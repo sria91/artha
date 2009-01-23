@@ -5,7 +5,7 @@ AC_PREREQ([2.50])
 
 AC_INIT([Artha], [0.7.0], [legends2k@yahoo.com], [artha])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([-Wall -Werror check-news])
+AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 
 # Checks for programs.
 AC_PROG_CC
