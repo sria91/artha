@@ -37,9 +37,9 @@ WordNet-3.x (minimum required version numbers are specified).
 
 Simple install procedure:
 
-  $ tar xvf artha-0.7.0.tar.gz			# unpack the sources
+  $ tar xvf <package_name>			# unpack the sources
   or
-  $ gzip -cd artha-0.7.0.tar.gz			# alternative to above
+  $ gzip -cd <package_name>			# alternative to above
 
   $ cd artha-0.7.0				# change to the toplevel directory
   $ ./configure					# run the `configure' script
