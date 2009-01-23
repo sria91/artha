@@ -1,0 +1,77 @@
+0.7.0 (Jan 23, 2009):
+	Since the help is yet to be created, a message box is put for first runs and hot key changes, 
+	so as to notify the user. Instead of sticking to Ctrl + Alt + W, 3 more hot key tries are 
+	added to the list. Artha tries to set them one by one. If none are available, summoning and 
+	notifications are disabled.
+
+0.6.5:
+	Last set user's preferences (mode & notifications) will now be stored in a .conf file in the 
+	user's config. directory. gtk_show_uri's availability now found in run-time, so that version 
+	2.12 of libgtk is now enough to run/build Artha, instead of 2.14.
+
+0.6.4:
+	'Attributes' tab will now get renamed dynamically based on the term. E.g. for 'tall' it gets 
+	renamed to 'Attribute of' & for 'height' it gets renamed to 'Attributes'. Applications menu 
+	shortcut will now get created for Artha under Accessories, implemented with .desktop file.
+0.6.3:
+	Finally, a bare bones man page is added to the dist! :) gtk_show_uri(), which is present since 
+	GTK+ 2.14, is required for email/url hooks in About screen, all other functions used will build 
+	againt 2.12. Hence I created a macro using autoconf. If compiled against libgtk 2.14 or greater, 
+	email and url hooks in About screen will be present from now on.
+
+0.6.2:
+	Status bar is now updated with the number of senses in different POSs (Part of Speeches). A 
+	minor bug, which resulted in not searching of a already searched term, when the last search 
+	was unsuccessful, fixed.
+
+0.6.1:
+	Double clicking or pressing Enter/Return key on a relative from any of the relative list, now 
+	jumps to that word's definition search. About box, credits & licence are now mentioned in the 
+	GUI. Autoconf and automake are now used to automate the building process in diff. environments. 
+	Files COPYING, TODO, AUTHORS, NEWS, INSTALL, README & ChangeLog are added to the project.
+
+0.6:
+	Previous and Next buttons are added to give a browser like feature, wherein the user can scroll 
+	thru' the list of terms they have searched. In case of a word already in history, when searched, 
+	the word is searched and results are set as usual, but the word is searched for in the history, 
+	and its set as the current active index in the combo box, that in-turn was calling the search 
+	button click module again, resulting in 2 recursive searches. This issue is fixed.
+
+0.5:
+	After reading a few tutorials, first hand-written Makefile for Artha created with a few rules. 
+	Two modes, one simple and the other advanced, designed for simplicity. Users who prefer to live 
+	in list based relatives can do so, while veterans who want detailed info on the relatives of a 
+	term can also do so with the help of the 'Detailed' mode button.
+
+0.4.1:
+	Populating of tree based relatives done (using recursion). Using the attributes concept of the 
+	tree view, bold face for multi occuring relatives are displayed. WNI had a small bug, wherein 
+	the term in question is checked against all of the master list, while missing the current list. 
+	This issue is fixed.
+
+0.4:
+	Populated list based relatives in the respective GTK Tree View with Tree Store model. Referred 
+	X's rgb.txt and assigned different colours for different familiarity category, with the lightest 
+	for the most familiar (very familiar) to the darkest for the least (very rare). History of 
+	searched words started to maintain in the drop down combo box with a GTK list store.
+
+0.3:
+	After doing code profiling of WNI using gprof, strip_adj_marker() was found to be getting 
+	called highly redundantly, it is removed where ever not required. GUI designed with Glade3, while
+	GTK Builder class is used for loading the GUI. Definitions of a searched string displayed in the 
+	designed GTK Text View. Initially formatting was like hell, once GTK Text Tag concepts came in, 
+	this was much better with a decent formatting/colour-coding scheme.
+
+0.2:
+	XGrabKey, to grab a hotkey combo, which was long done (2007 year end) before the project started 
+	came in very handy when it was required. libnotify used to display the first definition of Artha 
+	from System Tray icon.
+
+0.1.1:
+	Memory leaks checked with Valgrind. Since Slice Allocator was recommended by GTK+, code's 
+	alloc's. moved to Slice Alloctor.
+
+0.1:
+	After a lot of contemplation, WordNet Interface module is created with a list model for a 
+	few relative lists and tree model for the remaining, so that they can be used for different modes.
+

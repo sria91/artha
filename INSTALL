@@ -1,0 +1,58 @@
+Artha - An open cross-platform thesaurus based on WordNet
+=============================================================================
+Copyright (c) 2009  Sundaram Ramaswamy, <legends2k@yahoo.com>
+
+
+Installation Instructions
+-------------------------
+Artha can be installed from source on most GNU/Linux systems easily, by
+running the following commands in the source base directory:
+
+$ ./configure
+$ make
+
+And then switching to 'root' (through 'su' or 'sudo') and running:
+# make install
+
+Artha could then be started by running 'artha'. 
+
+It is recommended to add Artha to your list of start-up programs. For example, 
+in GNOME, this is done through 'Sessions' in the System -> Preferences menu.
+
+By default, Artha gets installed in /usr/local. Should you wish to change 
+the default installation path, you can do so by setting the 'prefix' parameter 
+of configure. Usually prefix is used with /usr argument, since /usr is the 
+usual base directory for program directories.
+
+e.g.
+$ ./configure --prefix=/usr
+
+which will configure Artha to get installed in /usr.
+
+
+System Requirements
+-------------------
+Artha has been tested and is known to run well on several GNU/Linux 
+distributions & on i386 and x86-64 platforms, but will probably run well on
+other UNIX-like systems and other architectures too.
+
+In order to build artha, as described above, you will need the following 
+"development" libraries installed (typical binary package names are given 
+within braces):
+
+- wordnet  >= 3.0	(wordnet-dev)
+- glib     >= 2.10	(libglib2.0-dev)
+- gtk+     >= 2.12	(libgtk2.0-dev)
+
+Optionally, Artha may use the following "development" libraries, if they 
+are available:
+- notify   >= 0.4.1	(libnotify-dev)
+- dbus     >= 1.0	(libdbus-1-dev)
+
+These 2 libraries are not a must for building Artha, however they are a must 
+to enable the Notifications feature of Artha.
+
+You will also need some build tools such as GNU gcc and gtk-builder-convert. 
+gtk-builder-convert is a part of libgtk2.0 development headers of version 
+2.12 or later.
+

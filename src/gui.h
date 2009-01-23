@@ -1,0 +1,186 @@
+/**
+ * Artha - Free cross-platform open thesaurus
+ * Copyright (C) 2009  Sundaram Ramaswamy, legends2k@yahoo.com
+ *
+ * Artha is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Artha is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Artha; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* gui.h: GUI Header */
+
+#include "wni.h"
+#include <gtk/gtk.h>
+#include <X11/Xlib.h>
+#include <X11/keysym.h>
+#include <gdk/gdkx.h>
+#include <gdk/gdkkeysyms.h>
+
+#ifdef HAVE_CONFIG_H
+
+#include <config.h>
+
+//#ifdef G_OS_UNIX
+#ifdef NOTIFIER_SUPPORT
+	#define NOTIFY
+#endif
+//#endif
+
+#define MAILTO_PREFIX "mailto:"
+
+#if DEBUG_LEVEL >= 1
+	#define G_DEBUG(format, args...) g_debug(format, ##args)
+#else
+	#define G_DEBUG(format, ...) 
+#endif
+
+#endif
+
+#ifdef NOTIFY
+#include <libnotify/notify.h>
+#include <dbus/dbus.h>
+#endif
+
+
+#define ICON_FILE "/artha.svg"
+#define UI_FILE "/gui.ui"
+
+#define SETTINGS_COMMENT "Artha Preferences File"
+#define GROUP_SETTINGS "Settings"
+#define KEY_HOTKEY_INDEX "Hotkey"
+#define KEY_VERSION "Version"
+#define KEY_MODE "Mode"
+#ifdef NOTIFY
+	#define KEY_NOTIFICATIONS "Notifications"
+#endif
+
+#define WINDOW_MAIN "wndMain"
+#define BUTTON_SEARCH "btnSearch"
+#define TEXT_VIEW_DEFINITIONS "txtDefinitions"
+#define COMBO_QUERY "cboQuery"
+#define TOOLBAR "toolbar"
+#define NOTEBOOK "notebook"
+#define EXPANDER "expander"
+#define STATUSBAR "statusbar"
+#define LABEL_ATTRIBUTES "lblAttributes"
+#define LABEL_TEXT_ATTRIBUTES "Attributes"
+#define LABEL_TEXT_ATTRIBUTE_OF "Attribute of"
+
+#define MAX_CONCAT_STR		500
+#define MAX_STATUS_MSG		75
+
+#define TREE_SYNONYMS		0
+#define TREE_ANTONYMS		1
+#define TREE_HYPERNYMS		2
+#define TREE_HYPONYMS		3
+#define TREE_HOLONYMS		4
+#define TREE_MERONYMS		5
+#define TREE_DERIVATIVES	6
+#define TREE_DOMAIN		7
+#define TREE_CAUSES		8
+#define TREE_ENTAILS		9
+#define TREE_ATTRIBUTES		10
+#define TREE_PERTAINYMS		11
+#define TREE_SIMILAR		12
+
+#define TOTAL_RELATIVES		TREE_SIMILAR + 1
+
+// Artha Global variables
+
+// Names of relative tree tab widgets from UI file
+// Note that the 'tree" prefix will be stripped and will be used within code
+gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms", "treeDerivatives", 
+"treeDomain", "treeCauses", "treeEntails", "treeAttributes", "treePertainyms", "treeSimilar"};
+
+#define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
+gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
+
+//gchar *list_type[] = {"MEMBER OF", "SUBSTANCE OF", "PART OF", "MEMBERS", "HAS SUBSTANCE", "PARTS"};
+//gchar *hypernym_type[] = {"INSTANCE OF", "INSTANCES"};
+
+#define FAMILIARITY_COUNT 8
+gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
+gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
+//none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give
+
+Bool 		x_error = False;
+GSList 		*results = NULL;
+gchar 		*last_search = NULL;
+guint32 	hotkey_time_stamp = 0;
+gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE;
+guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
+
+#ifdef NOTIFY
+gboolean 		notifier_enabled = FALSE;
+NotifyNotification	*notifier = NULL;
+#endif
+
+// Artha App. Strings
+
+#define QUIT_TOOLITEM_TOOLTIP "Close Artha completely. To minimize to system tray, click on the system try icon or the Close Window (X) button on the title bar"
+#define ABOUT_TOOLITEM_TOOLTIP "About Artha -> Copyright, Credits, Licence, etc."
+#define PREV_TOOLITEM_TOOLTIP "Go to the previous search term"
+#define NEXT_TOOLITEM_TOOLTIP "Go to the next search term"
+#define MODE_TOOLITEM_TOOLTIP "Toggle between simple/advanced modes"
+
+#define WELCOME_NOTE "Welcome to Artha!"
+
+#define WELCOME_HOTKEY_NORMAL "The hot key set for Artha is <b>Ctrl + Alt + %c</b>."
+
+#define WELCOME_HOTKEY_INFO " Press this key combination to call Artha. Selecting text \
+in any window and calling Artha will pop it up with the selected text's definitions."
+
+#define WELCOME_MANUAL "\n\nRefer manual ('man artha' in terminal) for detailed info/help."
+
+#ifdef NOTIFY
+#define WELCOME_NOTIFY "\n\nIf notifications are enabled, instead of popping up, Artha will \
+notify the first (prime) definition of the selection. Notifications can be enabled/disabled by \
+right-clicking on Artha's status icon on the system tray and selecting the required option."
+#endif
+
+#define WELCOME_NOHOTKEY "Artha tried to set one of the hot key combos \
+<b>Ctrl + Alt + [W|A|T|Q]</b> and found all of them to be already occupied by some other \
+application. Release atleast one of them and restart Artha to use the hot key feature.\n\nIf this \
+feature is enabled Artha can be called from any window, selecting some text, it will pop up with \
+the definitions of the selected text. This feature is also required to enable Notifications."
+
+#define WELCOME_NOTE_HOTKEY_CHANGED "Artha's hot key is now changed to <b>Ctrl + Alt + %c</b>."
+
+
+#define STRING_COPYRIGHT "Copyright © 2009  Sundaram Ramaswamy. All Rights Reserved.\n\nWordNet 3.0 \
+Copyright 2006 by Princeton University.\n  All rights reserved."
+
+#define STRING_WEBSITE "http://artha.sourceforge.net/"
+
+#define STRING_WEBSITE_LABEL "Artha Homepage"
+
+#define STRING_ABOUT "An open cross-platform thesaurus based on WordNet"
+
+#define STRING_LICENCE "Artha is free software; you can redistribute it and/or modify it under the terms of \
+the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, \
+or (at your option) any later version.\n\nArtha is distributed in the hope that it will be useful, but WITHOUT \
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See \
+the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public \
+License along with Artha; if not, see <www.gnu.org/licenses>.\n\nWordNet 3.0 Disclaimer\nTHIS SOFTWARE AND \
+DATABASE IS PROVIDED \"AS IS\" AND PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR \
+IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES \
+OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE, DATABASE OR \
+DOCUMENTATION WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS."
+
+gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>"};
+
+
+// Dynamically loaded gtk_show_uri function's prototype
+typedef gboolean (*ShowURIFunc) (GdkScreen *screen, const gchar *uri, guint32 timestamp, GError **error);
+
+
+

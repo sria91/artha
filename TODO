@@ -1,0 +1,96 @@
+* When starting for the first time, since extensive help docs aren't available, 
+  just show a message box telling about the Hot Key and Notifications
+
+* Help docs and Prefernces windows are to be added, and have the highest priority.
+
+* Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
+
+* Watch the X selection. I.e. selecting text and calling Artha by pressing the 
+  staus icon should make Artha come up with the definitions.
+
+* When in minimized mode, with notifications, just look up the synonyms, which 
+  should reduce a lot of overhead. When 'Lookup' is clicked, do the actual 
+  WORDNET_INTERFACE_ALL request call, till then this flag can be defered.
+
+* Check for boundary value of the selection. I.e. if selection is over x, truncate 
+  it before search.
+
+* Make sure you do all the required trim, truncate, check for illegal chars 
+  like ; : ~ " etc. and strip them before you send them to WNI
+
+* When the drop down list is too big, make sure, it doesn't exceed out of the 
+  app. Instead let it have a scroll bar.
+
+* When in simple mode, see the 'Parts' tab for 'rupee', it has lot of duplicates.
+
+* Search slippage, and see that the tab set is incorrect
+
+* Create a list view for antonyms for simple mode case, with additional columns 
+  like direct/indirect, via, etc.
+
+* When displaying antonym tree, if only direct antonyms exist, remove the parent 
+  node ("Direct") alone e.g. orthodox
+
+* Reoder the relatives list such that all the tree are at the bottom 
+  I.e. Pertainyms come before the BIG 4 (Hyper, Hypo, Holo & Mero) Order: Synonyms, 
+  Antonyms, Attributes, Derivatives, Causes, Entails, Similar, Domain, Pertainyms, 
+  Hypernyms,Hyponyms, Holonyms, Meronyms
+
+* Change Kind of (Hyperyms) to Kind of/Way to and Kinds (Hyponyms) to Kinds/Ways
+
+* Keep 2 buttons expand all/contract all for relative trees
+
+* Should change the g_printf to debug level prints in WNI (See "Running GTK+ 
+  Applications")
+
+* Should Similar be made as 'Similar/Related/See also'? Checkout Hinduism's similar.
+
+* Make sure you free or unref any object that gets newly created or referred
+
+* Memory profiling should be done, check why it shoots from 3 to 9 to 12 to 
+  15 MB when running (Check System Monitor)
+
+* Try, when the window is visible, searching 'man' and do the same when in tray 
+  (with notifications). Performance is differing? (Once the performance got hit 
+  when it was visible, but not very sure)
+
+* Try 'water' and then 'Vishnu' notice that the Holonyms/Part Of list's horizontal 
+  scroll bar is not gone, when it should scroll to top once TextView is loaded with text
+
+* Likewise scroll all the relative lists to top once they are populated
+
+* Check tab order (gtk_container_set_focus_chain() can be used
+  Source: http://www.kksou.com/php-gtk2/articles/change-tab-order---Example-4.php)
+
+* Use Key-value file parser in GLib for settings file
+
+* Double click on def. text should make a search again (GdkEvent). Also select 2 words 
+  before and after to see if its there in the dict as a lemma
+
+* Bring to foreground should be effective even when the window is visible, but in 
+  background (I.e. when z-order not 0)
+
+* Make sure when mouse scroll is made on cboQuery, you scroll thru' the history
+
+* Clearing search history
+
+* Auto complete of the query combo using history or the whole dict. index?
+
+* Making hotkey customizable (hint: user GdkEventKey, which has the same Mod1Mask, 
+  etc. as its a wrapper to X11)
+
+* Should the sense number be displayed as a column in relative lists like ATTRIBUTES, etc.?
+
+* Wrapped text should get aligned with the definition start and not the sense count start
+
+* Try to see if this is possible => farcry should be separated into "far cry" and sent to search
+
+* Pronunciations
+
+Settings
+~~~~~~~~
+Startup mode -> tray/show
+Hotkey selection
+Notification system
+Fonts and Colours preferred
+History storage pattern -> count/days to keep, should it be cleared on exit? etc.

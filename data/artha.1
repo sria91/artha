@@ -1,0 +1,67 @@
+'\" t
+.\" $Id$
+.tr ~
+.TH Artha 1 "Jan 14, 2009" "Artha" "Artha \- The Open Thesaurus"
+.SH NAME
+Artha \- An open cross-platform thesaurus based on WordNet  
+.SH DESCRIPTION
+\fBArtha\fP is an open thesaurus based on the WordNet database, 
+created with simplicity in mind. Once executed, Artha stays on the 
+system tray, monitoring for a set global hot key combination. When 
+the user selects some text in any window, and presses this set hot 
+key combo, Artha looks up WordNet for the selected text and pops-up 
+with the results.
+.PP
+Should the user prefer system tray notifications (balloon tips), 
+rather than the application popping up with the definitions, it can 
+be done by enabling Notifications.  This is done by right-clicking 
+on Artha's system tray icon, and tick off the 'Notifications' 
+check box in the menu. When notifications are enabled, and the user 
+selects text in a window and presses the hot key combo, Artha takes 
+the prime definition of that term from WordNet and shows that 
+definition as a system tray notification.
+.PP
+The hot key combo selection is done by Artha is in this Order:
+.IP
+	* Ctrl + Alt + W
+.IP
+	* Ctrl + Alt + A
+.IP
+	* Ctrl + Alt + T
+.IP
+	* Ctrl + Alt + Q
+.IP
+I.e. when executed, Artha tries to register a hot key for it. First 
+it tries to register Ctrl + Alt + W, if it is already occupied by 
+some other application, it tries for Ctrl + Alt + A, likewise until 
+it succeeds. If all the above listed 4 combinations are taken up 
+by other applications, Artha disables its hot key call and 
+notifications features. Hence its highly recommened that the user 
+keeps atleast one of these combinations free, so as to use all the 
+features of Artha effectively.
+.PP
+Apart from showing the definitions of a searched string with usage 
+examples, Artha also shows a word's relatives like Synonyms, 
+Antonyms, Attributes, Derivatives, Domain/Domain Terms, Causes, 
+Entails, Similar Terms, Hypernyms (is a kind of), Hyponyms (Kinds), 
+Holonyms (is a part of), Meronyms (Parts) and Pertainyms (Related 
+noun/verb).
+.PP
+Artha has 2 modes. Simple and Detailed. Artha enters Detailed mode 
+when the 'Detailed' button in the toolbar is pressed. When toggled 
+again, it returns back to simple mode. For relatives like Antonyms, 
+Pertainyms, Hypernyms, Hyponyms, Holonyms and Meronyms, where more 
+than one level of relatives may be present, is showed in a tree 
+fashion, in detailed mode. If in simple mode, only one level of 
+relatives are shown even when more levels are present. E.g. 'rich' 
+has 'poor' and 'lean' alone as antonyms in simple mode. While in 
+detailed mode, 'poor' further infers broke, skint, etc. which are 
+shown as children of 'poor'.
+.SH AVAILABILITY
+Artha has a World Wide Web site at
+\fBhttp://artha.sourceforge.net\fP.  From this web site users can 
+know more about the Artha project and also download its source and 
+binary distributions for various distros.
+.SH AUTHOR
+Sundaram Ramaswamy <legends2k@yahoo.com>
+

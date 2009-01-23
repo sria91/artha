@@ -1,0 +1,71 @@
+version 0.7.0 (Jan 23, 2009):
+	* 3 more hot key combos added (so now it is Ctrl + Alt + [W|A|T|Q]) to 
+	  the list of hot keys. Artha will try setting them in this order. If 
+	  none succeeds, the Notifications feature is disabled properly.
+	* On first run or when the hot key changes w.r.t the prev. run, Artha 
+	  shows a message box with details as a help to the user.
+
+version 0.6.5:
+	* Last set preferences are stored in a .conf file (persistent settings).
+	* gtk_show_uri's availability now found in run-time.
+
+version 0.6.4:
+	* 'Attributes' tab gets renamed (Attributes/Attribute of) based on the 
+	  POS (NOUN/ADJ) of the term's attribute item
+	* Shortcut in Applications Menu using .desktop file implemented
+
+version 0.6.3:
+	* Man page added, with minimal briefing.
+	* Link hooks for email/url in About screen created.
+
+version 0.6.2:
+	* Status Bar is now updated based on the latest search results.
+	* Fixed not searching of an already searched term immediately after a failed 
+	  search bug.
+
+version 0.6.1:
+	* Relatives List double-click/return handled, to jump to the corresponding term.
+	* About box created, licences & credits mentioned and made part of the GUI.
+	* Autoconf and automake employed.
+	* ChangeLog, NEWS, TODO, README, COPYING & AUTHORS are added.
+
+verison 0.6.0:
+	* Previous and Next buttons were added.
+	* Bug fix to prevent searching a word twice (in case of searching a word already in 
+	  history list) added.
+
+version 0.5.0:
+	* Hand written Makefile employed for the project.
+	* 2 Modes of Artha designed. 'Detailed' button added. Trees are now removed in 
+	  case of simple mode.
+
+version 0.4.1:
+	* Code to populate tree-based relatives added.
+	* Bold face for multiple occuring, higher weightage relatives implimented in 
+	  relative lists.
+	* Issue in checking for duplicate terms against the current lists, in WNI, fixed.
+
+version 0.4.0:
+	* Code to populate list-based relatives added
+	* Code to display 'familiarity' (based on polysemy count) added with colour-coding 
+	  based on weightage.
+	* Combo box for maintaining history of searched words added.
+
+version 0.3.0:
+	* GUI designed in Glade3, with Tabs and Toolbar
+	* Code to fill-in formatted definitions with colour coding added.
+	* strip_adj_marker usage minimized in WNI, to only ADJ terms.
+
+version 0.2.0:
+	* Key hooking using XGrabKey and getting primary clipboard data achieved.
+	* Notification of a selected word's definition displayed, the first visible GUI version
+	  of Artha born.
+
+version 0.1.1:
+	* WordNet Interface (engine) module completed. Now all possible relative list 
+	  generations for a given request is serviced by WNI.
+	* Memory allocation code moved from g_malloc0 to g_slice_alloc0.
+
+version 0.1.0:
+	* Initial version of WordNet Interface created, with all list based relatives populated.
+
