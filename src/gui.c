@@ -17,7 +17,7 @@
  */
 
 /* gui.c: GUI Code */
- 
+
 
 // TODO: When any of the relatives list is double clicked, it should go 
 // to the word's defn., as usual, but should highlight the sense which 
@@ -40,8 +40,9 @@ static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpoint
 static void mnuChkNotify_toggled(GtkCheckMenuItem *chkMenu, gpointer user_data);
 #endif
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
-static void statusIcon_activate(GtkStatusIcon *status_icon, gpointer user_data);
-static void statusIcon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
+static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
+static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
+static void about_response_handle(GtkDialog *about_dialog, gint response_id);
 static void about_activate(GtkWidget *menu_item, gpointer user_data);
 static void quit_activate(GtkWidget *menu_item, gpointer user_data);
 static guint8 get_frequency(guint sense_count);
@@ -64,7 +65,6 @@ static void expander_clicked(GtkExpander *expander, gpointer user_data);
 static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data);
 static gboolean relative_clicked(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean relative_keyed(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
-static void free_stores(GtkBuilder *gui_builder);
 static void create_stores_renderers(GtkBuilder *gui_builder);
 static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data);
 static void btnNext_clicked(GtkToolButton *toolbutton, gpointer user_data);
@@ -140,7 +140,16 @@ static void key_ungrab(Display *dpy, guint keyval)
 #ifdef NOTIFY
 static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpointer user_data)
 {
-	if(!g_strcmp0(actionID, "lookup")) gtk_window_present(GTK_WINDOW(user_data));
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+	GtkWidget *cboQuery = GTK_WIDGET(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+
+	if(!g_strcmp0(actionID, "lookup"))
+	{
+		gtk_window_present(window);
+		gtk_widget_grab_focus(GTK_WIDGET(cboQuery));
+	}
+	
 }
 #endif
 
@@ -162,10 +171,10 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 
 		gui_builder = GTK_BUILDER(user_data);
 		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
+		cboQuery = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 
 		if(selection)
 		{
-			cboQuery = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 			txtQuery = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(cboQuery)));
 			btnSearch = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
@@ -183,6 +192,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 			// see if in case notify is selected, should we popup or we should just notify "No selection made!"
 			window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 			gtk_window_present_with_time(window, hotkey_time_stamp);
+			gtk_widget_grab_focus(GTK_WIDGET(cboQuery));
 		}
 		return GDK_FILTER_REMOVE;
 	}
@@ -197,27 +207,61 @@ static void mnuChkNotify_toggled(GtkCheckMenuItem *chkMenu, gpointer user_data)
 }
 #endif
 
-static void statusIcon_activate(GtkStatusIcon *status_icon, gpointer user_data)
+static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 {
-	GtkWindow *window = GTK_WINDOW(user_data);
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+	GtkComboBoxEntry *cboQuery = NULL;
 
 	if(GTK_WIDGET_VISIBLE(window))
 		gtk_widget_hide(GTK_WIDGET(window));
 	else
-		gtk_widget_show(GTK_WIDGET(window));
+	{
+		gtk_window_present(window);
+		cboQuery = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+		gtk_widget_grab_focus(GTK_WIDGET(cboQuery));
+	}
 }
 
-static void statusIcon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data)
+static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data)
 {
 	GtkMenu *menu = GTK_MENU(user_data);
 	gtk_menu_popup(menu, NULL, NULL, gtk_status_icon_position_menu, status_icon, button, active_time);
 }
 
+static void about_response_handle(GtkDialog *about_dialog, gint response_id)
+{
+	switch(response_id)
+	{
+		case GTK_RESPONSE_CLOSE:
+		case GTK_RESPONSE_CANCEL:
+		case GTK_RESPONSE_DELETE_EVENT:
+			gtk_widget_destroy(GTK_WIDGET(about_dialog));
+			break;
+		case ARTHA_RESPONSE_REPORT_BUG:
+			if(fp_show_uri)
+				fp_show_uri(NULL, "http://launchpad.net/artha/+filebug", GDK_CURRENT_TIME, NULL);
+			break;
+		default:
+			g_warning("About Dialog: Unhandled response_id: %d!\n", response_id);
+			break;
+	}
+}
+
 static void about_activate(GtkWidget *menu_item, gpointer user_data)
 {
-	gtk_show_about_dialog(NULL, "license", STRING_LICENCE, "copyright", STRING_COPYRIGHT, 
+	GtkWidget *about_dialog = gtk_about_dialog_new();
+	
+	g_object_set(about_dialog, "license", STRING_LICENCE, "copyright", STRING_COPYRIGHT, 
 	"comments", STRING_ABOUT, "authors", strv_authors, "version", PACKAGE_VERSION, 
 	"wrap-license", TRUE, "website-label", STRING_WEBSITE_LABEL, "website", STRING_WEBSITE, NULL);
+
+	if(fp_show_uri)
+		gtk_dialog_add_button(GTK_DIALOG(about_dialog), BUTTON_TEXT_BUG, ARTHA_RESPONSE_REPORT_BUG);
+
+	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), about_dialog);
+	
+	gtk_dialog_run(GTK_DIALOG(about_dialog));
 }
 
 static void quit_activate(GtkWidget *menu_item, gpointer user_data)
@@ -426,7 +470,7 @@ static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *paren
 }
 
 /*
-	build_tree shall not be called for a simple mode generation pf tree type lists like 
+	build_tree shall not be called for a simple mode generation of tree type lists like 
 	hypernyms, hyponyms, holonyms, meronyms & pertainyms. But make sure a duplicate check is 
 	done when creating the list, since they may arise coz of no duplicate check in case of 
 	tree list creation. e.g. hypernym tree Sense 3 of register (v). In fact, when in simple 
@@ -953,7 +997,7 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 					definition = g_strconcat("<b><i>", partnames[((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->pos], 
 					"</i></b>. ", ((WNIDefinition*)((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->definitions->data)->definition, NULL);
 
-					notify_notification_add_action(notifier, "lookup", "Detailed Lookup", NOTIFY_ACTION_CALLBACK(notifier_clicked), window, NULL);
+					notify_notification_add_action(notifier, "lookup", "Detailed Lookup", NOTIFY_ACTION_CALLBACK(notifier_clicked), gui_builder, NULL);
 					if(definition)
 					{
 						notify_notification_update(notifier, lemma, definition, "gtk-dialog-info");
@@ -1207,25 +1251,6 @@ static gboolean relative_keyed(GtkWidget *widget, GdkEventKey *event, gpointer u
 	return FALSE;
 }
 
-static void free_stores(GtkBuilder *gui_builder)
-{
-	guint8 i = 0;
-	GtkTreeView *tree_view = NULL;
-	GtkTreeStore *tree_store = NULL;
-	GtkListStore *list_store = NULL;
-
-	list_store = GTK_LIST_STORE(gtk_combo_box_get_model(GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY))));
-	g_object_unref(list_store);	//unref the query list (history list) -> here is where you might store it in persistant data
-	
-	//unref relative stores
-	for(i = 0; i < TOTAL_RELATIVES; i++)
-	{
-		tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
-		tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
-		g_object_unref(tree_store);
-	}
-}
-
 static void create_stores_renderers(GtkBuilder *gui_builder)
 {
 	guint8 i = 0;
@@ -1240,9 +1265,10 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	// combo box data store
 	cboQuery = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	list_store_query = gtk_list_store_new(1, G_TYPE_STRING);
+	g_signal_connect(GTK_TREE_MODEL(list_store_query), "row-inserted", G_CALLBACK(query_list_updated), gui_builder);
 	gtk_combo_box_set_model(cboQuery, GTK_TREE_MODEL(list_store_query));
 	gtk_combo_box_entry_set_text_column(GTK_COMBO_BOX_ENTRY(cboQuery), 0);
-	g_signal_connect(GTK_TREE_MODEL(list_store_query), "row-inserted", G_CALLBACK(query_list_updated), gui_builder);
+	g_object_unref(list_store_query);
 	
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
@@ -1253,6 +1279,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tree_view), -1, col_name, tree_renderer, "text", 0, "weight", 1, NULL);
 		tree_store = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_UINT);
 		gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(tree_store));
+		g_object_unref(tree_store);
 
 		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(tree_view), FALSE);
 
@@ -1400,7 +1427,7 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
 	mnuQuit = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(mnuQuit));
 
-	g_signal_connect(mnuQuit, "activate", G_CALLBACK(quit_activate), gui_builder);
+	g_signal_connect(mnuQuit, "activate", G_CALLBACK(quit_activate), NULL);
 
 	gtk_widget_show_all(GTK_WIDGET(menu));
 
@@ -1563,12 +1590,10 @@ static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gp
 {
 	GError *error = NULL;
 	gchar *final_uri = NULL;
-	
-	ShowURIFunc show_uri = user_data;
 
 	final_uri = g_strconcat(MAILTO_PREFIX, link, NULL);
 
-	if(!show_uri(gtk_widget_get_screen(GTK_WIDGET(about_dialog)), final_uri, GDK_CURRENT_TIME, &error))
+	if(!fp_show_uri(gtk_widget_get_screen(GTK_WIDGET(about_dialog)), final_uri, GDK_CURRENT_TIME, &error))
 	{
 		g_warning("Email gtk_show_uri error: %s\n", error->message);
 	}
@@ -1579,10 +1604,8 @@ static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gp
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data)
 {
 	GError *error = NULL;
-	
-	ShowURIFunc show_uri = user_data;
 
-	if(!show_uri(gtk_widget_get_screen(GTK_WIDGET(about_dialog)), link, GDK_CURRENT_TIME, &error))
+	if(!fp_show_uri(gtk_widget_get_screen(GTK_WIDGET(about_dialog)), link, GDK_CURRENT_TIME, &error))
 	{
 		g_warning("URL gtk_show_uri error: %s\n", error->message);
 	}
@@ -1628,7 +1651,6 @@ int main(int argc, char *argv[])
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
 	
 	GModule *app_mod = NULL;
-	ShowURIFunc show_uri;
 
 	gboolean first_run = FALSE;
 	gint8 selected_key = 0;
@@ -1706,8 +1728,8 @@ int main(int argc, char *argv[])
 					
 					g_free(icon_file_path);
 					
-					g_signal_connect(statusIcon, "activate", G_CALLBACK(statusIcon_activate), window);
-					g_signal_connect(statusIcon, "popup-menu", G_CALLBACK(statusIcon_popup), GTK_WIDGET(popup_menu));
+					g_signal_connect(statusIcon, "activate", G_CALLBACK(status_icon_activate), gui_builder);
+					g_signal_connect(statusIcon, "popup-menu", G_CALLBACK(status_icon_popup), GTK_WIDGET(popup_menu));
 
 					// using the status icon, app. icon is also set
 					g_object_get(statusIcon, "pixbuf", &app_icon, NULL);
@@ -1756,11 +1778,11 @@ int main(int argc, char *argv[])
 					app_mod = g_module_open(NULL, G_MODULE_BIND_LAZY);
 					if(app_mod)
 					{
-						g_module_symbol(app_mod, "gtk_show_uri", (gpointer *) &show_uri);
-						if(show_uri)
+						g_module_symbol(app_mod, "gtk_show_uri", (gpointer *) &fp_show_uri);
+						if(fp_show_uri)
 						{
-							gtk_about_dialog_set_email_hook(about_email_hook, show_uri, NULL);
-							gtk_about_dialog_set_url_hook(about_url_hook, show_uri, NULL);
+							gtk_about_dialog_set_email_hook(about_email_hook, fp_show_uri, NULL);
+							gtk_about_dialog_set_url_hook(about_url_hook, fp_show_uri, NULL);
 						}
 						else
 							g_warning("Cannot find gtk_show_uri function symbol!\n");
@@ -1779,8 +1801,6 @@ int main(int argc, char *argv[])
 
 					
 					gtk_main();
-
-					free_stores(gui_builder);
 
 					save_preferences(selected_key + 1);
 	

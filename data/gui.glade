@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue Jan 13 06:32:26 2009 -->
+<!--Generated with glade3 3.4.5 on Fri Jan 23 10:17:33 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="wndMain">
     <property name="title" translatable="yes">Artha ~ The Open Thesaurus</property>
@@ -481,7 +481,7 @@
                               <widget class="GtkTreeView" id="treeMeronyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Hypernyms (Parts)</property>
+                                <property name="tooltip_text">Meronyms (Parts)</property>
                               </widget>
                             </child>
                           </widget>
@@ -492,7 +492,7 @@
                         <child>
                           <widget class="GtkLabel" id="lblMeronyms">
                             <property name="visible">True</property>
-                            <property name="tooltip_text">Hypernyms (Parts)</property>
+                            <property name="tooltip_text">Mernonyms (Parts)</property>
                             <property name="label" translatable="yes">Parts</property>
                           </widget>
                           <packing>

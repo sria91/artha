@@ -51,29 +51,32 @@
 #endif
 
 
-#define ICON_FILE "/artha.svg"
-#define UI_FILE "/gui.ui"
+#define ICON_FILE	"/artha.svg"
+#define UI_FILE		"/gui.ui"
 
-#define SETTINGS_COMMENT "Artha Preferences File"
-#define GROUP_SETTINGS "Settings"
-#define KEY_HOTKEY_INDEX "Hotkey"
-#define KEY_VERSION "Version"
-#define KEY_MODE "Mode"
+#define ARTHA_RESPONSE_REPORT_BUG	1
+#define BUTTON_TEXT_BUG			"Report a _Bug"
+
+#define SETTINGS_COMMENT	"Artha Preferences File"
+#define GROUP_SETTINGS		"Settings"
+#define KEY_HOTKEY_INDEX	"Hotkey"
+#define KEY_VERSION		"Version"
+#define KEY_MODE		"Mode"
 #ifdef NOTIFY
 	#define KEY_NOTIFICATIONS "Notifications"
 #endif
 
-#define WINDOW_MAIN "wndMain"
-#define BUTTON_SEARCH "btnSearch"
-#define TEXT_VIEW_DEFINITIONS "txtDefinitions"
-#define COMBO_QUERY "cboQuery"
-#define TOOLBAR "toolbar"
-#define NOTEBOOK "notebook"
-#define EXPANDER "expander"
-#define STATUSBAR "statusbar"
-#define LABEL_ATTRIBUTES "lblAttributes"
-#define LABEL_TEXT_ATTRIBUTES "Attributes"
-#define LABEL_TEXT_ATTRIBUTE_OF "Attribute of"
+#define WINDOW_MAIN			"wndMain"
+#define BUTTON_SEARCH			"btnSearch"
+#define TEXT_VIEW_DEFINITIONS		"txtDefinitions"
+#define COMBO_QUERY			"cboQuery"
+#define TOOLBAR				"toolbar"
+#define NOTEBOOK			"notebook"
+#define EXPANDER			"expander"
+#define STATUSBAR			"statusbar"
+#define LABEL_ATTRIBUTES		"lblAttributes"
+#define LABEL_TEXT_ATTRIBUTES		"Attributes"
+#define LABEL_TEXT_ATTRIBUTE_OF		"Attribute of"
 
 #define MAX_CONCAT_STR		500
 #define MAX_STATUS_MSG		75
@@ -126,44 +129,42 @@ NotifyNotification	*notifier = NULL;
 
 // Artha App. Strings
 
-#define QUIT_TOOLITEM_TOOLTIP "Close Artha completely. To minimize to system tray, click on the system try icon or the Close Window (X) button on the title bar"
-#define ABOUT_TOOLITEM_TOOLTIP "About Artha -> Copyright, Credits, Licence, etc."
-#define PREV_TOOLITEM_TOOLTIP "Go to the previous search term"
-#define NEXT_TOOLITEM_TOOLTIP "Go to the next search term"
-#define MODE_TOOLITEM_TOOLTIP "Toggle between simple/advanced modes"
+#define QUIT_TOOLITEM_TOOLTIP	"Close Artha completely. To minimize to system tray, click on the system try icon or the Close Window (X) button on the title bar"
+#define ABOUT_TOOLITEM_TOOLTIP	"About Artha -> Copyright, Credits, Licence, etc."
+#define PREV_TOOLITEM_TOOLTIP	"Go to the previous search term"
+#define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
+#define MODE_TOOLITEM_TOOLTIP	"Toggle between simple/advanced modes"
 
-#define WELCOME_NOTE "Welcome to Artha!"
+#define WELCOME_NOTE		"Welcome to Artha!"
+#define WELCOME_HOTKEY_NORMAL	"The hot key set for Artha is <b>Ctrl + Alt + %c</b>."
 
-#define WELCOME_HOTKEY_NORMAL "The hot key set for Artha is <b>Ctrl + Alt + %c</b>."
-
-#define WELCOME_HOTKEY_INFO " Press this key combination to call Artha. Selecting text \
+#define WELCOME_HOTKEY_INFO	" Press this key combination to call Artha. Selecting text \
 in any window and calling Artha will pop it up with the selected text's definitions."
-
-#define WELCOME_MANUAL "\n\nRefer manual ('man artha' in terminal) for detailed info/help."
+#define WELCOME_MANUAL		"\n\nRefer manual ('man artha' in terminal) for detailed info/help."
 
 #ifdef NOTIFY
-#define WELCOME_NOTIFY "\n\nIf notifications are enabled, instead of popping up, Artha will \
+#define WELCOME_NOTIFY		"\n\nIf notifications are enabled, instead of popping up, Artha will \
 notify the first (prime) definition of the selection. Notifications can be enabled/disabled by \
 right-clicking on Artha's status icon on the system tray and selecting the required option."
 #endif
 
-#define WELCOME_NOHOTKEY "Artha tried to set one of the hot key combos \
+#define WELCOME_NOHOTKEY	"Artha tried to set one of the hot key combos \
 <b>Ctrl + Alt + [W|A|T|Q]</b> and found all of them to be already occupied by some other \
 application. Release atleast one of them and restart Artha to use the hot key feature.\n\nIf this \
 feature is enabled Artha can be called from any window, selecting some text, it will pop up with \
 the definitions of the selected text. This feature is also required to enable Notifications."
 
-#define WELCOME_NOTE_HOTKEY_CHANGED "Artha's hot key is now changed to <b>Ctrl + Alt + %c</b>."
+#define WELCOME_NOTE_HOTKEY_CHANGED	"Artha's hot key is now changed to <b>Ctrl + Alt + %c</b>."
 
 
-#define STRING_COPYRIGHT "Copyright © 2009  Sundaram Ramaswamy. All Rights Reserved.\n\nWordNet 3.0 \
-Copyright 2006 by Princeton University.\n  All rights reserved."
+#define STRING_COPYRIGHT	"Copyright © 2009  Sundaram Ramaswamy. All Rights Reserved.\n\nWordNet 3.0 \
+Copyright 2006 by Princeton University.  All rights reserved."
 
-#define STRING_WEBSITE "http://artha.sourceforge.net/"
+#define STRING_WEBSITE		"http://artha.sourceforge.net/"
 
-#define STRING_WEBSITE_LABEL "Artha Homepage"
+#define STRING_WEBSITE_LABEL	"Artha Homepage"
 
-#define STRING_ABOUT "An open cross-platform thesaurus based on WordNet"
+#define STRING_ABOUT		"A handy open thesaurus based on WordNet"
 
 #define STRING_LICENCE "Artha is free software; you can redistribute it and/or modify it under the terms of \
 the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, \
@@ -181,6 +182,6 @@ gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>"};
 
 // Dynamically loaded gtk_show_uri function's prototype
 typedef gboolean (*ShowURIFunc) (GdkScreen *screen, const gchar *uri, guint32 timestamp, GError **error);
-
+ShowURIFunc fp_show_uri;
 
 
