@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.50])
 
-AC_INIT([Artha], [0.7.0], [legends2k@yahoo.com], [artha])
+AC_INIT([Artha], [0.7.1], [legends2k@yahoo.com], [artha])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 
@@ -64,7 +64,7 @@ if test "$NOTIFY" = 1; then
 		AC_DEFINE([NOTIFIER_SUPPORT], [1], [Notify Notifications library present])
 	fi
 else
-	AC_MSG_WARN([Notifications feature is disabled since notify library was not found! If you need it, please install libnotify development headers (libnotify-dev >= 0.4.1).])
+	AC_MSG_WARN([Notifications feature is disabled since libnotify development headers were not found! If you need Notifications feature, please install them (libnotify-dev >= 0.4.1).])
 fi
 
 

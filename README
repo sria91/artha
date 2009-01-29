@@ -24,12 +24,6 @@ but porting to other UNIX-like systems, Mac OS X and Microsoft Windows will
 commence soon.
 
 
-Licence
--------
-Artha is free software. It is absolutely free to use, modify and redistribute 
-under certain conditions. See COPYING for licence information.
-
-
 Installation
 ------------
 Artha requires the development headers of GTK+-2.12.x, GLib-2.10 and 
@@ -41,13 +35,25 @@ Simple install procedure:
   or
   $ gzip -cd <package_name>			# alternative to above
 
-  $ cd artha-0.7.0				# change to the toplevel directory
+  $ cd artha-<version>				# change to the toplevel directory
   $ ./configure					# run the `configure' script
   $ make					# build artha
   [ Become root by 'su' or 'sudo' ]
   # make install				# install artha
 
 See the file 'INSTALL' for more detailed information.
+
+
+Bugs & Queries
+--------------
+Bugs and queries are welcome! You can post them at 
+http://launchpad.net/artha/+filebug
+
+
+Licence
+-------
+Artha is free software. You are free to use, modify and redistribute it 
+under certain conditions. See COPYING for a detailed licence.
 
 
 More Information

@@ -1,6 +1,3 @@
-* When starting for the first time, since extensive help docs aren't available, 
-  just show a message box telling about the Hot Key and Notifications
-
 * Help docs and Prefernces windows are to be added, and have the highest priority.
 
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
@@ -92,5 +89,6 @@ Settings
 Startup mode -> tray/show
 Hotkey selection
 Notification system
+Watch clipboard
 Fonts and Colours preferred
 History storage pattern -> count/days to keep, should it be cleared on exit? etc.
