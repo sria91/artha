@@ -1,3 +1,11 @@
+version 0.7.1 (Jan 29, 2009):
+	* Fixed Tooltip for Meronyms in relative tabs/trees.
+	* Fixed tree store unreferencing when creating tree stores for relatives
+	* Focus to the Query field is now set on pop-up
+	* 'Report a Bug' button added to About dialog box
+	* Fixed an issue regarding the welcome message, when notifications are disabled.
+	* libdus threads init function called using its GLib bindings
+
 version 0.7.0 (Jan 23, 2009):
 	* 3 more hot key combos added (so now it is Ctrl + Alt + [W|A|T|Q]) to 
 	  the list of hot keys. Artha will try setting them in this order. If 

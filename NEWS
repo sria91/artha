@@ -1,3 +1,9 @@
+0.7.1 (Jan 29, 2009):
+	Finally, for bug tracking, Artha is registered in LaunchPad! A 'Report a Bug' button is kept 
+	on the About dialog for easy user access. After reading the dbus API docs, came to know that 
+	using GLib bindings API is the right way. Hence changed the low-level dbus call to dbus-GLib 
+	call to initialize threads in dbus.
+
 0.7.0 (Jan 23, 2009):
 	Since the help is yet to be created, a message box is put for first runs and hot key changes, 
 	so as to notify the user. Instead of sticking to Ctrl + Alt + W, 3 more hot key tries are 
