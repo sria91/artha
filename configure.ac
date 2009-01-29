@@ -46,25 +46,26 @@ fi
 # Check for libnotify, if found, get the details of dbus too
 AC_CHECK_LIB([notify], [notify_notification_new_with_status_icon], [NOTIFYLIB=-lnotify; NOTIFY=1], [NOTIFY=0])
 if test "$NOTIFY" = 1; then
-	PKG_CHECK_MODULES([dbus], [dbus-1 >= 1], , [
+	# version 0.74 is the one found on a presetine installation of Hardy
+	PKG_CHECK_MODULES([dbus], [dbus-glib-1 >= 0.74], , [
 	AC_MSG_RESULT(no)
 	AC_MSG_WARN([
-	You must have the dbus-1 development headers installed for Notifications feature.
+	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+	If you have it installed already you may need to install pkg-config so I can find them.
 	])
 	dbus_not_found=1
 	])
 	if test "$dbus_not_found" != 1; then
 		AC_SUBST([dbus_CFLAGS])
-		AC_SUBST([dbus_LIBS])
-		
+		#AC_SUBST([dbus_LIBS])
+
 		AC_SUBST([NOTIFYLIB])
 
-		AC_DEFINE([NOTIFIER_SUPPORT], [1], [Notify Notifications library present])
+		AC_DEFINE([NOTIFIER_SUPPORT], [1], [Notify - Notifications library present])
 	fi
 else
-	AC_MSG_WARN([Notifications feature is disabled since libnotify development headers were not found! If you need Notifications feature, please install them (libnotify-dev >= 0.4.1).])
+	AC_MSG_WARN([Notifications feature is disabled since libnotify development headers were not found! If you need Notifications, please install them (libnotify-dev >= 0.4.1) and rebuild.])
 fi
 
 

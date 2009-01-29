@@ -46,8 +46,8 @@ within braces):
 
 Optionally, Artha may use the following "development" libraries, if they 
 are available:
-- notify   >= 0.4.1	(libnotify-dev)
-- dbus     >= 1.0	(libdbus-1-dev)
+- notify	>= 0.4.1	(libnotify-dev)
+- dbus-glib	>= 0.74		(libdbus-glib-1-dev)
 
 These 2 libraries are not a must for building Artha, however they are a must 
 to enable the Notifications feature of Artha.

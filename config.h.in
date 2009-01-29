@@ -51,7 +51,7 @@
 /* Path where icon files are placed */
 #undef ICON_DIR
 
-/* Notify Notifications library present */
+/* Notify - Notifications library present */
 #undef NOTIFIER_SUPPORT
 
 /* Name of package */

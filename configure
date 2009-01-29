@@ -3856,6 +3856,7 @@ else
 fi
 
 if test "$NOTIFY" = 1; then
+	# version 0.74 is the one found on a presetine installation of Hardy
 
 pkg_failed=no
 { echo "$as_me:$LINENO: checking for dbus" >&5
@@ -3866,12 +3867,12 @@ if test -n "$PKG_CONFIG"; then
         pkg_cv_dbus_CFLAGS="$dbus_CFLAGS"
     else
         if test -n "$PKG_CONFIG" && \
-    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-1 >= 1\"") >&5
-  ($PKG_CONFIG --exists --print-errors "dbus-1 >= 1") 2>&5
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-glib-1 >= 0.74\"") >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-glib-1 >= 0.74") 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; then
-  pkg_cv_dbus_CFLAGS=`$PKG_CONFIG --cflags "dbus-1 >= 1" 2>/dev/null`
+  pkg_cv_dbus_CFLAGS=`$PKG_CONFIG --cflags "dbus-glib-1 >= 0.74" 2>/dev/null`
 else
   pkg_failed=yes
 fi
@@ -3884,12 +3885,12 @@ if test -n "$PKG_CONFIG"; then
         pkg_cv_dbus_LIBS="$dbus_LIBS"
     else
         if test -n "$PKG_CONFIG" && \
-    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-1 >= 1\"") >&5
-  ($PKG_CONFIG --exists --print-errors "dbus-1 >= 1") 2>&5
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-glib-1 >= 0.74\"") >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-glib-1 >= 0.74") 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; then
-  pkg_cv_dbus_LIBS=`$PKG_CONFIG --libs "dbus-1 >= 1" 2>/dev/null`
+  pkg_cv_dbus_LIBS=`$PKG_CONFIG --libs "dbus-glib-1 >= 0.74" 2>/dev/null`
 else
   pkg_failed=yes
 fi
@@ -3908,9 +3909,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        dbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "dbus-1 >= 1"`
+	        dbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "dbus-glib-1 >= 0.74"`
         else
-	        dbus_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "dbus-1 >= 1"`
+	        dbus_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "dbus-glib-1 >= 0.74"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$dbus_PKG_ERRORS" >&5
@@ -3921,14 +3922,14 @@ echo "${ECHO_T}no" >&6; }
 	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 	{ echo "$as_me:$LINENO: WARNING:
-	You must have the dbus-1 development headers installed for Notifications feature.
+	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+	If you have it installed already you may need to install pkg-config so I can find them.
 	" >&5
 echo "$as_me: WARNING:
-	You must have the dbus-1 development headers installed for Notifications feature.
+	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+	If you have it installed already you may need to install pkg-config so I can find them.
 	" >&2;}
 	dbus_not_found=1
 
@@ -3937,14 +3938,14 @@ elif test $pkg_failed = untried; then
 	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 	{ echo "$as_me:$LINENO: WARNING:
-	You must have the dbus-1 development headers installed for Notifications feature.
+	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+	If you have it installed already you may need to install pkg-config so I can find them.
 	" >&5
 echo "$as_me: WARNING:
-	You must have the dbus-1 development headers installed for Notifications feature.
+	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+	If you have it installed already you may need to install pkg-config so I can find them.
 	" >&2;}
 	dbus_not_found=1
 
@@ -3957,7 +3958,7 @@ echo "${ECHO_T}yes" >&6; }
 fi
 	if test "$dbus_not_found" != 1; then
 
-
+		#AC_SUBST([dbus_LIBS])
 
 
 
@@ -3968,8 +3969,8 @@ _ACEOF
 
 	fi
 else
-	{ echo "$as_me:$LINENO: WARNING: Notifications feature is disabled since libnotify development headers were not found! If you need Notifications feature, please install them (libnotify-dev >= 0.4.1)." >&5
-echo "$as_me: WARNING: Notifications feature is disabled since libnotify development headers were not found! If you need Notifications feature, please install them (libnotify-dev >= 0.4.1)." >&2;}
+	{ echo "$as_me:$LINENO: WARNING: Notifications feature is disabled since libnotify development headers were not found! If you need Notifications, please install them (libnotify-dev >= 0.4.1) and rebuild." >&5
+echo "$as_me: WARNING: Notifications feature is disabled since libnotify development headers were not found! If you need Notifications, please install them (libnotify-dev >= 0.4.1) and rebuild." >&2;}
 fi
 
 
