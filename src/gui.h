@@ -47,7 +47,7 @@
 
 #ifdef NOTIFY
 #include <libnotify/notify.h>
-#include <dbus/dbus.h>
+#include <dbus/dbus-glib.h>
 #endif
 
 
@@ -134,6 +134,14 @@ NotifyNotification	*notifier = NULL;
 #define PREV_TOOLITEM_TOOLTIP	"Go to the previous search term"
 #define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
 #define MODE_TOOLITEM_TOOLTIP	"Toggle between simple/advanced modes"
+
+#define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
+#define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
+
+#ifdef NOTIFY
+#define NOTIFY_QUERY_FAIL_TITLE	"Oops!"
+#define NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
+#endif
 
 #define WELCOME_NOTE		"Welcome to Artha!"
 #define WELCOME_HOTKEY_NORMAL	"The hot key set for Artha is <b>Ctrl + Alt + %c</b>."

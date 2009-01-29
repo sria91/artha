@@ -212,11 +212,18 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 	GtkComboBoxEntry *cboQuery = NULL;
+//	XEvent xe = {0};
+//	GdkEvent event = {0};
 
 	if(GTK_WIDGET_VISIBLE(window))
 		gtk_widget_hide(GTK_WIDGET(window));
 	else
 	{
+		// Code to watch clipboard when popping up
+		// Should be enabled when the 'Watch Clipboard' settings is put up in Pref. window
+		/*xe.type = KeyPress;
+		event.key.time = GDK_CURRENT_TIME;
+		hotkey_pressed(&xe, &event, gui_builder);*/
 		gtk_window_present(window);
 		cboQuery = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		gtk_widget_grab_focus(GTK_WIDGET(cboQuery));
@@ -1001,7 +1008,6 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 					if(definition)
 					{
 						notify_notification_update(notifier, lemma, definition, "gtk-dialog-info");
-						dbus_threads_init_default();
 						if(FALSE == notify_notification_show(notifier, &err))
 						{
 							g_warning("%s\n", err->message);
@@ -1025,8 +1031,7 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 #ifdef NOTIFY
 			if(!GTK_WIDGET_VISIBLE(window) && notifier_enabled && notifier)
 			{
-				notify_notification_update(notifier, "Oops!", "Queried term not found!", "gtk-dialog-warning");
-				dbus_threads_init_default();
+				notify_notification_update(notifier, NOTIFY_QUERY_FAIL_TITLE, NOTIFY_QUERY_FAIL_BODY, "gtk-dialog-warning");
 				if(FALSE == notify_notification_show(notifier, &err))
 				{
 					g_warning("%s\n", err->message);
@@ -1037,11 +1042,11 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 #endif
 				gtk_text_buffer_set_text(buffer, "", -1);
 				gtk_text_buffer_get_iter_at_offset(buffer, &cur, 0);
-				gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, "Queried string not found in thesaurus!", -1, "pos", NULL);
+				gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, STR_QUERY_FAILED, -1, "pos", NULL);
 				gtk_window_present(window);
 
 				msg_context_id = gtk_statusbar_get_context_id(status_bar, "search_failed");
-				gtk_statusbar_push(status_bar, msg_context_id, "Oops! Search string not found!");
+				gtk_statusbar_push(status_bar, msg_context_id, STR_STATUS_QUERY_FAILED);
 #ifdef NOTIFY
 			}
 #endif
@@ -1511,8 +1516,8 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 	{
 		first_run = TRUE;
 
-		g_warning("Preference file not found @ %s!\n", conf_file_path);
-		G_MESSAGE("User runs Artha for the first time!");
+		G_DEBUG("Preference file not found @ %s!\n", conf_file_path);
+		G_DEBUG("User runs Artha for the first time!");
 		
 		if(False == x_error)
 		{
@@ -1522,13 +1527,9 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 #endif
 			WELCOME_MANUAL,
 			NULL);
-		
-			welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message
-#ifdef NOTIFY
+
 			// subtract hot key value by 32 to get upper case char
-			, hot_key_vals[hotkey_index - 1] - 32
-#endif
-			);
+			welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, hot_key_vals[hotkey_index - 1] - 32);
 		}
 		else
 		{
@@ -1651,10 +1652,21 @@ int main(int argc, char *argv[])
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
 	
 	GModule *app_mod = NULL;
+	gpointer func_pointer = NULL;
 
 	gboolean first_run = FALSE;
 	gint8 selected_key = 0;
 
+
+	if(!g_thread_supported())
+	{
+		G_DEBUG("Calling g_thread_init()!\n");
+		g_thread_init(NULL);
+#ifdef NOTIFY
+		// do this! if removed, when the user selects text in our own txt entry, and press hotkey, app. hangs
+		dbus_g_thread_init();
+#endif
+	}
 
 	g_set_application_name(PACKAGE_NAME);
 
@@ -1669,7 +1681,7 @@ int main(int argc, char *argv[])
 			{
 				window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 				if(window)
-				{				
+				{
 					// Most Important: do not use the XServer's XGetDisplay, you will have to do XNextEvent (blocking) to 
 					// get the event call, so get GDK's display and its X's display equivalent
 					if (! ( dpy = gdk_x11_display_get_xdisplay(gdk_display_get_default()) ) )
@@ -1737,12 +1749,6 @@ int main(int argc, char *argv[])
 					g_object_unref(app_icon);
 
 #ifdef NOTIFY
-					// do this! if removed, when the user selects text in our own txt entry, and press hotkey, app. hangs
-					if(dbus_threads_init_default() 	== TRUE)
-					{
-						G_DEBUG("DBus Threads Init call successful!\n");
-					}
-
 					notify_init(PACKAGE_NAME);
 					notifier = notify_notification_new_with_status_icon("Word", "Definition of the <b>word</b> in <u>Wordnet</u>", "gtk-dialog-info", statusIcon);
 					notify_notification_set_urgency(notifier, NOTIFY_URGENCY_LOW);
@@ -1778,14 +1784,15 @@ int main(int argc, char *argv[])
 					app_mod = g_module_open(NULL, G_MODULE_BIND_LAZY);
 					if(app_mod)
 					{
-						g_module_symbol(app_mod, "gtk_show_uri", (gpointer *) &fp_show_uri);
-						if(fp_show_uri)
+						if(g_module_symbol(app_mod, "gtk_show_uri", &func_pointer))
 						{
+							fp_show_uri = (ShowURIFunc) &func_pointer;
+
 							gtk_about_dialog_set_email_hook(about_email_hook, fp_show_uri, NULL);
 							gtk_about_dialog_set_url_hook(about_url_hook, fp_show_uri, NULL);
 						}
 						else
-							g_warning("Cannot find gtk_show_uri function symbol!\n");
+							G_DEBUG("Cannot find gtk_show_uri function symbol!\n");
 
 						g_module_close(app_mod);
 					}
