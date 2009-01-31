@@ -51,7 +51,7 @@
 #endif
 
 
-#define ICON_FILE	"/artha.png"
+#define ICON_FILE	"/artha.svg"
 #define UI_FILE		"/gui.ui"
 
 #define ARTHA_RESPONSE_REPORT_BUG	1
