@@ -167,8 +167,6 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 	// Try this by removing below if and try to print debug text
 	if(xe->type == KeyPress)// && XKeysymToKeycode(dpy, XStringToKeysym("w")) == xe->xkey.keycode && (xe->xkey.state & ControlMask) && (xe->xkey.state & Mod1Mask))
 	{
-		hotkey_time_stamp = event->key.time;
-
 		gui_builder = GTK_BUILDER(user_data);
 		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
 		cboQuery = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
@@ -191,7 +189,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 		{
 			// see if in case notify is selected, should we popup or we should just notify "No selection made!"
 			window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-			gtk_window_present_with_time(window, hotkey_time_stamp);
+			gtk_window_present(window);
 			gtk_widget_grab_focus(GTK_WIDGET(cboQuery));
 		}
 		return GDK_FILTER_REMOVE;
@@ -1018,7 +1016,7 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 				else
 				{
 #endif
-					gtk_window_present_with_time(window, hotkey_time_stamp);
+					gtk_window_present(window);
 #ifdef NOTIFY
 				}
 #endif
@@ -1470,9 +1468,14 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 	GKeyFile *key_file = NULL;
 	GtkWidget *welcome_dialog = NULL;
 	gchar *welcome_message = NULL;
-	gchar welcome_title[] = WELCOME_NOTE;
+	gchar welcome_title[] = WELCOME_TITLE;
 	gint prev_hotkey_index = 0;
 	gboolean first_run = FALSE;
+
+	gchar *version = NULL;
+	gchar **version_numbers = NULL;
+	gchar **current_version_numbers = NULL;
+	guint8 i = 0;
 
 	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, ".conf", NULL);
 	key_file = g_key_file_new();
@@ -1484,7 +1487,32 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 #ifdef NOTIFY
 		notifier_enabled = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, NULL);
 #endif
-		
+
+		version = g_key_file_get_string(key_file, GROUP_SETTINGS, KEY_VERSION, NULL);
+
+		if(version)
+		{
+			if(0 != g_strcmp0(version, PACKAGE_VERSION))
+			{
+				// version number is split here. Major, Minor, Micro
+				version_numbers = g_strsplit(version, ".", 3);
+				current_version_numbers = g_strsplit(PACKAGE_VERSION, ".", 3);
+				
+				for(i = 0; i < 3; i++)
+				{
+					if(g_ascii_digit_value(version_numbers[i][0]) < g_ascii_digit_value(current_version_numbers[i][0]))
+					{
+						first_run = TRUE;
+						break;
+					}
+				}
+				
+				g_strfreev(version_numbers);
+				g_strfreev(current_version_numbers);
+			}
+			g_free(version);
+		}
+
 		// if previously set hot key got changed, or unset, notify user
 		// or also hot key value couldn't be retrived from prefs file
 		if(hotkey_index != prev_hotkey_index)
@@ -1492,14 +1520,14 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 			// hot key was set earlier and now couldn't be set
 			if(True == x_error)
 			{
-				welcome_message = g_strconcat(WELCOME_NOHOTKEY, WELCOME_MANUAL, NULL);
+				welcome_message = g_strconcat(first_run ? WELCOME_UPGRADED : WELCOME_TITLE, "\n\n", WELCOME_NOHOTKEY, WELCOME_MANUAL, NULL);
 				welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, NULL);
 			}
 			
 			// hot key was earlier either unset or was diff.
 			else if(False == x_error)
 			{
-				welcome_message = g_strconcat(WELCOME_NOTE_HOTKEY_CHANGED, WELCOME_HOTKEY_INFO, 
+				welcome_message = g_strconcat(first_run ? WELCOME_UPGRADED : WELCOME_TITLE,  "\n\n", WELCOME_NOTE_HOTKEY_CHANGED, WELCOME_HOTKEY_INFO, 
 #ifdef NOTIFY
 				WELCOME_NOTIFY,
 #endif
@@ -1507,9 +1535,21 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 
 				// subtract hot key value by 32 to get upper case char
 				welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, hot_key_vals[hotkey_index - 1] - 32);
+			}			
+		}
+		else
+		{
+			// Artha was updated to a newer version
+			if(first_run)
+			{
+				welcome_message = g_strconcat(WELCOME_UPGRADED, "\n\n", WELCOME_HOTKEY_NORMAL, WELCOME_HOTKEY_INFO,
+#ifdef NOTIFY
+				WELCOME_NOTIFY,
+#endif
+				WELCOME_MANUAL, NULL);
+
+				welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, hot_key_vals[hotkey_index - 1] - 32, NULL);
 			}
-			
-			
 		}
 	}
 	else
@@ -1537,6 +1577,10 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 
 			welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, NULL);
 		}
+
+		// The user might never close the app. and just shut down the system. Conf file won't be written to disk in that case
+		// Hence save the conf file when its a first run with the defaults
+		save_preferences(hotkey_index);
 	}
 	
 	// If some welcome message is set, show the message box and free it

@@ -51,7 +51,7 @@
 #endif
 
 
-#define ICON_FILE	"/artha.svg"
+#define ICON_FILE	"/artha.png"
 #define UI_FILE		"/gui.ui"
 
 #define ARTHA_RESPONSE_REPORT_BUG	1
@@ -118,7 +118,6 @@ gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOr
 Bool 		x_error = False;
 GSList 		*results = NULL;
 gchar 		*last_search = NULL;
-guint32 	hotkey_time_stamp = 0;
 gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 
@@ -129,7 +128,7 @@ NotifyNotification	*notifier = NULL;
 
 // Artha App. Strings
 
-#define QUIT_TOOLITEM_TOOLTIP	"Close Artha completely. To minimize to system tray, click on the system try icon or the Close Window (X) button on the title bar"
+#define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, click the Close Window (X) button on the title bar or the system try icon"
 #define ABOUT_TOOLITEM_TOOLTIP	"About Artha -> Copyright, Credits, Licence, etc."
 #define PREV_TOOLITEM_TOOLTIP	"Go to the previous search term"
 #define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
@@ -143,7 +142,8 @@ NotifyNotification	*notifier = NULL;
 #define NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
 #endif
 
-#define WELCOME_NOTE		"Welcome to Artha!"
+#define WELCOME_TITLE		"Welcome to Artha!"
+#define WELCOME_UPGRADED	"Thank you for updating Artha to a newer version!"
 #define WELCOME_HOTKEY_NORMAL	"The hot key set for Artha is <b>Ctrl + Alt + %c</b>."
 
 #define WELCOME_HOTKEY_INFO	" Press this key combination to call Artha. Selecting text \
