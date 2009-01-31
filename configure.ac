@@ -19,7 +19,7 @@ PKG_PROG_PKG_CONFIG
 
 # Check for wordnet-dev and wordnet (>=3.0)
 AC_CHECK_HEADERS([wn.h], , [
-AC_MSG_ERROR([You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)])
+AC_MSG_ERROR([echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"])
 ])
 AC_CHECK_LIB([wordnet], [wninit], [WORDNETLIB=-lwordnet], [echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
 AC_SUBST([WORDNETLIB])

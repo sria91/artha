@@ -4341,8 +4341,8 @@ _ACEOF
 
 else
 
-{ { echo "$as_me:$LINENO: error: You must have wordnet development headers to build.\"; echo \"(http://wordnet.princeton.edu/obtain)" >&5
-echo "$as_me: error: You must have wordnet development headers to build.\"; echo \"(http://wordnet.princeton.edu/obtain)" >&2;}
+{ { echo "$as_me:$LINENO: error: echo \"You must have wordnet development headers to build.\"; echo \"(http://wordnet.princeton.edu/obtain)\"" >&5
+echo "$as_me: error: echo \"You must have wordnet development headers to build.\"; echo \"(http://wordnet.princeton.edu/obtain)\"" >&2;}
    { (exit 1); exit 1; }; }
 
 fi
