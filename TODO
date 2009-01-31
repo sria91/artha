@@ -1,4 +1,6 @@
-* Help docs and Prefernces windows are to be added, and have the highest priority.
+* Saving on quit shouldn't be done. Saving on a change in a setting is more apt.
+
+* Help docs and Prefernces windows are to be added.
 
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
 
@@ -8,6 +10,9 @@
 * When in minimized mode, with notifications, just look up the synonyms, which 
   should reduce a lot of overhead. When 'Lookup' is clicked, do the actual 
   WORDNET_INTERFACE_ALL request call, till then this flag can be defered.
+
+* See if, in case none of the hot key can be set, closing Artha should exit and not 
+  minimize it to system tray, is required.
 
 * Check for boundary value of the selection. I.e. if selection is over x, truncate 
   it before search.

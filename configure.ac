@@ -17,7 +17,10 @@ PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
 
-# Check for libwordnet (>=3.0)
+# Check for wordnet-dev and wordnet (>=3.0)
+AC_CHECK_HEADERS([wn.h], , [
+AC_MSG_ERROR([You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)])
+])
 AC_CHECK_LIB([wordnet], [wninit], [WORDNETLIB=-lwordnet], [echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
 AC_SUBST([WORDNETLIB])
 
@@ -108,9 +111,9 @@ if test "$no_x" = "yes"; then
 	AC_MSG_ERROR([X11 libraries are required to build.])
 fi
 
-AC_CHECK_HEADERS([wn.h X11/Xlib.h X11/keysym.h], , [
-AC_MSG_ERROR([Development headers not found!
-Please refer INSTALL for details on required development libraries.])
+AC_CHECK_HEADERS([X11/Xlib.h X11/keysym.h], , [
+AC_MSG_ERROR([X Development headers not found!
+You need X11 development headers to build.])
 ])
 
 # Enable debugging argument option. Possible values = yes, message or verbose
