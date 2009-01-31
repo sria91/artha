@@ -7,7 +7,9 @@
 	Autotools scripts, both configure and makefile had bugs in finding the library availablity. 
 	Hence moved all AC_CHECK_LIBs to pkg-config based checks. When the version number is found 
 	incremented (from the conf file), the user is thanked for updating. Preferences are now saved 
-	whenever a setting is toggled and not on app. exit. Its a pretty hefty release :)
+	whenever a setting is toggled and not on app. exit. All characters not recognised by WordNet 
+	(characters other than alpha, num, -, , _) are stripped off the selection text. Summoning 
+	should generally fetch results, better end user experience. Its a pretty hefty release :)
 
 0.7.1 (Jan 29, 2009):
 	Finally, for bug tracking, Artha is registered in LaunchPad! A 'Report a Bug' button is kept 

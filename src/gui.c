@@ -39,6 +39,7 @@ static void key_ungrab(Display *dpy, guint keyval);
 static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpointer user_data);
 static void notification_toggled(GObject *obj, gpointer user_data);
 #endif
+static void strip_invalid_edges(gchar *selection);
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
 static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
@@ -153,6 +154,33 @@ static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpoint
 }
 #endif
 
+static void strip_invalid_edges(gchar *selection)
+{
+	guint i = 0;
+	gboolean alphanum_encounterd = FALSE;
+
+	g_return_if_fail(selection != NULL);
+
+	while(selection[i] != '\0')
+	{
+		if(!g_ascii_isalnum(selection[i]) && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ')
+		{
+			if(alphanum_encounterd)
+			{
+				selection[i] = '\0';
+				break;
+			}
+			else
+			{
+				selection[i] = ' ';
+			}
+		}
+		else
+			alphanum_encounterd = TRUE;
+		i++;
+	}
+}
+
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data)
 {
 	XEvent *xe = (XEvent*) xevent;
@@ -168,8 +196,11 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 	if(xe->type == KeyPress)// && XKeysymToKeycode(dpy, XStringToKeysym("w")) == xe->xkey.keycode && (xe->xkey.state & ControlMask) && (xe->xkey.state & Mod1Mask))
 	{
 		gui_builder = GTK_BUILDER(user_data);
-		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
 		cboQuery = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+		
+		// get the clipboard text and strip off any invalid characters
+		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
+		strip_invalid_edges(selection);
 
 		if(selection)
 		{
@@ -1817,11 +1848,14 @@ int main(int argc, char *argv[])
 					g_free(icon_file_path);
 
 #ifdef NOTIFY
-					if(notify_init(PACKAGE_NAME))
+					if(!x_error)
 					{
-						notifier = notify_notification_new_with_status_icon("Word", "Definition of the <b>word</b> in <u>Wordnet</u>", "gtk-dialog-info", statusIcon);
-						notify_notification_set_urgency(notifier, NOTIFY_URGENCY_LOW);
-						notify_notification_set_hint_byte(notifier, "persistent", (guchar) FALSE);
+						if(notify_init(PACKAGE_NAME))
+						{
+							notifier = notify_notification_new_with_status_icon("Word", "Definition of the <b>word</b> in <u>Wordnet</u>", "gtk-dialog-info", statusIcon);
+							notify_notification_set_urgency(notifier, NOTIFY_URGENCY_LOW);
+							notify_notification_set_hint_byte(notifier, "persistent", (guchar) FALSE);
+						}
 					}
 #endif
 
