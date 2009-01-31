@@ -1,5 +1,5 @@
-AM_CFLAGS = -Wall @GTK_CFLAGS@ @dbus_CFLAGS@
-AM_LDFLAGS = -lgtk-x11-2.0 -lgthread-2.0 $(WORDNETLIB) $(NOTIFYLIB)
+AM_CFLAGS = -Wall @GTK_CFLAGS@ @libnotify_CFLAGS@
+AM_LDFLAGS = -lgtk-x11-2.0 -lgthread-2.0 $(WORDNET_LIB) @libnotify_LIBS@
 
 
 bin_PROGRAMS = artha

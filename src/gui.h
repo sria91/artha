@@ -51,7 +51,7 @@
 #endif
 
 
-#define ICON_FILE	"/artha.svg"
+#define ICON_FILE	"/artha.png"
 #define UI_FILE		"/gui.ui"
 
 #define ARTHA_RESPONSE_REPORT_BUG	1
@@ -61,7 +61,7 @@
 #define GROUP_SETTINGS		"Settings"
 #define KEY_HOTKEY_INDEX	"Hotkey"
 #define KEY_VERSION		"Version"
-#define KEY_MODE		"Mode"
+#define KEY_MODE		"DetailedMode"
 #ifdef NOTIFY
 	#define KEY_NOTIFICATIONS "Notifications"
 #endif
@@ -119,11 +119,14 @@ Bool 		x_error = False;
 GSList 		*results = NULL;
 gchar 		*last_search = NULL;
 gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE;
+gint8		hotkey_index;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 
 #ifdef NOTIFY
 gboolean 		notifier_enabled = FALSE;
 NotifyNotification	*notifier = NULL;
+GtkCheckMenuItem	*menu_notify = NULL;
+GtkToolItem		*toolbar_notify = NULL;
 #endif
 
 // Artha App. Strings
@@ -138,6 +141,7 @@ NotifyNotification	*notifier = NULL;
 #define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
 
 #ifdef NOTIFY
+#define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When in the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition."
 #define NOTIFY_QUERY_FAIL_TITLE	"Oops!"
 #define NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
 #endif

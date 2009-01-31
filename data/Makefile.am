@@ -2,7 +2,7 @@ uidir = $(datadir)/$(PACKAGE_TARNAME)
 ui_DATA = gui.ui
 
 icondir = $(datadir)/@ICON_SUB_PATH@
-icon_DATA = artha.svg
+icon_DATA = artha.png
 
 desktopdir = $(datadir)/applications
 desktop_DATA = artha.desktop

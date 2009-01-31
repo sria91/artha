@@ -695,13 +695,14 @@ PKG_CONFIG
 CPP
 GREP
 EGREP
-WORDNETLIB
+WORDNET_LIB
 GTK_CFLAGS
 GTK_LIBS
 GTKBUILDERCONV
-dbus_CFLAGS
-dbus_LIBS
-NOTIFYLIB
+libnotify_CFLAGS
+libnotify_LIBS
+libdbus_CFLAGS
+libdbus_LIBS
 APP_DIR
 ICON_SUB_PATH
 ICON_DIR
@@ -721,8 +722,10 @@ PKG_CONFIG
 CPP
 GTK_CFLAGS
 GTK_LIBS
-dbus_CFLAGS
-dbus_LIBS
+libnotify_CFLAGS
+libnotify_LIBS
+libdbus_CFLAGS
+libdbus_LIBS
 XMKMF'
 
 
@@ -1324,8 +1327,14 @@ Some influential environment variables:
   CPP         C preprocessor
   GTK_CFLAGS  C compiler flags for GTK, overriding pkg-config
   GTK_LIBS    linker flags for GTK, overriding pkg-config
-  dbus_CFLAGS C compiler flags for dbus, overriding pkg-config
-  dbus_LIBS   linker flags for dbus, overriding pkg-config
+  libnotify_CFLAGS
+              C compiler flags for libnotify, overriding pkg-config
+  libnotify_LIBS
+              linker flags for libnotify, overriding pkg-config
+  libdbus_CFLAGS
+              C compiler flags for libdbus, overriding pkg-config
+  libdbus_LIBS
+              linker flags for libdbus, overriding pkg-config
   XMKMF       Path to xmkmf, Makefile generator for X Window System
 
 Use these variables to override the choices made by `configure' or to help
@@ -3558,6 +3567,7 @@ echo "${ECHO_T}no" >&6; }
 
 fi
 
+
 # Checks for libraries.
 
 # Check for wordnet-dev and wordnet (>=3.0)
@@ -4341,8 +4351,8 @@ _ACEOF
 
 else
 
-{ { echo "$as_me:$LINENO: error: You must have WordNet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details." >&5
-echo "$as_me: error: You must have WordNet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details." >&2;}
+{ { echo "$as_me:$LINENO: error: You must have wordnet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details." >&5
+echo "$as_me: error: You must have wordnet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details." >&2;}
    { (exit 1); exit 1; }; }
 
 fi
@@ -4411,9 +4421,9 @@ fi
 { echo "$as_me:$LINENO: result: $ac_cv_lib_wordnet_wninit" >&5
 echo "${ECHO_T}$ac_cv_lib_wordnet_wninit" >&6; }
 if test $ac_cv_lib_wordnet_wninit = yes; then
-  WORDNETLIB=-lwordnet
+  WORDNET_LIB=-lwordnet
 else
-  echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1
+  echo "You must have WordNet installed to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1
 fi
 
 
@@ -4487,14 +4497,18 @@ echo "${ECHO_T}no" >&6; }
 { echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 { { echo "$as_me:$LINENO: error:
-	You must have the GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 or above) development headers installed to build.
+You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10
+or above) development headers installed to build.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+If you have these installed already you may need to install pkg-config so
+I can find them.
 " >&5
 echo "$as_me: error:
-	You must have the GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 or above) development headers installed to build.
+You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10
+or above) development headers installed to build.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+If you have these installed already you may need to install pkg-config so
+I can find them.
 " >&2;}
    { (exit 1); exit 1; }; }
 elif test $pkg_failed = untried; then
@@ -4502,14 +4516,18 @@ elif test $pkg_failed = untried; then
 { echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 { { echo "$as_me:$LINENO: error:
-	You must have the GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 or above) development headers installed to build.
+You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10
+or above) development headers installed to build.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+If you have these installed already you may need to install pkg-config so
+I can find them.
 " >&5
 echo "$as_me: error:
-	You must have the GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 or above) development headers installed to build.
+You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10
+or above) development headers installed to build.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+If you have these installed already you may need to install pkg-config so
+I can find them.
 " >&2;}
    { (exit 1); exit 1; }; }
 else
@@ -4568,98 +4586,29 @@ done
 test -n "$GTKBUILDERCONV" || GTKBUILDERCONV="no"
 
 if test "$GTKBUILDERCONV" = "no"; then
-	{ { echo "$as_me:$LINENO: error: This application needs 'gtk-builder-convert' python script! Please install libgtk2.0 (version 2.12 or above) development headers." >&5
-echo "$as_me: error: This application needs 'gtk-builder-convert' python script! Please install libgtk2.0 (version 2.12 or above) development headers." >&2;}
+	{ { echo "$as_me:$LINENO: error: Artha needs 'gtk-builder-convert' python script to build! Please install libgtk2.0 (version 2.12 or above) development headers for the same." >&5
+echo "$as_me: error: Artha needs 'gtk-builder-convert' python script to build! Please install libgtk2.0 (version 2.12 or above) development headers for the same." >&2;}
    { (exit 1); exit 1; }; }
 fi
 
 
-# Check for libnotify, if found, get the details of dbus too
-{ echo "$as_me:$LINENO: checking for notify_notification_new_with_status_icon in -lnotify" >&5
-echo $ECHO_N "checking for notify_notification_new_with_status_icon in -lnotify... $ECHO_C" >&6; }
-if test "${ac_cv_lib_notify_notify_notification_new_with_status_icon+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnotify  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char notify_notification_new_with_status_icon ();
-int
-main ()
-{
-return notify_notification_new_with_status_icon ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_notify_notify_notification_new_with_status_icon=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_cv_lib_notify_notify_notification_new_with_status_icon=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_notify_notify_notification_new_with_status_icon" >&5
-echo "${ECHO_T}$ac_cv_lib_notify_notify_notification_new_with_status_icon" >&6; }
-if test $ac_cv_lib_notify_notify_notification_new_with_status_icon = yes; then
-  NOTIFYLIB=-lnotify; NOTIFY=1
-else
-  NOTIFY=0
-fi
-
-if test "$NOTIFY" = 1; then
-	# version 0.74 is the one found on a presetine installation of Hardy
+# Check for libnotify, if found, get the details of dbus and notification-daemon too
 
 pkg_failed=no
-{ echo "$as_me:$LINENO: checking for dbus" >&5
-echo $ECHO_N "checking for dbus... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking for libnotify" >&5
+echo $ECHO_N "checking for libnotify... $ECHO_C" >&6; }
 
 if test -n "$PKG_CONFIG"; then
-    if test -n "$dbus_CFLAGS"; then
-        pkg_cv_dbus_CFLAGS="$dbus_CFLAGS"
+    if test -n "$libnotify_CFLAGS"; then
+        pkg_cv_libnotify_CFLAGS="$libnotify_CFLAGS"
     else
         if test -n "$PKG_CONFIG" && \
-    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-glib-1 >= 0.74\"") >&5
-  ($PKG_CONFIG --exists --print-errors "dbus-glib-1 >= 0.74") 2>&5
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"libnotify >= 0.4.1\"") >&5
+  ($PKG_CONFIG --exists --print-errors "libnotify >= 0.4.1") 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; then
-  pkg_cv_dbus_CFLAGS=`$PKG_CONFIG --cflags "dbus-glib-1 >= 0.74" 2>/dev/null`
+  pkg_cv_libnotify_CFLAGS=`$PKG_CONFIG --cflags "libnotify >= 0.4.1" 2>/dev/null`
 else
   pkg_failed=yes
 fi
@@ -4668,16 +4617,16 @@ else
 	pkg_failed=untried
 fi
 if test -n "$PKG_CONFIG"; then
-    if test -n "$dbus_LIBS"; then
-        pkg_cv_dbus_LIBS="$dbus_LIBS"
+    if test -n "$libnotify_LIBS"; then
+        pkg_cv_libnotify_LIBS="$libnotify_LIBS"
     else
         if test -n "$PKG_CONFIG" && \
-    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-glib-1 >= 0.74\"") >&5
-  ($PKG_CONFIG --exists --print-errors "dbus-glib-1 >= 0.74") 2>&5
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"libnotify >= 0.4.1\"") >&5
+  ($PKG_CONFIG --exists --print-errors "libnotify >= 0.4.1") 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; then
-  pkg_cv_dbus_LIBS=`$PKG_CONFIG --libs "dbus-glib-1 >= 0.74" 2>/dev/null`
+  pkg_cv_libnotify_LIBS=`$PKG_CONFIG --libs "libnotify >= 0.4.1" 2>/dev/null`
 else
   pkg_failed=yes
 fi
@@ -4696,12 +4645,120 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        dbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "dbus-glib-1 >= 0.74"`
+	        libnotify_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "libnotify >= 0.4.1"`
         else
-	        dbus_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "dbus-glib-1 >= 0.74"`
+	        libnotify_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "libnotify >= 0.4.1"`
         fi
 	# Put the nasty error message in config.log where it belongs
-	echo "$dbus_PKG_ERRORS" >&5
+	echo "$libnotify_PKG_ERRORS" >&5
+
+	{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+                { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+{ echo "$as_me:$LINENO: WARNING:
+Notifications feature is disabled since libnotify development headers were
+not found! If you need Notifications in Artha, please install them
+(libnotify-dev >= 0.4.1) and rebuild.
+
+If you have these installed already you may need to install pkg-config so
+I can find them." >&5
+echo "$as_me: WARNING:
+Notifications feature is disabled since libnotify development headers were
+not found! If you need Notifications in Artha, please install them
+(libnotify-dev >= 0.4.1) and rebuild.
+
+If you have these installed already you may need to install pkg-config so
+I can find them." >&2;}
+NOTIFY_FOUND=0
+
+elif test $pkg_failed = untried; then
+	{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+{ echo "$as_me:$LINENO: WARNING:
+Notifications feature is disabled since libnotify development headers were
+not found! If you need Notifications in Artha, please install them
+(libnotify-dev >= 0.4.1) and rebuild.
+
+If you have these installed already you may need to install pkg-config so
+I can find them." >&5
+echo "$as_me: WARNING:
+Notifications feature is disabled since libnotify development headers were
+not found! If you need Notifications in Artha, please install them
+(libnotify-dev >= 0.4.1) and rebuild.
+
+If you have these installed already you may need to install pkg-config so
+I can find them." >&2;}
+NOTIFY_FOUND=0
+
+else
+	libnotify_CFLAGS=$pkg_cv_libnotify_CFLAGS
+	libnotify_LIBS=$pkg_cv_libnotify_LIBS
+        { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	NOTIFY_FOUND=1
+fi
+
+
+if test "$NOTIFY_FOUND" = 1; then
+
+pkg_failed=no
+{ echo "$as_me:$LINENO: checking for libdbus" >&5
+echo $ECHO_N "checking for libdbus... $ECHO_C" >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$libdbus_CFLAGS"; then
+        pkg_cv_libdbus_CFLAGS="$libdbus_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-1 >= 0.60 dbus-glib-1 >= 0.60\"") >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-1 >= 0.60 dbus-glib-1 >= 0.60") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; then
+  pkg_cv_libdbus_CFLAGS=`$PKG_CONFIG --cflags "dbus-1 >= 0.60 dbus-glib-1 >= 0.60" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$libdbus_LIBS"; then
+        pkg_cv_libdbus_LIBS="$libdbus_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"dbus-1 >= 0.60 dbus-glib-1 >= 0.60\"") >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-1 >= 0.60 dbus-glib-1 >= 0.60") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; then
+  pkg_cv_libdbus_LIBS=`$PKG_CONFIG --libs "dbus-1 >= 0.60 dbus-glib-1 >= 0.60" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        libdbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "dbus-1 >= 0.60 dbus-glib-1 >= 0.60"`
+        else
+	        libdbus_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "dbus-1 >= 0.60 dbus-glib-1 >= 0.60"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$libdbus_PKG_ERRORS" >&5
 
 	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
@@ -4709,14 +4766,18 @@ echo "${ECHO_T}no" >&6; }
 	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 	{ echo "$as_me:$LINENO: WARNING:
-	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
+You must have the dbus and dbus-glib-1 (version 0.60 or above)
+development headers installed for Notifications feature.
 
-	If you have it installed already you may need to install pkg-config so I can find them.
+If you have it installed already you may need to install pkg-config so
+I can find them.
 	" >&5
 echo "$as_me: WARNING:
-	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
+You must have the dbus and dbus-glib-1 (version 0.60 or above)
+development headers installed for Notifications feature.
 
-	If you have it installed already you may need to install pkg-config so I can find them.
+If you have it installed already you may need to install pkg-config so
+I can find them.
 	" >&2;}
 	dbus_not_found=1
 
@@ -4725,27 +4786,39 @@ elif test $pkg_failed = untried; then
 	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
 	{ echo "$as_me:$LINENO: WARNING:
-	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
+You must have the dbus and dbus-glib-1 (version 0.60 or above)
+development headers installed for Notifications feature.
 
-	If you have it installed already you may need to install pkg-config so I can find them.
+If you have it installed already you may need to install pkg-config so
+I can find them.
 	" >&5
 echo "$as_me: WARNING:
-	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
+You must have the dbus and dbus-glib-1 (version 0.60 or above)
+development headers installed for Notifications feature.
 
-	If you have it installed already you may need to install pkg-config so I can find them.
+If you have it installed already you may need to install pkg-config so
+I can find them.
 	" >&2;}
 	dbus_not_found=1
 
 else
-	dbus_CFLAGS=$pkg_cv_dbus_CFLAGS
-	dbus_LIBS=$pkg_cv_dbus_LIBS
+	libdbus_CFLAGS=$pkg_cv_libdbus_CFLAGS
+	libdbus_LIBS=$pkg_cv_libdbus_LIBS
         { echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6; }
-	:
+	dbus_not_found=0
 fi
 	if test "$dbus_not_found" != 1; then
+		{ echo "$as_me:$LINENO:
+Notifications feature will be enabled in Artha!
+Make sure notification-daemon is installed to see the notifications." >&5
+echo "$as_me:
+Notifications feature will be enabled in Artha!
+Make sure notification-daemon is installed to see the notifications." >&6;}
 
-		#AC_SUBST([dbus_LIBS])
+		#AC_SUBST([libdbus_CFLAGS])
+		#AC_SUBST([libdbus_LIBS])
+
 
 
 
@@ -4755,22 +4828,12 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 	fi
-else
-	{ echo "$as_me:$LINENO: WARNING: Notifications feature is disabled since libnotify development headers were not found! If you need Notifications, please install them (libnotify-dev >= 0.4.1) and rebuild." >&5
-echo "$as_me: WARNING: Notifications feature is disabled since libnotify development headers were not found! If you need Notifications, please install them (libnotify-dev >= 0.4.1) and rebuild." >&2;}
 fi
 
 
 
 
 
-# Commented sine PKG_CHECK_MODULES will take care of checking this
-#AC_CHECK_LIB([glib-2.0], [g_key_file_new], , AC_MSG_ERROR([You must have glib-2.0 (version 2.10 or above) development headers installed to build.]), )
-
-#AC_CHECK_LIB([gtk-x11-2.0], [gtk_show_uri], [SHOW_URI=yes], [SHOW_URI=no], )
-#if test "$SHOW_URI" = "yes"; then
-#	AC_DEFINE([GTK_SHOW_URI], [1], [gtk_show_uri function availability])
-#fi
 
 # get the target directory's path and get it defined in config.h
 
@@ -4789,6 +4852,7 @@ _ACEOF
 
   test "$prefix_NONE" && prefix=NONE
   test "$exec_prefix_NONE" && exec_prefix=NONE
+
 
 
 # get the target directory's path and get it defined in config.h
@@ -4811,6 +4875,7 @@ _ACEOF
 
   test "$prefix_NONE" && prefix=NONE
   test "$exec_prefix_NONE" && exec_prefix=NONE
+
 
 
 # Checks for header files.
@@ -5062,6 +5127,7 @@ fi
 
 
 
+
 for ac_header in X11/Xlib.h X11/keysym.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -5215,6 +5281,7 @@ fi
 done
 
 
+
 # Enable debugging argument option. Possible values = yes, message or verbose
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then
@@ -5240,6 +5307,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 fi
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 { echo "$as_me:$LINENO: checking for an ANSI C-conforming const" >&5
@@ -5535,8 +5603,6 @@ _ACEOF
 fi
 
 
-# Checks for library functions.
-#AC_CHECK_FUNCS([wninit])
 
 
 ac_config_headers="$ac_config_headers config.h"
@@ -6267,13 +6333,14 @@ PKG_CONFIG!$PKG_CONFIG$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
-WORDNETLIB!$WORDNETLIB$ac_delim
+WORDNET_LIB!$WORDNET_LIB$ac_delim
 GTK_CFLAGS!$GTK_CFLAGS$ac_delim
 GTK_LIBS!$GTK_LIBS$ac_delim
 GTKBUILDERCONV!$GTKBUILDERCONV$ac_delim
-dbus_CFLAGS!$dbus_CFLAGS$ac_delim
-dbus_LIBS!$dbus_LIBS$ac_delim
-NOTIFYLIB!$NOTIFYLIB$ac_delim
+libnotify_CFLAGS!$libnotify_CFLAGS$ac_delim
+libnotify_LIBS!$libnotify_LIBS$ac_delim
+libdbus_CFLAGS!$libdbus_CFLAGS$ac_delim
+libdbus_LIBS!$libdbus_LIBS$ac_delim
 APP_DIR!$APP_DIR$ac_delim
 ICON_SUB_PATH!$ICON_SUB_PATH$ac_delim
 ICON_DIR!$ICON_DIR$ac_delim
@@ -6282,7 +6349,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 93; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 94; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -6880,6 +6947,7 @@ if test "$no_create" != yes; then
   # would make configure fail if this is the last instruction.
   $ac_cs_success || { (exit 1); exit 1; }
 fi
+
 
 
 # display message, if all the above was successful

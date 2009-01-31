@@ -15,14 +15,15 @@ AC_PROG_RANLIB
 # define the usage of pkg-config
 PKG_PROG_PKG_CONFIG
 
+
 # Checks for libraries.
 
 # Check for wordnet-dev and wordnet (>=3.0)
 AC_CHECK_HEADERS([wn.h], , [
-AC_MSG_ERROR([You must have WordNet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details.])
+AC_MSG_ERROR([You must have wordnet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details.])
 ])
-AC_CHECK_LIB([wordnet], [wninit], [WORDNETLIB=-lwordnet], [echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
-AC_SUBST([WORDNETLIB])
+AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [echo "You must have WordNet installed to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
+AC_SUBST([WORDNET_LIB])
 
 
 # gtk_builder_add_from_file() since 2.12 only, hence check for GTK+-2.0 >= 2.12
@@ -31,9 +32,11 @@ AC_SUBST([WORDNETLIB])
 PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.12 glib-2.0 >= 2.10], , [
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([
-	You must have the GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 or above) development headers installed to build.
+You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 
+or above) development headers installed to build.
 
-	If you have these installed already you may need to install pkg-config so I can find them.
+If you have these installed already you may need to install pkg-config so 
+I can find them.
 ])])
 AC_SUBST([GTK_CFLAGS])
 AC_SUBST([GTK_LIBS])
@@ -42,34 +45,50 @@ AC_SUBST([GTK_LIBS])
 # check for gtk-builder-convert command
 AC_CHECK_PROGS([GTKBUILDERCONV], [gtk-builder-convert], [no])
 if test "$GTKBUILDERCONV" = "no"; then
-	AC_MSG_ERROR([This application needs 'gtk-builder-convert' python script! Please install libgtk2.0 (version 2.12 or above) development headers.])
+	AC_MSG_ERROR([Artha needs 'gtk-builder-convert' python script to build! Please install libgtk2.0 (version 2.12 or above) development headers for the same.])
 fi
 
 
-# Check for libnotify, if found, get the details of dbus too
-AC_CHECK_LIB([notify], [notify_notification_new_with_status_icon], [NOTIFYLIB=-lnotify; NOTIFY=1], [NOTIFY=0])
-if test "$NOTIFY" = 1; then
-	# version 0.74 is the one found on a presetine installation of Hardy
-	PKG_CHECK_MODULES([dbus], [dbus-glib-1 >= 0.74], , [
+# Check for libnotify, if found, get the details of dbus and notification-daemon too
+PKG_CHECK_MODULES([libnotify], [libnotify >= 0.4.1], [NOTIFY_FOUND=1], [AC_MSG_RESULT(no)
+AC_MSG_WARN([
+Notifications feature is disabled since libnotify development headers were
+not found! If you need Notifications in Artha, please install them 
+(libnotify-dev >= 0.4.1) and rebuild.
+
+If you have these installed already you may need to install pkg-config so 
+I can find them.])
+[NOTIFY_FOUND=0]
+])
+
+
+if test "$NOTIFY_FOUND" = 1; then
+	PKG_CHECK_MODULES([libdbus], [dbus-1 >= 0.60 dbus-glib-1 >= 0.60], dbus_not_found=0, [
 	AC_MSG_RESULT(no)
 	AC_MSG_WARN([
-	You must have the dbus-glib-1 (version 0.74 or above) development headers installed for Notifications feature.
+You must have the dbus and dbus-glib-1 (version 0.60 or above) 
+development headers installed for Notifications feature.
 
-	If you have it installed already you may need to install pkg-config so I can find them.
+If you have it installed already you may need to install pkg-config so 
+I can find them.
 	])
 	dbus_not_found=1
 	])
 	if test "$dbus_not_found" != 1; then
-		AC_SUBST([dbus_CFLAGS])
-		#AC_SUBST([dbus_LIBS])
+		AC_MSG_NOTICE([
+Notifications feature will be enabled in Artha!
+Make sure notification-daemon is installed to see the notifications.])
 
-		AC_SUBST([NOTIFYLIB])
+		#AC_SUBST([libdbus_CFLAGS])
+		#AC_SUBST([libdbus_LIBS])
+
+		AC_SUBST([libnotify_CFLAGS])
+		AC_SUBST([libnotify_LIBS])
 
 		AC_DEFINE([NOTIFIER_SUPPORT], [1], [Notify - Notifications library present])
 	fi
-else
-	AC_MSG_WARN([Notifications feature is disabled since libnotify development headers were not found! If you need Notifications, please install them (libnotify-dev >= 0.4.1) and rebuild.])
 fi
+
 
 
 AC_DEFUN([AC_DEFINE_DIR], [
@@ -88,21 +107,15 @@ dnl refers to ${prefix}.  Thus we have to use `eval' twice.
 ])
 
 
-# Commented sine PKG_CHECK_MODULES will take care of checking this
-#AC_CHECK_LIB([glib-2.0], [g_key_file_new], , AC_MSG_ERROR([You must have glib-2.0 (version 2.10 or above) development headers installed to build.]), )
-
-#AC_CHECK_LIB([gtk-x11-2.0], [gtk_show_uri], [SHOW_URI=yes], [SHOW_URI=no], )
-#if test "$SHOW_URI" = "yes"; then
-#	AC_DEFINE([GTK_SHOW_URI], [1], [gtk_show_uri function availability])
-#fi
-
 # get the target directory's path and get it defined in config.h
 AC_DEFINE_DIR([APP_DIR], [datadir/AC_PACKAGE_TARNAME], [Path where app. files are placed])
+
 
 # get the target directory's path and get it defined in config.h
 icon_dir=pixmaps
 AC_SUBST([ICON_SUB_PATH], [$icon_dir])
 AC_DEFINE_DIR([ICON_DIR], [datadir/"$icon_dir"], [Path where icon files are placed])
+
 
 # Checks for header files.
 AC_PATH_X
@@ -111,10 +124,12 @@ if test "$no_x" = "yes"; then
 	AC_MSG_ERROR([X11 libraries are required to build.])
 fi
 
+
 AC_CHECK_HEADERS([X11/Xlib.h X11/keysym.h], , [
 AC_MSG_ERROR([X Development headers not found!
 You need X11 development headers to build.])
 ])
+
 
 # Enable debugging argument option. Possible values = yes, message or verbose
 AC_ARG_ENABLE([debug], AC_HELP_STRING([--enable-debug], [enable debugging (default = no)]), [ac_debug="$enableval"])
@@ -126,17 +141,17 @@ elif test "$ac_debug" = "verbose"; then
 	AC_DEFINE(DEBUG_LEVEL, 3, [Verbose Debugging enabled both in application and WNI])
 fi
 
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_STDBOOL
 
-# Checks for library functions.
-#AC_CHECK_FUNCS([wninit])
 
 AC_CONFIG_SRCDIR([src/wni.c])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile data/Makefile src/Makefile])
 AC_OUTPUT
+
 
 # display message, if all the above was successful
 AC_MSG_RESULT([

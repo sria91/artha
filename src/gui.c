@@ -37,7 +37,7 @@ static void key_grab(Display *dpy, guint keyval);
 static void key_ungrab(Display *dpy, guint keyval);
 #ifdef NOTIFY
 static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpointer user_data);
-static void mnuChkNotify_toggled(GtkCheckMenuItem *chkMenu, gpointer user_data);
+static void notification_toggled(GObject *obj, gpointer user_data);
 #endif
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
 static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
@@ -72,8 +72,8 @@ static void btnPrev_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void setup_toolbar(GtkBuilder *gui_builder);
 static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
-static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index);
-static void save_preferences(gint8 hotkey_index);
+static gboolean load_preferences(GtkWindow *parent);
+static void save_preferences();
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void destructor(Display *dpy, guint keyval);
@@ -199,9 +199,22 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 }
 
 #ifdef NOTIFY
-static void mnuChkNotify_toggled(GtkCheckMenuItem *chkMenu, gpointer user_data)
+/*
+	This will be called for both notify check pop-up menu and notify tool bar button
+	Hence the first argument is GObject. Since both have the propery "active" as its
+	current state, this common function will suffice for notification toggling. 
+*/
+static void notification_toggled(GObject *obj, gpointer user_data)
 {
-	notifier_enabled = gtk_check_menu_item_get_active(chkMenu)?TRUE:FALSE;
+	g_object_get(obj, "active", &notifier_enabled, NULL);
+
+	g_object_set(G_OBJECT(toolbar_notify), "active", notifier_enabled, NULL);
+	//gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbar_notify), notifier_enabled);
+	gtk_tool_button_set_stock_id(GTK_TOOL_BUTTON(toolbar_notify), notifier_enabled ? GTK_STOCK_YES : GTK_STOCK_NO);
+
+	gtk_check_menu_item_set_active(menu_notify, notifier_enabled);
+	
+	save_preferences();
 }
 #endif
 
@@ -850,8 +863,11 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 	{
 
 #ifdef NOTIFY
+		if(notifier)
+		{
 			notify_notification_close(notifier, NULL);
 			notify_notification_clear_actions(notifier);
+		}
 #endif
 
 		G_MESSAGE("'%s' queried!\n", search_str);
@@ -1305,6 +1321,8 @@ static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 		relatives_clear_all(gui_builder);
 		relatives_load(gui_builder, FALSE);
 	}
+	
+	save_preferences();
 }
 
 static void btnNext_clicked(GtkToolButton *toolbutton, gpointer user_data)
@@ -1347,6 +1365,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	GtkToolItem *toolbar_next = NULL;
 	GtkToolItem *toolbar_sep = NULL;
 
+
 	// toolbar code starts here
 	toolbar = GTK_TOOLBAR(gtk_builder_get_object(gui_builder, TOOLBAR));
 	
@@ -1369,6 +1388,19 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 
 	toolbar_sep = gtk_separator_tool_item_new();
 	gtk_toolbar_insert(toolbar, toolbar_sep, 0);
+
+#ifdef NOTIFY
+	if(notifier)
+	{
+		toolbar_notify = gtk_toggle_tool_button_new_from_stock(notifier_enabled ? GTK_STOCK_YES : GTK_STOCK_NO);
+		gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_notify), TRUE);
+		gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_notify), "N_otify");
+		gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbar_notify), notifier_enabled);
+		gtk_tool_item_set_tooltip_text(toolbar_notify, NOTIFY_TOOLITEM_TOOLTIP);
+		g_signal_connect(toolbar_notify, "toggled", G_CALLBACK(notification_toggled), NULL);
+		gtk_toolbar_insert(toolbar, toolbar_notify, 0);		
+	}
+#endif
 
 	toolbar_mode = gtk_toggle_tool_button_new_from_stock(GTK_STOCK_DIALOG_INFO);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_mode), TRUE);
@@ -1404,33 +1436,32 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
 {
 	GtkMenu *menu = NULL;
 #ifdef NOTIFY
-	GtkSeparatorMenuItem *mnuSeparator = NULL;
-	GtkCheckMenuItem *mnuChkNotify = NULL;
+	GtkSeparatorMenuItem *menu_separator = NULL;
 #endif
-	GtkImageMenuItem *mnuQuit = NULL;
+	GtkImageMenuItem *menu_quit = NULL;
 	
 	// Initialize popup menu/sub menus
 	menu = GTK_MENU(gtk_menu_new());
 
 #ifdef NOTIFY
 	// if there was no error in registering for a hot key, then setup a notifications menu
-	if(False == x_error)
+	if(False == x_error && notifier)
 	{
-		mnuChkNotify = GTK_CHECK_MENU_ITEM(gtk_check_menu_item_new_with_mnemonic("_Notifications"));
+		menu_notify = GTK_CHECK_MENU_ITEM(gtk_check_menu_item_new_with_mnemonic("_Notifications"));
 		// load the settings value
-		gtk_check_menu_item_set_active(mnuChkNotify, notifier_enabled);
+		gtk_check_menu_item_set_active(menu_notify, notifier_enabled);
 
-		mnuSeparator = GTK_SEPARATOR_MENU_ITEM(gtk_separator_menu_item_new());
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(mnuChkNotify));
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(mnuSeparator));
-		g_signal_connect(mnuChkNotify, "toggled", G_CALLBACK(mnuChkNotify_toggled), NULL);
+		menu_separator = GTK_SEPARATOR_MENU_ITEM(gtk_separator_menu_item_new());
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_notify));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_separator));
+		g_signal_connect(menu_notify, "toggled", G_CALLBACK(notification_toggled), NULL);
 	}
 #endif
 
-	mnuQuit = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL));
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(mnuQuit));
+	menu_quit = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_quit));
 
-	g_signal_connect(mnuQuit, "activate", G_CALLBACK(quit_activate), NULL);
+	g_signal_connect(menu_quit, "activate", G_CALLBACK(quit_activate), NULL);
 
 	gtk_widget_show_all(GTK_WIDGET(menu));
 
@@ -1462,7 +1493,7 @@ static void create_text_view_tags(GtkBuilder *gui_builder)
 	}
 }
 
-static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
+static gboolean load_preferences(GtkWindow *parent)
 {
 	gchar *conf_file_path = NULL;
 	GKeyFile *key_file = NULL;
@@ -1529,7 +1560,7 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 			{
 				welcome_message = g_strconcat(first_run ? WELCOME_UPGRADED : WELCOME_TITLE,  "\n\n", WELCOME_NOTE_HOTKEY_CHANGED, WELCOME_HOTKEY_INFO, 
 #ifdef NOTIFY
-				WELCOME_NOTIFY,
+				(notifier != NULL)?WELCOME_NOTIFY:"",
 #endif
 				WELCOME_MANUAL, NULL);
 
@@ -1544,7 +1575,7 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 			{
 				welcome_message = g_strconcat(WELCOME_UPGRADED, "\n\n", WELCOME_HOTKEY_NORMAL, WELCOME_HOTKEY_INFO,
 #ifdef NOTIFY
-				WELCOME_NOTIFY,
+				(notifier != NULL)?WELCOME_NOTIFY:"",
 #endif
 				WELCOME_MANUAL, NULL);
 
@@ -1563,7 +1594,7 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 		{
 			welcome_message = g_strconcat(WELCOME_HOTKEY_NORMAL, WELCOME_HOTKEY_INFO, 
 #ifdef NOTIFY
-			WELCOME_NOTIFY,
+			(notifier != NULL)?WELCOME_NOTIFY:"",
 #endif
 			WELCOME_MANUAL,
 			NULL);
@@ -1600,7 +1631,7 @@ static gboolean load_preferences(GtkWindow *parent, gint8 hotkey_index)
 	return first_run;
 }
 
-static void save_preferences(gint8 hotkey_index)
+static void save_preferences()
 {
 	gchar *conf_file_path = NULL;
 	GKeyFile *key_file = NULL;
@@ -1667,15 +1698,19 @@ static void destructor(Display *dpy, guint keyval)
 	}
 
 #ifdef NOTIFY
-	notify_notification_close(notifier, NULL);
-	notify_notification_clear_actions(notifier);
-
 	if(notifier)
 	{
-		g_object_unref(G_OBJECT(notifier));
+		notify_notification_close(notifier, NULL);
+		notify_notification_clear_actions(notifier);
+
+		// Its better to be safe than to be sorry
+		// some times, notifier becomes NULL
+		if(notifier) g_object_unref(G_OBJECT(notifier));
+
 		notifier = NULL;
+
+		notify_uninit();
 	}
-	notify_uninit();
 #endif
 }
 
@@ -1765,11 +1800,11 @@ int main(int argc, char *argv[])
 					if(selected_key == (sizeof(hot_key_vals) / sizeof(guint)) ) x_error = True;
 
 					if(True == x_error) selected_key = -2;
+					
+					// set the global var. so that load and save preferences can see them
+					hotkey_index = selected_key + 1;
 
-					first_run = load_preferences(GTK_WINDOW(window), selected_key + 1);
-
-					// create popup menu
-					popup_menu = create_popup_menu(gui_builder);
+					first_run = load_preferences(GTK_WINDOW(window));
 
 					icon_file_path = g_build_filename(ICON_DIR, ICON_FILE, NULL);
 					if(!g_file_test(icon_file_path, G_FILE_TEST_IS_REGULAR))
@@ -1781,23 +1816,31 @@ int main(int argc, char *argv[])
 					statusIcon = gtk_status_icon_new_from_file(icon_file_path);
 					gtk_status_icon_set_tooltip(statusIcon, "Artha ~ The Open Thesaurus");
 					gtk_status_icon_set_visible(statusIcon, TRUE);
-					
+
 					g_free(icon_file_path);
-					
+
+#ifdef NOTIFY
+					if(notify_init(PACKAGE_NAME))
+					{
+						notifier = notify_notification_new_with_status_icon("Word", "Definition of the <b>word</b> in <u>Wordnet</u>", "gtk-dialog-info", statusIcon);
+						notify_notification_set_urgency(notifier, NOTIFY_URGENCY_LOW);
+						notify_notification_set_hint_byte(notifier, "persistent", (guchar) FALSE);
+					}
+#endif
+
+					// create popup menu
+					popup_menu = create_popup_menu(gui_builder);
+
 					g_signal_connect(statusIcon, "activate", G_CALLBACK(status_icon_activate), gui_builder);
 					g_signal_connect(statusIcon, "popup-menu", G_CALLBACK(status_icon_popup), GTK_WIDGET(popup_menu));
+
 
 					// using the status icon, app. icon is also set
 					g_object_get(statusIcon, "pixbuf", &app_icon, NULL);
 					gtk_window_set_default_icon(app_icon);
 					g_object_unref(app_icon);
 
-#ifdef NOTIFY
-					notify_init(PACKAGE_NAME);
-					notifier = notify_notification_new_with_status_icon("Word", "Definition of the <b>word</b> in <u>Wordnet</u>", "gtk-dialog-info", statusIcon);
-					notify_notification_set_urgency(notifier, NOTIFY_URGENCY_LOW);
-					notify_notification_set_hint_byte(notifier, "persistent", (guchar) FALSE);
-#endif
+
 					btnSearch = GTK_WIDGET(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 					g_signal_connect(btnSearch, "clicked", G_CALLBACK(btnSearch_click), gui_builder);
 
@@ -1853,7 +1896,9 @@ int main(int argc, char *argv[])
 					
 					gtk_main();
 
-					save_preferences(selected_key + 1);
+					// since every setting change will call save prefs.
+					// saving the pref. on exit isn't required
+					//save_preferences(selected_key + 1);
 	
 					gtk_widget_destroy(window);
 					

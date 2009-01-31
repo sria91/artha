@@ -3,7 +3,7 @@
 .tr ~
 .TH Artha 1 "Jan 14, 2009" "Artha" "Artha \- The Open Thesaurus"
 .SH NAME
-Artha \- An open cross-platform thesaurus based on WordNet  
+Artha \- An open cross-platform thesaurus based on WordNet
 .SH DESCRIPTION
 \fBArtha\fP is an open thesaurus based on the WordNet database, 
 created with simplicity in mind. Once executed, Artha stays on the 
@@ -11,15 +11,6 @@ system tray, monitoring for a set global hot key combination. When
 the user selects some text in any window, and presses this set hot 
 key combo, Artha looks up WordNet for the selected text and pops-up 
 with the results.
-.PP
-Should the user prefer system tray notifications (balloon tips), 
-rather than the application popping up with the definitions, it can 
-be done by enabling Notifications.  This is done by right-clicking 
-on Artha's system tray icon, and tick off the 'Notifications' 
-check box in the menu. When notifications are enabled, and the user 
-selects text in a window and presses the hot key combo, Artha takes 
-the prime definition of that term from WordNet and shows that 
-definition as a system tray notification.
 .PP
 The hot key combo selection is done by Artha is in this Order:
 .IP
@@ -57,9 +48,24 @@ relatives are shown even when more levels are present. E.g. 'rich'
 has 'poor' and 'lean' alone as antonyms in simple mode. While in 
 detailed mode, 'poor' further infers broke, skint, etc. which are 
 shown as children of 'poor'.
+.PP
+Should the user prefer system tray notifications (balloon tips), 
+rather than the application popping up with the definitions, it can 
+be done by enabling Notifications. This is done via the Notify 
+tool button or by right-clicking on Artha's system tray icon, and 
+tick off the 'Notifications' check box in the menu. When 
+notifications are enabled, and the user selects text in a window 
+and presses the hot key combo, Artha takes the prime definition of 
+that term from WordNet and shows that definition as a system tray 
+notification.
+.PP
+Note: For the notifications feature to be present, Artha should
+have been compiled against that option. Also your system should 
+have the notification-daemon installed. If not, Artha will not 
+show the feature at all.
 .SH AVAILABILITY
 Artha has a World Wide Web site at
-\fBhttp://artha.sourceforge.net\fP.  From this web site users can 
+\fBhttp://artha.sourceforge.net\fP. From this web site users can 
 know more about the Artha project and also download its source and 
 binary distributions for various distros.
 .SH AUTHOR

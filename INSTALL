@@ -44,6 +44,10 @@ within braces):
 - glib     >= 2.10	(libglib2.0-dev)
 - gtk+     >= 2.12	(libgtk2.0-dev)
 
+
+WordNet can be obtained from http://wordnet.princeton.edu/obtain. Debian 
+based operating systems may have the package in their universe repository.
+
 Optionally, Artha may use the following "development" libraries, if they 
 are available:
 - notify	>= 0.4.1	(libnotify-dev)
