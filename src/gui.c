@@ -1371,7 +1371,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	
 	toolbar_quit = gtk_tool_button_new_from_stock(GTK_STOCK_QUIT);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_quit), TRUE);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_quit), "Q_uit");
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_quit), STR_TOOLITEM_QUIT);
 	gtk_tool_item_set_tooltip_text(toolbar_quit, QUIT_TOOLITEM_TOOLTIP);
 	g_signal_connect(toolbar_quit, "clicked", G_CALLBACK(quit_activate), NULL);
 	gtk_toolbar_insert(toolbar, toolbar_quit, 0);
@@ -1381,7 +1381,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 
 	toolbar_about = gtk_tool_button_new_from_stock(GTK_STOCK_ABOUT);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_about), TRUE);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_about), "_About");
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_about), STR_TOOLITEM_ABOUT);
 	gtk_tool_item_set_tooltip_text(toolbar_about, ABOUT_TOOLITEM_TOOLTIP);
 	g_signal_connect(toolbar_about, "clicked", G_CALLBACK(about_activate), NULL);
 	gtk_toolbar_insert(toolbar, toolbar_about, 0);
@@ -1394,7 +1394,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	{
 		toolbar_notify = gtk_toggle_tool_button_new_from_stock(notifier_enabled ? GTK_STOCK_YES : GTK_STOCK_NO);
 		gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_notify), TRUE);
-		gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_notify), "N_otify");
+		gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_notify), STR_TOOLITEM_NOTIFY);
 		gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbar_notify), notifier_enabled);
 		gtk_tool_item_set_tooltip_text(toolbar_notify, NOTIFY_TOOLITEM_TOOLTIP);
 		g_signal_connect(toolbar_notify, "toggled", G_CALLBACK(notification_toggled), NULL);
@@ -1404,7 +1404,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 
 	toolbar_mode = gtk_toggle_tool_button_new_from_stock(GTK_STOCK_DIALOG_INFO);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_mode), TRUE);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_mode), "_Detailed");
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_mode), STR_TOOLITEM_MODE);
 	gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbar_mode), advanced_mode);
 	gtk_tool_item_set_tooltip_text(toolbar_mode, MODE_TOOLITEM_TOOLTIP);
 	g_signal_connect(toolbar_mode, "toggled", G_CALLBACK(mode_toggled), gui_builder);
@@ -1415,7 +1415,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 
 	toolbar_next = gtk_tool_button_new_from_stock(GTK_STOCK_GO_FORWARD);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_next), TRUE);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_next), "_Next");
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_next), STR_TOOLITEM_NEXT);
 	gtk_tool_item_set_tooltip_text(toolbar_next, NEXT_TOOLITEM_TOOLTIP);
 	gtk_widget_set_sensitive(GTK_WIDGET(toolbar_next), FALSE);
 	g_signal_connect(toolbar_next, "clicked", G_CALLBACK(btnNext_clicked), gui_builder);
@@ -1423,7 +1423,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 
 	toolbar_prev = gtk_tool_button_new_from_stock(GTK_STOCK_GO_BACK);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_prev), TRUE);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_prev), "_Previous");
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_prev), STR_TOOLITEM_PREV);
 	gtk_tool_item_set_tooltip_text(toolbar_prev, PREV_TOOLITEM_TOOLTIP);
 	gtk_widget_set_sensitive(GTK_WIDGET(toolbar_prev), FALSE);
 	g_signal_connect(toolbar_prev, "clicked", G_CALLBACK(btnPrev_clicked), gui_builder);
@@ -1447,7 +1447,7 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
 	// if there was no error in registering for a hot key, then setup a notifications menu
 	if(False == x_error && notifier)
 	{
-		menu_notify = GTK_CHECK_MENU_ITEM(gtk_check_menu_item_new_with_mnemonic("_Notifications"));
+		menu_notify = GTK_CHECK_MENU_ITEM(gtk_check_menu_item_new_with_mnemonic(STR_TOOLITEM_NOTIFY));
 		// load the settings value
 		gtk_check_menu_item_set_active(menu_notify, notifier_enabled);
 
@@ -1608,10 +1608,6 @@ static gboolean load_preferences(GtkWindow *parent)
 
 			welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, NULL);
 		}
-
-		// The user might never close the app. and just shut down the system. Conf file won't be written to disk in that case
-		// Hence save the conf file when its a first run with the defaults
-		save_preferences(hotkey_index);
 	}
 	
 	// If some welcome message is set, show the message box and free it
@@ -1627,7 +1623,9 @@ static gboolean load_preferences(GtkWindow *parent)
 
 	g_key_file_free(key_file);
 	g_free(conf_file_path);
-	
+
+	// The user might never close the app. and just shut down the system. Conf file won't be written to disk in that case
+	// Hence save the conf file when its a first run with the defaults. This is done by the main func.
 	return first_run;
 }
 
@@ -1804,7 +1802,6 @@ int main(int argc, char *argv[])
 					// set the global var. so that load and save preferences can see them
 					hotkey_index = selected_key + 1;
 
-					first_run = load_preferences(GTK_WINDOW(window));
 
 					icon_file_path = g_build_filename(ICON_DIR, ICON_FILE, NULL);
 					if(!g_file_test(icon_file_path, G_FILE_TEST_IS_REGULAR))
@@ -1828,7 +1825,13 @@ int main(int argc, char *argv[])
 					}
 #endif
 
-					// create popup menu
+					// load pref. should be after assessing the availability of notifications
+					// since the message shown to the user depends on it
+					first_run = load_preferences(GTK_WINDOW(window));
+
+					// pop-up menu creation should be after assessing the availability of notifications
+					// since if it is not available, the Notify menu option can be stripped
+					// create pop-up menu
 					popup_menu = create_popup_menu(gui_builder);
 
 					g_signal_connect(statusIcon, "activate", G_CALLBACK(status_icon_activate), gui_builder);
@@ -1891,7 +1894,12 @@ int main(int argc, char *argv[])
 
 					// To show or not to show? on startup - better show it the very first time, when the user sets the option
 					// start up hided, then don't show it
-					if(first_run) gtk_widget_show_all(window);
+					if(first_run)
+					{
+						// since its a first run (anew/updated) save the preferences once
+						save_preferences();
+						gtk_widget_show_all(window);
+					}
 
 					
 					gtk_main();

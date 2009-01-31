@@ -1,3 +1,14 @@
+0.7.2 (Jan 31, 2009):
+	After trying 0.7.1 on Kubuntu, lots of insights were gained. Even though libnotify is present 
+	with dbus, notifications are not shown, since notification-daemon is missing. Hence a check 
+	for notify_init's return value is now done, and when it fails, Artha refrains from showing 
+	the option at all to the user. Likewise, svg was not supported for menu icons and status bar 
+	icon, hence the svg pixbuf is now replace by a png, as it is better supported on most systems. 
+	Autotools scripts, both configure and makefile had bugs in finding the library availablity. 
+	Hence moved all AC_CHECK_LIBs to pkg-config based checks. When the version number is found 
+	incremented (from the conf file), the user is thanked for updating. Preferences are now saved 
+	whenever a setting is toggled and not on app. exit. Its a pretty hefty release :)
+
 0.7.1 (Jan 29, 2009):
 	Finally, for bug tracking, Artha is registered in LaunchPad! A 'Report a Bug' button is kept 
 	on the About dialog for easy user access. After reading the dbus API docs, came to know that 

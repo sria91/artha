@@ -131,7 +131,15 @@ GtkToolItem		*toolbar_notify = NULL;
 
 // Artha App. Strings
 
-#define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, click the Close Window (X) button on the title bar or the system try icon"
+#define STR_TOOLITEM_QUIT	"Q_uit"
+#define STR_TOOLITEM_ABOUT	"_About"
+#define STR_TOOLITEM_NOTIFY	"N_otify"
+#define STR_TOOLITEM_MODE	"_Detailed"
+#define STR_TOOLITEM_NEXT	"_Next"
+#define STR_TOOLITEM_PREV	"_Previous"
+
+
+#define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, click the Close Window (X) button on the title bar or the system try icon or press Esc"
 #define ABOUT_TOOLITEM_TOOLTIP	"About Artha -> Copyright, Credits, Licence, etc."
 #define PREV_TOOLITEM_TOOLTIP	"Go to the previous search term"
 #define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
@@ -141,7 +149,7 @@ GtkToolItem		*toolbar_notify = NULL;
 #define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
 
 #ifdef NOTIFY
-#define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When in the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition."
+#define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When in the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
 #define NOTIFY_QUERY_FAIL_TITLE	"Oops!"
 #define NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
 #endif
