@@ -19,7 +19,7 @@ PKG_PROG_PKG_CONFIG
 
 # Check for wordnet-dev and wordnet (>=3.0)
 AC_CHECK_HEADERS([wn.h], , [
-AC_MSG_ERROR([echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"])
+AC_MSG_ERROR([You must have WordNet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details.])
 ])
 AC_CHECK_LIB([wordnet], [wninit], [WORDNETLIB=-lwordnet], [echo "You must have wordnet development headers to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
 AC_SUBST([WORDNETLIB])
@@ -151,6 +151,6 @@ Artha is now configured!
 
   Once installed, type `artha` to run.
 
-    See INSTALL file for further details.
+    Refer INSTALL file for further details.
 ])
 
