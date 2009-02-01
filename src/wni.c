@@ -71,6 +71,30 @@ static void properties_tree_free(GSList **list, WNIRequestFlags id);
 
 
 /*
+	This function is equivalent to g_strcmp0, which is a 
+	wrapper over the standard C lib. function strcmp. The 
+	reason for having it instead of using wni_strcmp0 is that 
+	it was introduced only in glib 2.16. So as to reduce 
+	the version dependency, this function is employed.
+*/
+
+int wni_strcmp0(const char *s1, const char *s2)
+{
+	if(s1 != NULL && s2 != NULL)
+		return strcmp(s1, s2);
+	else
+	{
+		if(s1 == s2)
+			return 0;
+		else if(s1)
+			return 1;
+		else
+			return -1;
+	}
+}
+
+
+/*
 	Checks if depth hasn't exceeded the MAXDEPTH.
 */
 
@@ -159,7 +183,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 					strsubst(cur_synset->words[j], '_', ' ');
 
 					// check against temp_list too, not only implications, so that we don't miss duplicates in the same list
-					if(g_strcmp0(antonym->term, cur_synset->words[j]) && 
+					if(wni_strcmp0(antonym->term, cur_synset->words[j]) && 
 					(NULL == check_term_in_list(cur_synset->words[j], &antonym->implications, 0)) && 
 					(NULL == check_term_in_list(cur_synset->words[j], &temp_list, 0)))
 					{
@@ -501,12 +525,12 @@ static gint pos_list_compare(gconstpointer a, gconstpointer b, gpointer actual_s
 
 	WNIDefinitionItem *defn_item_a = (WNIDefinitionItem*) a, *defn_item_b = (WNIDefinitionItem*) b;
 
-	not_equal = g_strcmp0(defn_item_a->lemma, defn_item_b->lemma);
+	not_equal = wni_strcmp0(defn_item_a->lemma, defn_item_b->lemma);
 	if(not_equal)
 	{
-		if(0 == g_strcmp0((gchar*) actual_search, defn_item_a->lemma))		// Actual search str compared against item a and b's lemma
+		if(0 == wni_strcmp0((gchar*) actual_search, defn_item_a->lemma))		// Actual search str compared against item a and b's lemma
 			return -1;
-		else if (0 == g_strcmp0((gchar*) actual_search, defn_item_b->lemma))
+		else if (0 == wni_strcmp0((gchar*) actual_search, defn_item_b->lemma))
 			return 1;
 	}
 
@@ -586,7 +610,7 @@ static gboolean is_synm_a_lemma(GSList **list, gchar *synm)
 		{
 			temp_def_item = (WNIDefinitionItem*) temp_list->data;
 
-			if(0 == g_strcmp0(temp_def_item->lemma, synm))
+			if(0 == wni_strcmp0(temp_def_item->lemma, synm))
 				return TRUE;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -653,7 +677,7 @@ static GSList *findexample(SynsetPtr synptr)
 			splits = g_strsplit_set(tbuf, " ,\n", 0);
 			while(splits[i])
 			{
-				if(0 != g_strcmp0(splits[i], ""))
+				if(0 != wni_strcmp0(splits[i], ""))
 					if((returned_example = getexample(splits[i], synptr->words[wdnum])))
 						examples = g_slist_prepend(examples, returned_example);
 				i++;
@@ -828,7 +852,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	defn->definition = g_strdup(splits[0]);
 
 	for(i = 1; splits[i]; i++)
-		if(g_strcmp0(splits[i], ""))		// make sure examples are not null strings
+		if(wni_strcmp0(splits[i], ""))		// make sure examples are not null strings
 			defn->examples = g_slist_prepend(defn->examples, g_strdup(splits[i]));
 
 	defn->examples = g_slist_reverse(defn->examples);
@@ -892,7 +916,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 			// for cases where search is like 'wordsworth', substitute the proper case equivalent, provided if its the prime defn.
 			// I.e. if its the first defn. of the whole group. Since every defn. is prepended this is found by checking the next ptr of the list.
 			// If next is there, it means earlier there were defns before this one, else this is the first defn.
-			if(0 != g_strcmp0(lemma, temp_str) && NULL == g_slist_next(def_item->definitions))
+			if(0 != wni_strcmp0(lemma, temp_str) && NULL == g_slist_next(def_item->definitions))
 			{
 				g_free(lemma);
 				*lemma_ptr = g_strdup(temp_str);

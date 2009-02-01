@@ -9,7 +9,11 @@
 	incremented (from the conf file), the user is thanked for updating. Preferences are now saved 
 	whenever a setting is toggled and not on app. exit. All characters not recognised by WordNet 
 	(characters other than alpha, num, -, , _) are stripped off the selection text. Summoning 
-	should generally fetch results, better end user experience. Its a pretty hefty release :)
+	should generally fetch results, better end user experience. When doing a complete code 
+	walkthru' to find the maximum version number of GLib and GTK+, it was found that except the 
+	func. g_strcmp0, all other GLib functions were either of 2.10 or earlier. Hence wrote a 
+	custom wrapper over strcmp to remove the dependency on Glib 2.16. So now the maximum usage of 
+	GLib abd GTK are the modules GSlice and GtkBuilder. Phew! Its a pretty hefty release, eh? :)
 
 0.7.1 (Jan 29, 2009):
 	Finally, for bug tracking, Artha is registered in LaunchPad! A 'Report a Bug' button is kept 

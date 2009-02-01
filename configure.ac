@@ -130,6 +130,10 @@ AC_MSG_ERROR([X Development headers not found!
 You need X11 development headers to build.])
 ])
 
+AC_CHECK_FUNC([strcmp], , [
+AC_MSG_ERROR([Failed to find strcmp()! The standard C library function strcmp is required to build.])
+])
+
 
 # Enable debugging argument option. Possible values = yes, message or verbose
 AC_ARG_ENABLE([debug], AC_HELP_STRING([--enable-debug], [enable debugging (default = no)]), [ac_debug="$enableval"])

@@ -145,7 +145,7 @@ static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpoint
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 	GtkWidget *cboQuery = GTK_WIDGET(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 
-	if(!g_strcmp0(actionID, "lookup"))
+	if(0 == wni_strcmp0(actionID, "lookup"))
 	{
 		gtk_window_present(window);
 		gtk_widget_grab_focus(GTK_WIDGET(cboQuery));
@@ -159,7 +159,7 @@ static void strip_invalid_edges(gchar *selection)
 	guint i = 0;
 	gboolean alphanum_encounterd = FALSE;
 
-	g_return_if_fail(selection != NULL);
+	if(NULL == selection) return;
 
 	while(selection[i] != '\0')
 	{
@@ -176,7 +176,11 @@ static void strip_invalid_edges(gchar *selection)
 			}
 		}
 		else
-			alphanum_encounterd = TRUE;
+		{
+			// before setting the alphanum_encountered, make sure the current char isn't other valid ones
+			if(!alphanum_encounterd && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ')
+				alphanum_encounterd = TRUE;
+		}
 		i++;
 	}
 }
@@ -1001,7 +1005,7 @@ static void btnSearch_click(GtkButton *button, gpointer user_data)
 					while(gtk_list_store_iter_is_valid(query_list_store, &query_list_iter))
 					{
 						gtk_tree_model_get(GTK_TREE_MODEL(query_list_store), &query_list_iter, 0, &str_list_item, -1);
-						if(g_strcmp0(lemma, str_list_item) == 0)
+						if(0 == wni_strcmp0(lemma, str_list_item))
 						{
 							// While in here, if you set a particular index item as active, 
 							// it again calls the btnSearch_click from within as an after effect of cboQuery "changed" signal
@@ -1181,7 +1185,7 @@ static void txtDefn_selected(GtkWidget *widget, GtkSelectionData *sel_data, guin
 		txtQuery = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(cboQuery)));
 		btnSearch = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 	
-		if(0 != g_strcmp0(gtk_entry_get_text(txtQuery), selection))
+		if(0 != wni_strcmp0(gtk_entry_get_text(txtQuery), selection))
 		{
 			gtk_entry_set_text(txtQuery, selection);
 			//gtk_editable_set_position(GTK_EDITABLE(txtQuery), -1);
@@ -1554,7 +1558,7 @@ static gboolean load_preferences(GtkWindow *parent)
 
 		if(version)
 		{
-			if(0 != g_strcmp0(version, PACKAGE_VERSION))
+			if(0 != wni_strcmp0(version, PACKAGE_VERSION))
 			{
 				// version number is split here. Major, Minor, Micro
 				version_numbers = g_strsplit(version, ".", 3);

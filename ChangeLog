@@ -13,6 +13,9 @@ version 0.7.2 (Jan 31, 2009):
 	  and Notifications.
 	* All characters other than alpha numeric, -, _ and blank space are stripped
 	  on either side of the selection cllipboard text.
+	* Removed dependency on g_strcmp0() (which is present only on GLib >= 2.16) by 
+	  writing a custom wrapper over strcmp. Now all the functions of GLib used by 
+	  Artha are of Glib 2.10 or below.
 
 version 0.7.1 (Jan 29, 2009):
 	* Fixed Tooltip for Meronyms in relative tabs/trees.

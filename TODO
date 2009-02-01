@@ -1,6 +1,9 @@
-* Saving on quit shouldn't be done. Saving on a change in a setting is more apt.
-
 * Help docs and Prefernces windows are to be added.
+
+* When showing "Oops! Queried term not found!" as a notification, can show the 
+  first few chars of what was queried for. E.g "'ied for' not found!"
+
+* Should removed dependency on libnotify, by making it a pluggable module.
 
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
 
