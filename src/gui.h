@@ -16,7 +16,9 @@
  * along with Artha; if not, see <http://www.gnu.org/licenses/>.
  */
 
+
 /* gui.h: GUI Header */
+
 
 #include "wni.h"
 #include <gtk/gtk.h>
@@ -83,26 +85,26 @@
 
 #define TREE_SYNONYMS		0
 #define TREE_ANTONYMS		1
-#define TREE_HYPERNYMS		2
-#define TREE_HYPONYMS		3
-#define TREE_HOLONYMS		4
-#define TREE_MERONYMS		5
-#define TREE_DERIVATIVES	6
-#define TREE_DOMAIN		7
-#define TREE_CAUSES		8
-#define TREE_ENTAILS		9
-#define TREE_ATTRIBUTES		10
-#define TREE_PERTAINYMS		11
-#define TREE_SIMILAR		12
+#define TREE_DERIVATIVES	2
+#define TREE_PERTAINYMS		3
+#define TREE_ATTRIBUTES		4
+#define TREE_SIMILAR		5
+#define TREE_DOMAIN		6
+#define TREE_CAUSES		7
+#define TREE_ENTAILS		8
+#define TREE_HYPERNYMS		9
+#define TREE_HYPONYMS		10
+#define TREE_HOLONYMS		11
+#define TREE_MERONYMS		12
 
-#define TOTAL_RELATIVES		TREE_SIMILAR + 1
+#define TOTAL_RELATIVES		TREE_MERONYMS + 1
 
 // Artha Global variables
 
 // Names of relative tree tab widgets from UI file
 // Note that the 'tree" prefix will be stripped and will be used within code
-gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms", "treeDerivatives", 
-"treeDomain", "treeCauses", "treeEntails", "treeAttributes", "treePertainyms", "treeSimilar"};
+gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
+"treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
 
 #define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
 gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
@@ -132,6 +134,7 @@ gchar 		*last_search = NULL;
 gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE;
 gint8		hotkey_index;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
+gint		history_count = 0;
 
 #ifdef NOTIFY
 gboolean 		notifier_enabled = FALSE;
@@ -172,7 +175,7 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define WELCOME_UPGRADED	"Thank you for updating Artha to a newer version!"
 #define WELCOME_HOTKEY_NORMAL	"The hot key set for Artha is <b>Ctrl + Alt + %c</b>."
 
-#define WELCOME_HOTKEY_INFO	" Press this key combination to call Artha. Selecting text \
+#define WELCOME_HOTKEY_INFO	" Press this key combination to call Artha from the system tray. Selecting text \
 in any window and calling Artha will pop it up with the selected text's definitions."
 #define WELCOME_MANUAL		"\n\nRefer manual ('man artha' in terminal) for detailed info/help."
 

@@ -16,17 +16,8 @@
  * along with Artha; if not, see <http://www.gnu.org/licenses/>.
  */
 
+
 /* gui.c: GUI Code */
-
-
-// TODO: When any of the relatives list is double clicked, it should go 
-// to the word's defn., as usual, but should highlight the sense which 
-// linked it there. Params reqd. are id and sense, in normal case, they 
-// can be unset (-1) so that no highlighting is made also scroll to the 
-// highlighted sense in both double/click cases. Write a function which 
-// does the mark positioning and highlighting, which can be called in 
-// both click (list select) and double click. When the user presses 
-// right/left, expand/collapse accordingly
 
 
 #include "gui.h"
@@ -480,7 +471,7 @@ static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *paren
 	//guint8 type_no = 0;
 	gchar terms[MAX_CONCAT_STR] = "";
 
-	if((child = node->children))
+	if((child = g_node_first_child(node)))
 	do
 	{
 		i = 0;
@@ -547,7 +538,7 @@ static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFl
 		tree = (GNode*) properties->data;
 		if(tree)
 		{
-			tree = tree->children;
+			tree = g_node_first_child(tree);
 			while(tree)
 			{
 				i = 0;
@@ -1030,6 +1021,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 					{
 						gtk_list_store_prepend(query_list_store, &query_list_iter);
 						gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
+						history_count++;
 					}
 				}
 
@@ -1201,13 +1193,14 @@ static gboolean window_main_key_press(GtkWidget *widget, GdkEventKey *event, gpo
 {
 	GtkComboBox *combo_query = GTK_COMBO_BOX(user_data);
 	gboolean popped_down = FALSE;
+	gboolean deleted = FALSE;
 
 	if(GDK_Escape == event->keyval)
 	{
 		g_object_get(combo_query, "popup-shown", &popped_down, NULL);
 		if(!popped_down)
 		{
-			gtk_widget_hide(widget);
+			g_signal_emit_by_name(widget, "delete-event", G_TYPE_BOOLEAN, &deleted);
 			return TRUE;
 		}
 	}
@@ -1289,8 +1282,10 @@ static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *
 	GSList *wni_results = results;
 	GSList *synonyms_list = NULL;
 	GSList *synonym_mapping = NULL;
-	GtkTextMark *mark = NULL;
-	gboolean scrolled_to_first_mark = FALSE;
+	GtkTextMark *highlighted_mark = NULL, *scroll_mark = NULL;
+	GtkTextBuffer *buffer = NULL;
+	GtkTextIter iter = {0};
+	guint16 last_offset = 0, current_offset = 0;
 
 	while(wni_results)
 	{
@@ -1299,17 +1294,31 @@ static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *
 			synonyms_list = ((WNIOverview*) ((WNINym*)wni_results->data)->data)->synonyms_list;
 			for(; relative_index; relative_index--, synonyms_list = g_slist_next(synonyms_list));
 			synonym_mapping = ((WNIPropertyItem*) synonyms_list->data)->mapping;
+			
+			buffer = gtk_text_view_get_buffer(text_view);
+			gtk_text_buffer_get_end_iter(buffer, &iter);
+			// store the last line number
+			last_offset = gtk_text_iter_get_line(&iter);
 
 			while(synonym_mapping)
 			{
-				mark = highlight_definition(((WNISynonymMapping*) synonym_mapping->data)->id, ((WNISynonymMapping*) synonym_mapping->data)->sense, text_view);
-				if(!scrolled_to_first_mark)
+				highlighted_mark = highlight_definition(((WNISynonymMapping*) synonym_mapping->data)->id, ((WNISynonymMapping*) synonym_mapping->data)->sense, text_view);
+				
+				gtk_text_buffer_get_iter_at_mark(buffer, &iter, highlighted_mark);
+
+				// see if this mark is at a higher line
+				current_offset = gtk_text_iter_get_line(&iter);
+
+				if(current_offset < last_offset)
 				{
-					gtk_text_view_scroll_to_mark(text_view, mark, 0.0, TRUE, 0, 0);
-					scrolled_to_first_mark = TRUE;
+					last_offset = current_offset;
+					scroll_mark = highlighted_mark;
 				}
+
 				synonym_mapping = g_slist_next(synonym_mapping);
 			}
+
+			gtk_text_view_scroll_to_mark(text_view, scroll_mark, 0.0, TRUE, 0, 0);
 
 			break;
 		}
@@ -1445,6 +1454,111 @@ static void highlight_senses_from_domain(guint8 category, guint16 relative_index
 	}
 }
 
+static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view)
+{
+	GSList *wni_results = results;
+	GSList *properties_list = NULL;
+	GSList *property_mapping = NULL;
+	WNIPropertyMapping *mapping = NULL;
+	GtkTextMark *highlighted_mark = NULL, *scroll_mark = NULL;
+	GtkTextBuffer *buffer = NULL;
+	GtkTextIter iter = {0};
+	guint16 last_offset = 0, current_offset = 0;
+
+	while(wni_results)
+	{
+		if(id == ((WNINym*)wni_results->data)->id)
+		{
+			properties_list = ((WNIProperties*)((WNINym*)wni_results->data)->data)->properties_list;
+
+			for(; relative_index; relative_index--, properties_list = g_slist_next(properties_list));
+			property_mapping = ((WNIPropertyItem*) properties_list->data)->mapping;
+			
+			buffer = gtk_text_view_get_buffer(text_view);
+			gtk_text_buffer_get_end_iter(buffer, &iter);
+			last_offset = gtk_text_iter_get_line(&iter);
+			
+			while(property_mapping)
+			{
+				mapping = (WNIPropertyMapping*) property_mapping->data;
+				highlighted_mark = highlight_definition(mapping->id, mapping->sense, text_view);
+				
+				gtk_text_buffer_get_iter_at_mark(buffer, &iter, highlighted_mark);
+
+				// see if this mark is at a higher line
+				current_offset = gtk_text_iter_get_line(&iter);
+
+				if(current_offset < last_offset)
+				{
+					last_offset = current_offset;
+					scroll_mark = highlighted_mark;
+				}
+
+				property_mapping = g_slist_next(property_mapping);
+			}
+			
+			gtk_text_view_scroll_to_mark(text_view, scroll_mark, 0.0, TRUE, 0, 0);
+
+			break;
+		}
+		wni_results = g_slist_next(wni_results);
+	}
+}
+
+/*
+static void highlight_senses_from_relative_trees(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view)
+{
+	GSList *wni_results = results;
+	GSList *properties_list = NULL, *term_list = NULL;
+	WNISynonymMapping *mapping = NULL;
+	GtkTextMark *mark = NULL;
+	GNode *node = NULL;
+	gboolean found = FALSE;
+	guint16 count = 0;
+
+	while(wni_results)
+	{
+		if(id == ((WNINym*)wni_results->data)->id)
+		{
+			properties_list = ((WNIProperties*)((WNINym*)wni_results->data)->data)->properties_list;
+
+			while(properties_list)
+			{
+				node = g_node_first_child((GNode*) properties_list->data);
+
+				while(node)
+				{
+					term_list = ((WNITreeList*) node->data)->word_list;
+					while(term_list)
+					{
+						count++;
+						if(count == relative_index + 1)
+						{
+							found = TRUE;
+							break;
+						}
+						term_list = g_slist_next(term_list);
+					}
+					if(found) break;
+					node = g_node_next_sibling(node);
+				}
+				if(found) break;
+				properties_list = g_slist_next(properties_list);
+			}
+			
+			mapping = (WNISynonymMapping*) ((GNode*) properties_list->data)->data;
+
+			mark = highlight_definition(mapping->id, mapping->sense, text_view);
+
+			gtk_text_view_scroll_to_mark(text_view, mark, 0.0, TRUE, 0, 0);
+
+			break;
+		}
+		wni_results = g_slist_next(wni_results);
+	}
+}
+*/
+
 static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data)
 {
 	GtkTreeIter iter = {0};
@@ -1524,8 +1638,10 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 				case TREE_HYPONYMS:
 				case TREE_HOLONYMS:
 				case TREE_MERONYMS:
+					//highlight_senses_from_relative_trees(1 << gtk_notebook_get_current_page(notebook), g_ascii_strtoull(str_path, NULL, 10), text_view);
 					break;
 				default:
+					highlight_senses_from_relative_lists(1 << gtk_notebook_get_current_page(notebook), g_ascii_strtoull(str_path, NULL, 10), text_view);
 					break;
 			}
 		}
@@ -1656,6 +1772,35 @@ static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data)
 	}
 
 	gtk_combo_box_set_active(combo_query, active_item + 1);
+}
+
+static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data)
+{
+	gint current_index = 0;
+
+	if((GDK_SCROLL_UP == event->direction) || (GDK_SCROLL_DOWN == event->direction))
+	{
+		current_index = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+
+		if(-1 == current_index && history_count > 0) current_index = 0;
+
+		if(GDK_SCROLL_DOWN == event->direction)
+		{
+			current_index++;
+			if(history_count <= current_index) current_index = 0;
+		}
+		else
+		{
+			current_index--;
+			if(current_index < 0) current_index = history_count - 1;
+		}
+
+		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), current_index);
+
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 static void setup_toolbar(GtkBuilder *gui_builder)
@@ -1862,7 +2007,7 @@ static gboolean load_preferences(GtkWindow *parent)
 			}
 			
 			// hot key was earlier either unset or was diff.
-			else if(False == x_error)
+			else
 			{
 				welcome_message = g_strconcat(first_run ? WELCOME_UPGRADED : WELCOME_TITLE,  "\n\n", WELCOME_NOTE_HOTKEY_CHANGED, WELCOME_HOTKEY_INFO, 
 #ifdef NOTIFY
@@ -1872,7 +2017,8 @@ static gboolean load_preferences(GtkWindow *parent)
 
 				// subtract hot key value by 32 to get upper case char
 				welcome_dialog = gtk_message_dialog_new_with_markup(parent, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, welcome_message, hot_key_vals[hotkey_index - 1] - 32);
-			}			
+			}
+			first_run = TRUE;
 		}
 		else
 		{
@@ -1947,7 +2093,7 @@ static void save_preferences()
 	key_file = g_key_file_new();
 	
 	g_key_file_set_comment(key_file, NULL, NULL, SETTINGS_COMMENT, NULL);
-	
+
 	g_key_file_set_string(key_file, GROUP_SETTINGS, KEY_VERSION, PACKAGE_VERSION);
 	g_key_file_set_integer(key_file, GROUP_SETTINGS, KEY_HOTKEY_INDEX, hotkey_index);
 	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
@@ -2033,7 +2179,6 @@ static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder)
 	}
 #endif
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -2151,7 +2296,7 @@ int main(int argc, char *argv[])
 						// setup status icon
 						status_icon = gtk_status_icon_new_from_file(icon_file_path);
 						gtk_status_icon_set_tooltip(status_icon, "Artha ~ The Open Thesaurus");
-						gtk_status_icon_set_visible(status_icon, TRUE);
+						gtk_status_icon_set_visible(status_icon, !x_error);
 					}
 
 					g_free(icon_file_path);
@@ -2201,11 +2346,14 @@ int main(int argc, char *argv[])
 					setup_toolbar(gui_builder);
 
 					// do main window specific connects
-					g_signal_connect_swapped(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), window);
+					if(!x_error)
+						g_signal_connect_swapped(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), window);
+					else
+						g_signal_connect(window, "delete-event", G_CALLBACK(quit_activate), window);
 					
 					// connect to Escape Key
 					g_signal_connect(window, "key-press-event", G_CALLBACK(window_main_key_press), combo_query);
-
+					g_signal_connect(combo_query, "scroll-event", G_CALLBACK(combo_query_scroll), button_search);
 					
 					expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
 					g_signal_connect(expander, "activate", G_CALLBACK(expander_clicked), gui_builder);
@@ -2240,11 +2388,11 @@ int main(int argc, char *argv[])
 					// To show or not to show? on startup - better show it the very first time, when the user sets the option
 					// start up hided, then don't show it
 					if(first_run)
-					{
 						// since its a first run (anew/updated) save the preferences once
 						save_preferences();
+
+					if(first_run || x_error)
 						gtk_widget_show_all(window);
-					}
 
 					
 					gtk_main();

@@ -14,39 +14,19 @@
   should reduce a lot of overhead. When 'Lookup' is clicked, do the actual 
   WORDNET_INTERFACE_ALL request call, till then this flag can be defered.
 
-* See if, in case none of the hot key can be set, closing Artha should exit and not 
-  minimize it to system tray, is required.
-
-* Check for boundary value of the selection. I.e. if selection is over x, truncate 
-  it before search.
-
-* Make sure you do all the required trim, truncate, check for illegal chars 
-  like ; : ~ " etc. and strip them before you send them to WNI
-
 * When the drop down list is too big, make sure, it doesn't exceed out of the 
   app. Instead let it have a scroll bar.
 
 * When in simple mode, see the 'Parts' tab for 'rupee', it has lot of duplicates.
 
-* Search slippage, and see that the tab set is incorrect
-
-* Create a list view for antonyms for simple mode case, with additional columns 
-  like direct/indirect, via, etc.
+* Search 'slippage', and see that the tab set is incorrect
 
 * When displaying antonym tree, if only direct antonyms exist, remove the parent 
   node ("Direct") alone e.g. orthodox
 
-* Reoder the relatives list such that all the tree are at the bottom 
-  I.e. Pertainyms come before the BIG 4 (Hyper, Hypo, Holo & Mero) Order: Synonyms, 
-  Antonyms, Attributes, Derivatives, Causes, Entails, Similar, Domain, Pertainyms, 
-  Hypernyms,Hyponyms, Holonyms, Meronyms
-
 * Change Kind of (Hyperyms) to Kind of/Way to and Kinds (Hyponyms) to Kinds/Ways
 
 * Keep 2 buttons expand all/contract all for relative trees
-
-* Should change the g_printf to debug level prints in WNI (See "Running GTK+ 
-  Applications")
 
 * Should Similar be made as 'Similar/Related/See also'? Checkout Hinduism's similar.
 
@@ -67,15 +47,11 @@
 * Check tab order (gtk_container_set_focus_chain() can be used
   Source: http://www.kksou.com/php-gtk2/articles/change-tab-order---Example-4.php)
 
-* Use Key-value file parser in GLib for settings file
-
 * Double click on def. text should make a search again (GdkEvent). Also select 2 words 
   before and after to see if its there in the dict as a lemma
 
 * Bring to foreground should be effective even when the window is visible, but in 
   background (I.e. when z-order not 0)
-
-* Make sure when mouse scroll is made on cboQuery, you scroll thru' the history
 
 * Clearing search history
 
@@ -88,13 +64,14 @@
 
 * Wrapped text should get aligned with the definition start and not the sense count start
 
-* Try to see if this is possible => farcry should be separated into "far cry" and sent to search
+* Check if this is possible => farcry should be separated into "far cry" and sent to search
 
 * Pronunciations
 
 Settings
 ~~~~~~~~
 Startup mode -> tray/show
+Should each example take a new line or all of the examples in a single line?
 Hotkey selection
 Notification system
 Watch clipboard

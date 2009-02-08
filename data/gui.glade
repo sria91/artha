@@ -185,9 +185,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">1</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblAntonyms">
@@ -197,37 +194,6 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">1</property>
-                            <property name="tab_fill">False</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkScrolledWindow" id="scrollWndAttributes">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                            <child>
-                              <widget class="GtkTreeView" id="treeAttributes">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="tooltip_text">Attributes (is a value of/values)</property>
-                              </widget>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="position">2</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkLabel" id="lblAttributes">
-                            <property name="visible">True</property>
-                            <property name="tooltip_text">Attributes (is a value of/values)</property>
-                            <property name="label" translatable="yes">Attributes</property>
-                          </widget>
-                          <packing>
-                            <property name="type">tab</property>
-                            <property name="position">2</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -245,9 +211,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">3</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblDerivatives">
@@ -257,67 +220,58 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">3</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
-                        <child>
-                          <widget class="GtkScrolledWindow" id="scrollWndCauses">
+			<child>
+                          <widget class="GtkScrolledWindow" id="scrollWndPertainyms">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
                             <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
                             <child>
-                              <widget class="GtkTreeView" id="treeCauses">
+                              <widget class="GtkTreeView" id="treePertainyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">The search string causes to...</property>
+                                <property name="tooltip_text">Hypernyms (Relates to noun/verb)</property>
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">4</property>
-                          </packing>
                         </child>
                         <child>
-                          <widget class="GtkLabel" id="lblCauses">
+                          <widget class="GtkLabel" id="lblPertainyms">
                             <property name="visible">True</property>
-                            <property name="tooltip_text">The search string causes to...</property>
-                            <property name="label" translatable="yes">Causes</property>
+                            <property name="tooltip_text">Hypernyms (Relates to noun/verb)</property>
+                            <property name="label" translatable="yes">Relates to</property>
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">4</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkScrolledWindow" id="scrollWndEntails">
+                          <widget class="GtkScrolledWindow" id="scrollWndAttributes">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
                             <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
                             <child>
-                              <widget class="GtkTreeView" id="treeEntails">
+                              <widget class="GtkTreeView" id="treeAttributes">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">The search string entails doing...</property>
+                                <property name="tooltip_text">Attributes (is a value of/values)</property>
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">5</property>
-                          </packing>
                         </child>
                         <child>
-                          <widget class="GtkLabel" id="lblEntails">
+                          <widget class="GtkLabel" id="lblAttributes">
                             <property name="visible">True</property>
-                            <property name="tooltip_text">The search string entails doing...</property>
-                            <property name="label" translatable="yes">Entails</property>
+                            <property name="tooltip_text">Attributes (is a value of/values)</property>
+                            <property name="label" translatable="yes">Attributes</property>
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">5</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -335,9 +289,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">6</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblSimilar">
@@ -347,7 +298,6 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">6</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -365,9 +315,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">7</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblDomain">
@@ -377,7 +324,58 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">7</property>
+                            <property name="tab_fill">False</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrollWndCauses">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                            <child>
+                              <widget class="GtkTreeView" id="treeCauses">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="tooltip_text">The search string causes to...</property>
+                              </widget>
+                            </child>
+                          </widget>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="lblCauses">
+                            <property name="visible">True</property>
+                            <property name="tooltip_text">The search string causes to...</property>
+                            <property name="label" translatable="yes">Causes</property>
+                          </widget>
+                          <packing>
+                            <property name="type">tab</property>
+                            <property name="tab_fill">False</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrollWndEntails">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+                            <child>
+                              <widget class="GtkTreeView" id="treeEntails">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="tooltip_text">The search string entails doing...</property>
+                              </widget>
+                            </child>
+                          </widget>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="lblEntails">
+                            <property name="visible">True</property>
+                            <property name="tooltip_text">The search string entails doing...</property>
+                            <property name="label" translatable="yes">Entails</property>
+                          </widget>
+                          <packing>
+                            <property name="type">tab</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -395,9 +393,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">8</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblHypernyms">
@@ -407,7 +402,6 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">8</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -425,9 +419,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">9</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblHyponyms">
@@ -437,7 +428,6 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">9</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -455,9 +445,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">10</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblHolonyms">
@@ -467,7 +454,6 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">10</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -485,9 +471,6 @@
                               </widget>
                             </child>
                           </widget>
-                          <packing>
-                            <property name="position">11</property>
-                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblMeronyms">
@@ -497,37 +480,6 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
-                            <property name="position">11</property>
-                            <property name="tab_fill">False</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkScrolledWindow" id="scrollWndPertainyms">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                            <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                            <child>
-                              <widget class="GtkTreeView" id="treePertainyms">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="tooltip_text">Hypernyms (Relates to noun/verb)</property>
-                              </widget>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="position">12</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkLabel" id="lblPertainyms">
-                            <property name="visible">True</property>
-                            <property name="tooltip_text">Hypernyms (Relates to noun/verb)</property>
-                            <property name="label" translatable="yes">Relates to</property>
-                          </widget>
-                          <packing>
-                            <property name="type">tab</property>
-                            <property name="position">12</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
