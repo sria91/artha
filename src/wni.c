@@ -445,6 +445,9 @@ Based on the following defns from WN, the below function was formulated: (when a
 	passion = "(any object of warm affection or devotion; \"the theater was her first love\"; \"he has a passion for cock fighting\";)"
 	passion = "(an irrational but irresistible motive for a belief or action)"
 	alright = "(in a satisfactory or adequate manner; \"she'll do okay on her own\"; \"held up all right under pressure\"; (`alright' is a nonstandard variant of `all right'))"
+	
+	// TODO: notice the ',' instead of ';' as the delimiter between the examples
+	compound = "make more intense, stronger, or more marked; \"The efforts were intensified\", \"Her rudeness intensified his dislike for her\"; "
 
 	Takes a synset defn and applies delimiter '|' between definition and meanings.
 	Returns a new string, should be freed.
@@ -867,6 +870,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	}
 
 	def_item->definitions = g_slist_prepend(def_item->definitions, defn);	// with this, definitions_list section is over, remaining is synonyms_list appending/mapping
+	def_item->count++;
 	
 	check_len = g_utf8_strlen(lemma, -1) + 1;
 
@@ -906,7 +910,6 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 				//synm = (WNISynonym*) g_slice_alloc0 (sizeof(WNISynonym));
 				synm = (WNIPropertyItem*) g_slice_alloc0 (sizeof(WNIPropertyItem));
 				synm->term = g_strdup(temp_str);
-				synm->mapping = NULL;
 				synm->mapping = g_slist_append(synm->mapping, mapping);
 				overview->synonyms_list = g_slist_append(overview->synonyms_list, synm);
 			}

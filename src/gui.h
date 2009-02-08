@@ -110,11 +110,22 @@ gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms
 //gchar *list_type[] = {"MEMBER OF", "SUBSTANCE OF", "PART OF", "MEMBERS", "HAS SUBSTANCE", "PARTS"};
 //gchar *hypernym_type[] = {"INSTANCE OF", "INSTANCES"};
 
-#define FAMILIARITY_COUNT 8
+#define FAMILIARITY_COUNT	8
 gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
 gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
 //none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give
 
+#define	TAG_LEMMA	"tag_lemma"
+#define TAG_POS		"tag_pos"
+#define TAG_COUNTER	"tag_counter"
+#define TAG_EXAMPLE	"tag_example"
+#define TAG_HIGHLIGHT	"tag_highlight"
+
+#define DIRECT_ANTONYM_HEADER		"Direct Antonyms"
+#define	INDIRECT_ANTONYM_HEADER		"Indirect Antonyms"
+#define	INDIRECT_ANTONYM_COLUMN_HEADER	"Indirect via Similar Term"
+
+#define	MAX_SENSE_DIGITS	5
 Bool 		x_error = False;
 GSList 		*results = NULL;
 gchar 		*last_search = NULL;
@@ -145,6 +156,9 @@ GtkToolItem		*toolbar_notify = NULL;
 #define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
 #define MODE_TOOLITEM_TOOLTIP	"Toggle between simple/advanced modes"
 
+#define STR_STATUS_QUERY_SUCCESS "Search complete. Results returned: %d sense(s) in %d POS(s)!"
+#define MSG_WN_ERROR		"Failed to open WordNet database files!\n\
+Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere, set the environment variable WNHOME to point to it."
 #define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
 #define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
 
@@ -182,6 +196,8 @@ Copyright 2006 by Princeton University.  All rights reserved."
 
 #define STRING_WEBSITE		"http://artha.sourceforge.net/"
 
+#define STRING_BUG_WEBPAGE	"http://launchpad.net/artha/+filebug"
+
 #define STRING_WEBSITE_LABEL	"Artha Homepage"
 
 #define STRING_ABOUT		"A handy open thesaurus based on WordNet"
@@ -202,6 +218,6 @@ gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>"};
 
 // Dynamically loaded gtk_show_uri function's prototype
 typedef gboolean (*ShowURIFunc) (GdkScreen *screen, const gchar *uri, guint32 timestamp, GError **error);
-ShowURIFunc fp_show_uri;
+ShowURIFunc fp_show_uri = NULL;
 
 

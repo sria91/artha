@@ -18,7 +18,8 @@
 
 /* wni.h: WordNet Interface Header */
  
-#pragma once
+#ifndef WNI_H
+#define WNI_H
 
 #include <string.h>
 
@@ -26,6 +27,7 @@
 #include <glib/gprintf.h>
 
 #include <wn.h>
+
 
 /* For adjectives, indicates synset type */
 #define DONT_KNOW	0
@@ -68,7 +70,7 @@ typedef enum
 	WORDNET_INTERFACE_CAUSES	= 1 << 8,	// 4
 	WORDNET_INTERFACE_ENTAILS	= 1 << 9,	// 5
 	WORDNET_INTERFACE_ATTRIBUTES	= 1 << 10,	// 3
-	WORDNET_INTERFACE_PERTAINYMS	= 1 << 11,	// 8 still pending with levels
+	WORDNET_INTERFACE_PERTAINYMS	= 1 << 11,	// 8
 	WORDNET_INTERFACE_SIMILAR	= 1 << 12,	// 6
 	WORDNET_INTERFACE_ALL		=(WORDNET_INTERFACE_OVERVIEW | WORDNET_INTERFACE_ANTONYMS | WORDNET_INTERFACE_HYPERNYMS | WORDNET_INTERFACE_HYPONYMS | 
 					  WORDNET_INTERFACE_HOLONYMS | WORDNET_INTERFACE_MERONYMS | WORDNET_INTERFACE_DERIVATIONS | WORDNET_INTERFACE_CLASS | 
@@ -98,6 +100,7 @@ struct _definition_item
 	gchar *lemma;
 	guint8 id;
 	guint8 pos;
+	guint8 count;
 	GSList *definitions;
 };
 typedef struct _definition_item WNIDefinitionItem;
@@ -192,9 +195,14 @@ struct _tree_list
 typedef struct _tree_list WNITreeList;
 
 
+G_BEGIN_DECLS
+
 // WNI Exposed functions
 extern void wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode);
 extern void wni_free(GSList **response_list);
 extern int wni_strcmp0(const char *s1, const char *s2);
 
+G_END_DECLS
+
+#endif
 
