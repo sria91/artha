@@ -176,7 +176,8 @@ static gchar* strip_invalid_edges(gchar *selection)
 	{
 		while(selection[i] != '\0')
 		{
-			if(!g_ascii_isalnum(selection[i]) && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ' && selection[i] != '\'')
+			if(!g_ascii_isalnum(selection[i]) && selection[i] != '-' && selection[i] != '_' && 
+			selection[i] != ' ' && selection[i] != '\'' && selection[i] != '.')
 			{
 				if(alphanum_encounterd)
 				{
@@ -191,7 +192,8 @@ static gchar* strip_invalid_edges(gchar *selection)
 			else
 			{
 				// before setting the alphanum_encountered, make sure the current char isn't other valid ones
-				if(!alphanum_encounterd && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ' && selection[i] != '\'')
+				if(!alphanum_encounterd && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ' && 
+				selection[i] != '\'' && selection[i] != '.')
 					alphanum_encounterd = TRUE;
 			}
 			i++;

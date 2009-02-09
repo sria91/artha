@@ -1,3 +1,21 @@
+version 0.8.0 (Feb 09, 2009):
+	* Artha will now give suggestions when a misspelled word is searched for. 
+	  Suggestions module added, which looks for libenchant at runtime.
+	* When a (list type) relative is selected, the respective senses to which it 
+	  relates to are now highlighted.
+	* Indirect Antonyms will now have an additional column where the Similar term 
+	  through which it relates to the search term is displayed.
+	* Examples will now appear in a single line delimited by a ';'.
+	* Mouse wheel can now scroll through the history list.
+	* When WordNet dict files couldn't be opened, the user is shown a message.
+	* Relative tabs reordered based on most-used ones and complexity.
+	* When no hot key could be set, Artha won't be persistent.
+	* Bug in saving preferences fixed.
+	* Bug in filtering invalid characters on search fixed.
+	* Bug in finding relatives with more then one sense mapping fixed.
+	* Few memory leakages relating GError variables are fixed.
+	* Crash when a link is clicked in the About box fixed.
+
 version 0.7.2 (Jan 31, 2009):
 	* Toolbar button added for toggling Notifications
 	* If the notification-daemon is missing in a the system, the notification 
@@ -12,7 +30,7 @@ version 0.7.2 (Jan 31, 2009):
 	* Both Toolbar button and menu now reads "Notify", earlier it was Notify 
 	  and Notifications.
 	* All characters other than alpha numeric, -, _ and blank space are stripped
-	  on either side of the selection cllipboard text.
+	  on either side of the selection clipboard text.
 	* Removed dependency on g_strcmp0() (which is present only on GLib >= 2.16) by 
 	  writing a custom wrapper over strcmp. Now all the functions of GLib used by 
 	  Artha are of Glib 2.10 or below.

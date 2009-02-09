@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.50])
 
-AC_INIT([Artha], [0.7.2], [legends2k@yahoo.com], [artha])
+AC_INIT([Artha], [0.8.0], [legends2k@yahoo.com], [artha])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 
@@ -19,7 +19,7 @@ PKG_PROG_PKG_CONFIG
 # Checks for libraries.
 
 # Check for wordnet-dev and wordnet (>=3.0)
-AC_CHECK_HEADERS([wn.h], , [
+AC_CHECK_HEADER([wn.h], , [
 AC_MSG_ERROR([You must have wordnet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details.])
 ])
 AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [echo "You must have WordNet installed to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
