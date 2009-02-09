@@ -301,10 +301,16 @@ static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpo
 
 static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 {
+	gchar *about_comments = NULL;
 	GtkWidget *about_dialog = gtk_about_dialog_new();
+
+	if(hotkey_index != -1)
+		about_comments = g_strdup_printf("%s\r\n\r\n%s%c", STRING_ABOUT, ABOUT_HOTKEY_SET, hot_key_vals[hotkey_index - 1] - 32);
+	else
+		about_comments = STRING_ABOUT;
 	
 	g_object_set(about_dialog, "license", STRING_LICENCE, "copyright", STRING_COPYRIGHT, 
-	"comments", STRING_ABOUT, "authors", strv_authors, "version", PACKAGE_VERSION, 
+	"comments", about_comments, "authors", strv_authors, "version", PACKAGE_VERSION, 
 	"wrap-license", TRUE, "website-label", STRING_WEBSITE_LABEL, "website", STRING_WEBSITE, NULL);
 
 	if(fp_show_uri)
@@ -313,6 +319,8 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), NULL);
 	
 	gtk_dialog_run(GTK_DIALOG(about_dialog));
+	
+	if(hotkey_index != -1) g_free(about_comments);
 }
 
 static void quit_activate(GObject *obj, gpointer user_data)

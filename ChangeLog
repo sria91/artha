@@ -9,6 +9,7 @@ version 0.8.0 (Feb 09, 2009):
 	* Mouse wheel can now scroll through the history list.
 	* When WordNet dict files couldn't be opened, the user is shown a message.
 	* Relative tabs reordered based on most-used ones and complexity.
+	* The current hot key set will now be displayed in the About dialog.
 	* When no hot key could be set, Artha won't be persistent.
 	* Bug in saving preferences fixed.
 	* Bug in filtering invalid characters on search fixed.

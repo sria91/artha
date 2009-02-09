@@ -158,6 +158,7 @@ GtkToolItem		*toolbar_notify = NULL;
 #define STR_TOOLITEM_NEXT	"_Next"
 #define STR_TOOLITEM_PREV	"_Previous"
 
+#define ABOUT_HOTKEY_SET	"The hot key set to summon Artha is Ctrl + Alt + "
 
 #define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, click the Close Window (X) button on the title bar or the system try icon or press Esc"
 #define ABOUT_TOOLITEM_TOOLTIP	"About Artha -> Copyright, Credits, Licence, etc."
@@ -209,7 +210,7 @@ Copyright 2006 by Princeton University.  All rights reserved."
 
 #define STRING_WEBSITE_LABEL	"Artha Homepage"
 
-#define STRING_ABOUT		"A handy open thesaurus based on WordNet"
+#define STRING_ABOUT		"A handy off-line thesaurus based on WordNet"
 
 #define STRING_LICENCE "Artha is free software; you can redistribute it and/or modify it under the terms of \
 the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, \
