@@ -198,7 +198,7 @@ typedef struct _tree_list WNITreeList;
 G_BEGIN_DECLS
 
 // WNI Exposed functions
-extern void wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode);
+extern gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode);
 extern void wni_free(GSList **response_list);
 extern int wni_strcmp0(const char *s1, const char *s2);
 

@@ -51,7 +51,7 @@ libwni_a_OBJECTS = $(am_libwni_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_artha_OBJECTS = gui.$(OBJEXT)
+am_artha_OBJECTS = gui.$(OBJEXT) suggestions.$(OBJEXT)
 artha_OBJECTS = $(am_artha_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
@@ -164,11 +164,11 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall @GTK_CFLAGS@ @libnotify_CFLAGS@
-AM_LDFLAGS = -lgtk-x11-2.0 -lgthread-2.0 $(WORDNET_LIB) @libnotify_LIBS@
+AM_LDFLAGS = -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 $(WORDNET_LIB) @libnotify_LIBS@
 noinst_LIBRARIES = libwni.a
 libwni_a_SOURCES = wni.c wni.h
 artha_DEPENDENCIES = libwni.a
-artha_SOURCES = wni.h gui.c gui.h
+artha_SOURCES = wni.h addons.h gui.c gui.h suggestions.c suggestions.h
 artha_LDADD = libwni.a
 all: all-am
 
@@ -244,6 +244,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gui.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suggestions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wni.Po@am__quote@
 
 .c.o:

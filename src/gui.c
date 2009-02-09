@@ -176,7 +176,7 @@ static gchar* strip_invalid_edges(gchar *selection)
 	{
 		while(selection[i] != '\0')
 		{
-			if(!g_ascii_isalnum(selection[i]) && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ')
+			if(!g_ascii_isalnum(selection[i]) && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ' && selection[i] != '\'')
 			{
 				if(alphanum_encounterd)
 				{
@@ -191,7 +191,7 @@ static gchar* strip_invalid_edges(gchar *selection)
 			else
 			{
 				// before setting the alphanum_encountered, make sure the current char isn't other valid ones
-				if(!alphanum_encounterd && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ')
+				if(!alphanum_encounterd && selection[i] != '-' && selection[i] != '_' && selection[i] != ' ' && selection[i] != '\'')
 					alphanum_encounterd = TRUE;
 			}
 			i++;
@@ -834,7 +834,7 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 
 static void button_search_click(GtkButton *button, gpointer user_data)
 {
-	gchar *search_str = NULL, *lemma = NULL;
+	gchar *search_str = NULL, *lemma = NULL, **suggestions = NULL;
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
@@ -852,7 +852,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	WNIDefinition *defn = NULL;
 
 	gint16 count = 0;
-	const gchar *str_new_line = "\r\n";
 	gchar *str_list_item = NULL;
 	gchar str_count[MAX_SENSE_DIGITS] = "";
 
@@ -926,7 +925,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 						freq_marker = gtk_text_buffer_create_mark(buffer, NULL, &cur, TRUE);
 
-						gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, str_new_line, -1, TAG_POS, NULL);
+						gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, NEW_LINE, -1, TAG_POS, NULL);
 				
 						count = 1;
 						while(definitions_list)
@@ -945,7 +944,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 							example = defn->examples;
 
 							definitions_list = g_slist_next(definitions_list);
-							if(example || definitions_list) gtk_text_buffer_insert(buffer, &cur, str_new_line, -1);
+							if(example || definitions_list) gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 
 							while(example)
 							{
@@ -953,12 +952,12 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 								example = g_slist_next(example);
 								// for each example come to appear in a new line enabled this line and 
 								// comment the next two buffer inserts of "; " and new line
-								//if(example || definitions_list) gtk_text_buffer_insert(buffer, &cur, str_new_line, -1);
+								//if(example || definitions_list) gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 
 								if(example)
 									gtk_text_buffer_insert(buffer, &cur, "; ", -1);
 								else if(definitions_list)
-									gtk_text_buffer_insert(buffer, &cur, str_new_line, -1);
+									gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 							}
 							count++;
 						}
@@ -972,7 +971,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 					if(def_list)
 					{
 						gtk_text_buffer_get_end_iter(buffer, &cur);
-						gtk_text_buffer_insert(buffer, &cur, str_new_line, -1);
+						gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 					}
 
 					msg_context_id++;
@@ -1083,8 +1082,29 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			{
 #endif
 				gtk_text_buffer_set_text(buffer, "", -1);
-				gtk_text_buffer_get_iter_at_offset(buffer, &cur, 0);
+				gtk_text_buffer_get_start_iter(buffer, &cur);
 				gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, STR_QUERY_FAILED, -1, TAG_POS, NULL);
+
+				if(mod_suggest)
+				{
+					suggestions = suggestions_get(search_str);
+					if(suggestions)
+					{
+						total_results = 0;
+					
+						gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
+						gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_SUGGEST, NULL);
+					
+						while(suggestions[total_results])
+						{
+							gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
+							gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, suggestions[total_results++], -1, TAG_SUGGESTION, NULL);
+						}
+					
+						g_strfreev(suggestions);
+					}
+				}
+
 				gtk_window_present(window);
 
 				msg_context_id = gtk_statusbar_get_context_id(status_bar, "search_failed");
@@ -1309,7 +1329,7 @@ static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *
 				// see if this mark is at a higher line
 				current_offset = gtk_text_iter_get_line(&iter);
 
-				if(current_offset < last_offset)
+				if(current_offset <= last_offset)
 				{
 					last_offset = current_offset;
 					scroll_mark = highlighted_mark;
@@ -1390,7 +1410,7 @@ static void highlight_senses_from_antonyms(guint8 category, guint16 relative_ind
 						// see if this mark is at a higher line
 						indirect_count = gtk_text_iter_get_line(&iter);
 
-						if(indirect_count < direct_count)
+						if(indirect_count <= direct_count)
 						{
 							direct_count = indirect_count;
 							scroll_mark = highlighted_mark;
@@ -1488,7 +1508,7 @@ static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 rel
 				// see if this mark is at a higher line
 				current_offset = gtk_text_iter_get_line(&iter);
 
-				if(current_offset < last_offset)
+				if(current_offset <= last_offset)
 				{
 					last_offset = current_offset;
 					scroll_mark = highlighted_mark;
@@ -1930,7 +1950,8 @@ static void create_text_view_tags(GtkBuilder *gui_builder)
 	gtk_text_buffer_create_tag(buffer, TAG_POS, "foreground", "red", "style", PANGO_STYLE_ITALIC, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_COUNTER, "left_margin", 15, "weight", PANGO_WEIGHT_BOLD, "foreground", "gray", NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_EXAMPLE, "foreground", "blue", "font", "FreeSerif Italic 11", "left_margin", 45, NULL);
-
+	gtk_text_buffer_create_tag(buffer, TAG_SUGGEST, "foreground", "DarkGreen", "weight", PANGO_WEIGHT_SEMIBOLD, NULL);
+	gtk_text_buffer_create_tag(buffer, TAG_SUGGESTION, "foreground", "blue" , "left_margin", 25, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_HIGHLIGHT, "background", "black", "foreground", "white", NULL);
 	
 	for(i = 0; i < FAMILIARITY_COUNT; i++)
@@ -1980,7 +2001,7 @@ static gboolean load_preferences(GtkWindow *parent)
 				version_numbers = g_strsplit(version, ".", 3);
 				current_version_numbers = g_strsplit(PACKAGE_VERSION, ".", 3);
 				
-				for(i = 0; i < 3; i++)
+				for(i = 0; (NULL != version_numbers[i] && NULL != current_version_numbers[i]); i++)
 				{
 					if(g_ascii_digit_value(version_numbers[i][0]) < g_ascii_digit_value(current_version_numbers[i][0]))
 					{
@@ -2163,6 +2184,12 @@ static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder)
 		key_ungrab(dpy, keyval);
 	}
 
+	if(mod_suggest)
+	{
+		suggestions_uninit();
+		mod_suggest = FALSE;
+	}
+
 #ifdef NOTIFY
 	if(notifier)
 	{
@@ -2197,7 +2224,6 @@ int main(int argc, char *argv[])
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
 	
 	GModule *app_mod = NULL;
-	gpointer func_pointer = NULL;
 
 	gboolean first_run = FALSE;
 	gint8 selected_key = 0;
@@ -2367,10 +2393,8 @@ int main(int argc, char *argv[])
 					app_mod = g_module_open(NULL, G_MODULE_BIND_LAZY);
 					if(app_mod)
 					{
-						if(g_module_symbol(app_mod, "gtk_show_uri", &func_pointer))
+						if(g_module_symbol(app_mod, "gtk_show_uri", (gpointer*) &fp_show_uri))
 						{
-							fp_show_uri = (ShowURIFunc) func_pointer;
-
 							gtk_about_dialog_set_email_hook(about_email_hook, fp_show_uri, NULL);
 							gtk_about_dialog_set_url_hook(about_url_hook, fp_show_uri, NULL);
 						}
@@ -2381,6 +2405,8 @@ int main(int argc, char *argv[])
 					}
 					else
 						g_warning("Cannot open module!\n");
+					
+					mod_suggest = suggestions_init();
 
 					// set via GUI.ui
 					//gtk_window_set_startup_id(GTK_WINDOW(window), APP_ID);

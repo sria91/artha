@@ -1414,24 +1414,26 @@ static void populate(gchar *lemma, guint8 pos, WNIRequestFlags flag, gchar *actu
 
 
 /*
-	Exposed function to which external quries reach for populating the requested info in response_list
+	Exposed function to which external queries reach for populating the requested info in response_list.
+	If the response_list is NULL, it only checks for the availablity of search_str in WordNet and doesn't populate anything.
+	Returns TRUE if the search string is present in WordNet.
 */
 
-void wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode)
+gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode)
 {
 	guint definitions_set = 0, i = 0;
 	gchar *morphword = NULL;
 	gboolean morphword_in_file = TRUE;			// This bit denotes if the lemma is in exceptions file, then no need to do prediction tech. and vice-versa
 
 	if(NULL == search_str)
-		return;
+		return FALSE;
 
 	// if WordNet's database files are not opened, open it
 	if(OpenDB != 1) wninit();
 
 	if(1 == OpenDB)
 	{
-		if(*response_list)			// if the list passed isn't empty, free it
+		if(response_list && *response_list)			// if the list passed isn't empty, free it
 			wni_free(response_list);
 
 		search_str = g_strdup(search_str);
@@ -1443,29 +1445,38 @@ void wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags
 		{
 			for(i = 1; i <= NUMPARTS; i++)
 			{
-				if((definitions_set = is_defined(search_str, i)) != 0)	// search for the unmorphed occurance of the search string
+
+				// search for the unmorphed occurance of the search string
+				if(((definitions_set = is_defined(search_str, i)) != 0) && response_list)
 					populate(search_str, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
 
-				if (morphword_in_file && (morphword = morphstr(search_str, i - 1)) != NULL)	// i -1 is because of the issue Wordnet has in Ubuntu which it doesn't have in Windows
-				{									// Searching for 'automata' returns NULL in Ubuntu and "automaton" in Windows.
+
+				// i -1 is because of the issue Wordnet has in Ubuntu which it doesn't have in Windows
+				// Searching for 'automata' returns NULL in Ubuntu and "automaton" in Windows
+				if(morphword_in_file && (morphword = morphstr(search_str, i - 1)) != NULL)
+				{
 					do
 					{
 						//G_PRINTF("i - 1: %d, %s\n", i, morphword);
 
-						if ((definitions_set = is_defined(morphword, i)) != 0)
+						if(((definitions_set = is_defined(morphword, i)) != 0) && response_list)
 							populate(morphword, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
 					} while((morphword = morphstr(NULL, i - 1)) != NULL );
 				}
-				else if((morphword = morphstr(search_str, i)) != NULL)			// This is the actual search mech. which should work fine
+				// This is the actual search mech. which should work fine
+				// In the first go if it's not present in the excp. file, then its not there at all
+				else if((morphword = morphstr(search_str, i)) != NULL)
 				{
-					morphword_in_file = FALSE;					// In the first go if it's not present in the excp. file, then its not there at all
+					morphword_in_file = FALSE;
 					do
 					{
 						//G_PRINTF("i: %d, %s\n", i, morphword);
-						if ((definitions_set = is_defined(morphword, i)) != 0)
+						if(((definitions_set = is_defined(morphword, i)) != 0) && response_list)
 							populate(morphword, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
 					} while((morphword = morphstr(NULL, i)) != NULL );
 				}
+				
+				if(NULL == response_list && definitions_set) break;
 			}
 		}
 
@@ -1478,6 +1489,8 @@ void wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags
 			*response_list = global_list;
 		global_list = NULL;
 	}
+	
+	return (definitions_set != 0);
 }
 
 

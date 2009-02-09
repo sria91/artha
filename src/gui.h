@@ -27,6 +27,8 @@
 #include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
 
+#include "addons.h"
+
 #ifdef HAVE_CONFIG_H
 
 #include <config.h>
@@ -52,7 +54,7 @@
 #include <dbus/dbus-glib.h>
 #endif
 
-
+#define NEW_LINE	"\r\n"
 #define ICON_FILE	"/artha.png"
 #define UI_FILE		"/gui.ui"
 
@@ -122,6 +124,10 @@ gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOr
 #define TAG_COUNTER	"tag_counter"
 #define TAG_EXAMPLE	"tag_example"
 #define TAG_HIGHLIGHT	"tag_highlight"
+#define TAG_SUGGEST	"tag_suggest"
+#define TAG_SUGGESTION	"tag_suggestion"
+
+#define STR_SUGGEST_MATCHES		"Near matches found:"
 
 #define DIRECT_ANTONYM_HEADER		"Direct Antonyms"
 #define	INDIRECT_ANTONYM_HEADER		"Indirect Antonyms"
@@ -131,7 +137,7 @@ gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOr
 Bool 		x_error = False;
 GSList 		*results = NULL;
 gchar 		*last_search = NULL;
-gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE;
+gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, mod_suggest = FALSE;
 gint8		hotkey_index;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 gint		history_count = 0;
