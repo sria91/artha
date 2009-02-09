@@ -1,3 +1,15 @@
+0.8.0 (Feb 10, 2009):
+	Since libenchant is a good wrapper over a lot of dictionaries, it is chosen for suggestions. 
+	When Artha loads, it will look for libenchant.so.1 and see if it can get the handles to its 
+	functions. If found, Artha can show suggestions on a misspelled word search. libnotify should 
+	also be made as a plugin, so that a direct dependency can be cut, but that is something for 
+	the next release, along with the regex based searches. Since mappings between relatives and 
+	senses are difficult to find, highlighting is done now, when a relative is selected. In all 
+	the previous versions, when in detailed mode, each 'Indirect Antonym' was shown under its 
+	parent 'Similar' word (word similar to the searched term) due to which it is conceived as an 
+	antonym. Now those similar words are put up in a new column so as to avoid confusion. Lot of 
+	small bugs and petite memory leaks fixed, apart from these major ones.
+
 0.7.2 (Jan 31, 2009):
 	After trying 0.7.1 on Kubuntu, lots of insights were gained. Even though libnotify is present 
 	with dbus, notifications are not shown, since notification-daemon is missing. Hence a check 
