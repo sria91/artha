@@ -83,7 +83,7 @@
 #define LABEL_TEXT_ATTRIBUTE_OF		"Attribute of"
 
 #define MAX_CONCAT_STR		500
-#define MAX_STATUS_MSG		75
+#define MAX_STATUS_MSG		100
 
 #define TREE_SYNONYMS		0
 #define TREE_ANTONYMS		1
@@ -124,10 +124,10 @@ gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOr
 #define TAG_COUNTER	"tag_counter"
 #define TAG_EXAMPLE	"tag_example"
 #define TAG_HIGHLIGHT	"tag_highlight"
-#define TAG_SUGGEST	"tag_suggest"
+#define TAG_MATCH	"tag_match"
 #define TAG_SUGGESTION	"tag_suggestion"
 
-#define STR_SUGGEST_MATCHES		"Near matches found:"
+#define STR_SUGGEST_MATCHES		"Matches found:"
 
 #define DIRECT_ANTONYM_HEADER		"Direct Antonyms"
 #define	INDIRECT_ANTONYM_HEADER		"Indirect Antonyms"
@@ -141,6 +141,8 @@ gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mod
 gint8		hotkey_index;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 gint		history_count = 0;
+guint		msg_context_id = 0;
+GString		*wordnet_terms = NULL;
 
 #ifdef NOTIFY
 gboolean 		notifier_enabled = FALSE;
@@ -160,17 +162,21 @@ GtkToolItem		*toolbar_notify = NULL;
 
 #define ABOUT_HOTKEY_SET	"The hot key set to summon Artha is Ctrl + Alt + "
 
-#define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, click the Close Window (X) button on the title bar or the system try icon or press Esc"
+#define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, press Esc or click the Close Window (X) button or the system tray icon"
 #define ABOUT_TOOLITEM_TOOLTIP	"About Artha -> Copyright, Credits, Licence, etc."
 #define PREV_TOOLITEM_TOOLTIP	"Go to the previous search term"
 #define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
 #define MODE_TOOLITEM_TOOLTIP	"Toggle between simple/advanced modes"
 
-#define STR_STATUS_QUERY_SUCCESS "Search complete. Results returned: %d sense(s) in %d POS(s)!"
+#define STR_STATUS_QUERY_SUCCESS "Results returned: %d sense(s) in %d POS(s)!"
 #define MSG_WN_ERROR		"Failed to open WordNet database files!\n\
 Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere, set the environment variable WNHOME to point to it."
 #define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
 #define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
+#define STR_REGEX_DETECTED	"Regular expression pattern detected"
+#define STR_REGEX_FAILED	"No matches found! Please check your expression and try again."
+#define STR_LOOKUP_HINT		"For compound words hold ctrl & drag-sel. whole term to look it up."
+#define STR_STATUS_REGEX	"%d match(es) found! %s"
 
 #ifdef NOTIFY
 #define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When in the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"

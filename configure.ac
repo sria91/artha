@@ -27,12 +27,12 @@ AC_SUBST([WORDNET_LIB])
 
 
 # gtk_builder_add_from_file() since 2.12 only, hence check for GTK+-2.0 >= 2.12
-# g_slice_alloc() since 2.10 only, hence check for GLib-2.0 >= 2.10
+# g_regex_new() since 2.14 only, hence check for GLib-2.0 >= 2.14
 # check for GTK+ and GLib
-PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.12 glib-2.0 >= 2.10], , [
+PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.12 glib-2.0 >= 2.14], , [
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([
-You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.10 
+You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.14 
 or above) development headers installed to build.
 
 If you have these installed already you may need to install pkg-config so 

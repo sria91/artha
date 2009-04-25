@@ -40,7 +40,7 @@ static void quit_activate(GObject *obj, gpointer user_data);
 static guint8 get_frequency(guint sense_count);
 static void relatives_clear_all(GtkBuilder *gui_builder);
 static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder);
-static guint8 append_term(gchar *target, gchar *term, gboolean is_heading);
+static guint16 append_term(gchar *target, gchar *term, gboolean is_heading);
 static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *parent_iter);
 static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
 static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
@@ -73,7 +73,10 @@ static void save_preferences();
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder);
-
+static gchar* wildmat_to_regex(gchar *wildmat);
+static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder);
+static gboolean is_wildmat_expr();
+static gboolean wordnet_terms_load();
 
 
 static int x_error_handler(Display *dpy, XErrorEvent *xevent)
@@ -455,9 +458,9 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 	gtk_tree_view_set_headers_visible(tree_antonyms, has_indirect);
 }
 
-static guint8 append_term(gchar *target, gchar *term, gboolean is_heading)
+static guint16 append_term(gchar *target, gchar *term, gboolean is_heading)
 {
-	guint8 i = 0;
+	guint16 i = 0;
 
 	while(term[i] != '\0')
 	{
@@ -468,7 +471,7 @@ static guint8 append_term(gchar *target, gchar *term, gboolean is_heading)
 	++target;
 	*target = ' ';
 
-	return i + 2;
+	return (i + 2);
 }
 
 static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *parent_iter)
@@ -477,7 +480,7 @@ static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *paren
 	GSList *temp_list = NULL;
 	WNIImplication *imp = NULL;
 	GtkTreeIter tree_iter = {0};
-	guint8 i = 0;
+	guint32 i = 0;
 	//guint8 type_no = 0;
 	gchar terms[MAX_CONCAT_STR] = "";
 
@@ -530,7 +533,7 @@ static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFl
 	WNIImplication *imp = NULL;
 	GSList *temp_list = NULL;
 	gchar terms[MAX_CONCAT_STR] = "";
-	guint8 i = 0;
+	guint16 i = 0;
 	//guint8 type_no = 0;
 	
 	if(!advanced_mode && WORDNET_INTERFACE_HYPERNYMS == id) return;
@@ -836,10 +839,133 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 	// instead of invalidate rect redraw, we just toggle visibility
 	gtk_widget_show(expander);
 
-	// not required in all systems. At home (with compiz) it works perfectly fine without this code
+	// This is not required in all systems. With compiz, it works perfectly fine without this code.
 	// redraw the window after visibility changes
 	//if(GTK_WIDGET(gtk_builder_get_object(gui_builder, EXPANDER))->window != NULL)		// if its NULL, it means window is invisible, needn't redraw
 		//gdk_window_invalidate_rect(GTK_WIDGET(gtk_builder_get_object(gui_builder, EXPANDER))->window, NULL, TRUE);
+}
+
+static gchar* wildmat_to_regex(gchar *wildmat)
+{
+	guint16 i = 0;
+	gchar ch = 0;
+	GString *regex = g_string_new("^");
+
+	// Conversion Rules are simple at this point.
+	// 1. To get the proper term from start to end, make sure the beginning and end of the regex is ^ and $ respectively
+	// 2. E.g. in 'a*b', * is applied to a in regex, while in wildmat, 'a' & 'b' is sure included and * is anything b/w them
+	// so in regex make it as 'a.*b', which will make * applied to . (dot means any char. except newline in regex)
+	// 3. A dot/period in regex acts as a Joker (?) in wildmat, so make a direct conv.
+	// 4. Other chars go in as such, its the same in both for stuff like [r|m|s]{m,n} or [a-m]+, etc.
+
+	while((ch = wildmat[i++]) != '\0')
+	{
+		if(ch == '*')
+			regex = g_string_append(regex, ".*");
+		else if(ch == '?')
+			regex = g_string_append_c(regex, '.');
+		else
+			regex = g_string_append_c(regex, ch);
+		
+	}
+	
+	regex = g_string_append_c(regex, '$');
+	regex = g_string_append_c(regex, '\0');
+
+	return g_string_free(regex, FALSE);
+}
+
+static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
+{
+	gchar *regex_pattern = NULL, *lemma = NULL;
+	GRegex *regex = NULL;
+	GMatchInfo *match_info = NULL;
+	guint16 count = 0;
+	GtkTextView *text_view = NULL;
+	GtkTextBuffer *text_buffer = NULL;
+	GtkTextIter cur = {0};
+	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
+	gchar status_msg[MAX_STATUS_MSG] = "";
+
+
+	// convert the wilmat expr. to PERL regex
+	regex_pattern = wildmat_to_regex(wildmat_exp);
+
+	if(regex_pattern)
+	{
+		text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
+		text_buffer = gtk_text_view_get_buffer(text_view);
+
+		// compile a GRegex
+		regex = g_regex_new(regex_pattern, G_REGEX_MULTILINE|G_REGEX_CASELESS|G_REGEX_UNGREEDY|G_REGEX_OPTIMIZE, G_REGEX_MATCH_NOTEMPTY, NULL);
+
+		if(regex)
+		{
+			// set heading that Regex mode is now in action
+			gtk_text_buffer_set_text(text_buffer, "", -1);
+			gtk_text_buffer_get_start_iter(text_buffer, &cur);
+			gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_DETECTED, -1, TAG_LEMMA, NULL);
+			gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
+
+			// do the actual regex matching and get the count
+			g_regex_match(regex, wordnet_terms->str, G_REGEX_MATCH_NOTEMPTY, &match_info);
+			count = g_match_info_get_match_count(match_info);
+
+			// make a header for the suggestions to follow
+			if(count < 1)
+			{
+				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_FAILED, -1, TAG_POS, NULL);
+			}
+			else
+			{
+				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_MATCH, NULL);
+				//gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
+				//gtk_text_buffer_insert_with_tags(text_buffer, &cur, "", -1, , NULL);
+			}
+
+			// initialize count to 0 for the actual count to be displayed in the status bar
+			count = 0;
+
+			// insert the matches one by one
+			while(g_match_info_matches(match_info))
+			{
+
+				lemma = g_match_info_fetch(match_info, 0);
+				gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
+				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, lemma, -1, TAG_SUGGESTION, NULL);
+				g_free (lemma);
+				g_match_info_next (match_info, NULL);
+				count++;
+			}
+
+			// free all the initialised data
+			g_match_info_free (match_info);
+			g_regex_unref(regex);
+
+			// set the status bar accordingly with the count
+			gtk_statusbar_pop(status_bar, msg_context_id);
+			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX, count, count > 0?STR_LOOKUP_HINT:"");
+			msg_context_id = gtk_statusbar_get_context_id(status_bar, "regex_mode_set");
+			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+		}
+
+		g_free(regex_pattern);
+	}
+}
+
+static gboolean is_wildmat_expr(gchar *expr)
+{
+	guint16 i = 0;
+	gchar ch = 0;
+
+	// if the passed expr. has any of the char below deem it as a wildmat expr.
+	while((ch = expr[i++]) != '\0')
+	{
+		if(ch == '*' || ch == '?' || ch == '[' || ch == '|' || ch == ']' || ch =='{' || ch == '}' || ch == '+')
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 static void button_search_click(GtkButton *button, gpointer user_data)
@@ -871,12 +997,26 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 #endif
 
 	gboolean results_set = FALSE;
+	gchar *regex_text = NULL;
+
 
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
-	static guint msg_context_id = 0;
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	guint16 total_results = 0;
 
+	// Check if the fed string is a wildmat expr.
+	// If true, call the regex mod. to set the results and return
+	regex_text = g_strstrip(gtk_combo_box_get_active_text(combo_query));
+	if((results_set = is_wildmat_expr(regex_text)))
+		set_regex_results(regex_text, gui_builder);
+
+	g_free(regex_text);
+
+	// If it was a regex and its results are now furbished, so return
+	if(results_set) return;
+
+
+	// From here on normal search and suggestions start
 	text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 	buffer = gtk_text_view_get_buffer(text_view);
 
@@ -916,7 +1056,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			if(results)
 			{
 				total_results = 0;
-				msg_context_id = 0;
 
 				G_MESSAGE("Results successful!\n");
 
@@ -1103,14 +1242,14 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 						total_results = 0;
 					
 						gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
-						gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_SUGGEST, NULL);
-					
+						gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_MATCH, NULL);
+
 						while(suggestions[total_results])
 						{
 							gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 							gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, suggestions[total_results++], -1, TAG_SUGGESTION, NULL);
 						}
-					
+
 						g_strfreev(suggestions);
 					}
 				}
@@ -1959,8 +2098,9 @@ static void create_text_view_tags(GtkBuilder *gui_builder)
 	gtk_text_buffer_create_tag(buffer, TAG_LEMMA, "weight", PANGO_WEIGHT_BOLD, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_POS, "foreground", "red", "style", PANGO_STYLE_ITALIC, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_COUNTER, "left_margin", 15, "weight", PANGO_WEIGHT_BOLD, "foreground", "gray", NULL);
-	gtk_text_buffer_create_tag(buffer, TAG_EXAMPLE, "foreground", "blue", "font", "FreeSerif Italic 11", "left_margin", 45, NULL);
-	gtk_text_buffer_create_tag(buffer, TAG_SUGGEST, "foreground", "DarkGreen", "weight", PANGO_WEIGHT_SEMIBOLD, NULL);
+	gtk_text_buffer_create_tag(buffer, TAG_EXAMPLE, "foreground", "blue", "font", "Serif Italic 10", "left_margin", 45, NULL);
+//	gtk_text_buffer_create_tag(buffer, TAG_EXAMPLE, "foreground", "blue", "font", "FreeSerif Italic 11", "left_margin", 45, NULL);
+	gtk_text_buffer_create_tag(buffer, TAG_MATCH, "foreground", "DarkGreen", "weight", PANGO_WEIGHT_SEMIBOLD, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_SUGGESTION, "foreground", "blue" , "left_margin", 25, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_HIGHLIGHT, "background", "black", "foreground", "white", NULL);
 	
@@ -2176,6 +2316,12 @@ static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpoi
 
 static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder)
 {
+	if(wordnet_terms)
+	{
+	        g_string_free(wordnet_terms, TRUE);
+	        wordnet_terms = NULL;
+	}
+
 	if(last_search)
 		g_free(last_search);
 
@@ -2217,6 +2363,73 @@ static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder)
 #endif
 }
 
+static gboolean wordnet_terms_load()
+{
+	gchar *index_file_path = NULL;
+	gchar *contents = NULL;
+	GString *word, *prev_word = NULL;
+	gchar ch = 0;
+	guint32 i = 0;
+	guint32 count = 0;
+	gboolean ret_val = FALSE;
+
+	if(SetSearchdir())
+	{
+		index_file_path = g_strconcat(SetSearchdir(), G_DIR_SEPARATOR_S, "index.sense", NULL);
+		
+		if(g_file_get_contents(index_file_path, &contents, NULL, NULL))
+		{
+			word = g_string_new("");
+			prev_word = g_string_new("");
+			wordnet_terms = g_string_new("");
+
+			do
+			{
+				ch = contents[i++];
+				
+				if(ch == '_') ch = ' ';
+
+				if(ch == '%')
+				{
+					for(; contents[i] != '\n'; i++);
+					
+					ch = contents[i++];
+					word = g_string_append_c(word, ch);
+					
+					if(!g_string_equal(prev_word, word))
+					{
+						wordnet_terms = g_string_append(wordnet_terms, word->str);
+						g_string_erase(prev_word, 0, prev_word->len);
+						g_string_append(prev_word, word->str);
+						
+						count++;
+					}
+					word = g_string_erase(word, 0, word->len);
+				}
+				else
+				{
+					word = g_string_append_c(word, ch);
+				}
+
+			} while(ch != '\0');
+
+			wordnet_terms = g_string_overwrite(wordnet_terms, wordnet_terms->len - 1, &ch);
+			
+			G_DEBUG("Total Dict. Terms Loaded: %d\n", ++count);
+
+			g_free(contents);
+			g_string_free(word, TRUE);
+			g_string_free(prev_word, TRUE);
+			
+			ret_val = TRUE;
+		}
+		
+		g_free(index_file_path);
+	}
+	
+	return ret_val;
+}
+
 int main(int argc, char *argv[])
 {
 	Display *dpy = NULL;
@@ -2239,7 +2452,6 @@ int main(int argc, char *argv[])
 	gint8 selected_key = 0;
 
 	GtkWidget *msg_dialog = NULL;
-
 
 	if(!g_thread_supported())
 	{
@@ -2274,6 +2486,8 @@ int main(int argc, char *argv[])
 						msg_dialog = NULL;
 					}
 				}
+				
+				wordnet_terms_load();
 
 				window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 				if(window)

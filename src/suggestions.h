@@ -126,6 +126,8 @@ typedef void	(*EnchantDictDescribeFn)		(const char * const lang_tag, const char 
 							 const char * const provider_desc, const char * const provider_file,
 							 void * user_data);
 
+G_BEGIN_DECLS
+
 
 EnchantBroker*	(*enchant_broker_init)			(void) = NULL;
 void		(*enchant_broker_free)			(EnchantBroker * broker) = NULL;
@@ -147,6 +149,8 @@ void		(*enchant_dict_free_string_list)	(EnchantDict * dict, char **string_list) 
 char*		(*enchant_dict_get_error)		(EnchantDict * dict) = NULL;
 char*		(*enchant_broker_get_error)		(EnchantBroker * broker) = NULL;
 
+
+G_END_DECLS
 
 // Global variables
 

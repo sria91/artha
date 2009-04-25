@@ -35,6 +35,7 @@
 #define INDIRECT_ANT	2	/* indrect antonyms (similar) */
 #define PERTAINYM	3	/* no antonyms or similars (pertainyms) */
 
+#define MAX_BUFFER 	256
 
 #define SYNONYM_MAPPING		1
 #define ANTONYM_MAPPING		2

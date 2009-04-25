@@ -656,7 +656,7 @@ static gchar *getexample(gchar *offset, gchar *wd)
 
 static GSList *findexample(SynsetPtr synptr)
 {
-	gchar tbuf[256]="", *temp = NULL, *returned_example = NULL, **splits = NULL;
+	gchar tbuf[MAX_BUFFER]="", *temp = NULL, *returned_example = NULL, **splits = NULL;
 	guint16 wdnum = 0, i = 0;
 	GSList *examples = NULL;
 
@@ -664,7 +664,7 @@ static GSList *findexample(SynsetPtr synptr)
 	{
 		wdnum = synptr->whichword - 1;
 
-		sprintf(tbuf,"%s%%%-1.1d:%-2.2d:%-2.2d::",
+		g_snprintf(tbuf, MAX_BUFFER, "%s%%%-1.1d:%-2.2d:%-2.2d::",
 			synptr->words[wdnum],
 			getpos(synptr->pos),
 			synptr->fnum,
