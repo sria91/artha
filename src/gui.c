@@ -919,8 +919,6 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 			else
 			{
 				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_MATCH, NULL);
-				//gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
-				//gtk_text_buffer_insert_with_tags(text_buffer, &cur, "", -1, , NULL);
 			}
 
 			// initialize count to 0 for the actual count to be displayed in the status bar
@@ -961,7 +959,7 @@ static gboolean is_wildmat_expr(gchar *expr)
 	// if the passed expr. has any of the char below deem it as a wildmat expr.
 	while((ch = expr[i++]) != '\0')
 	{
-		if(ch == '*' || ch == '?' || ch == '[' || ch == '|' || ch == ']' || ch =='{' || ch == '}' || ch == '+')
+		if(ch == '*' || ch == '?' || ch == '[' || ch == ']' || ch =='{' || ch == '}' || ch == '+')
 			return TRUE;
 	}
 
@@ -1318,18 +1316,102 @@ static gboolean text_view_button_pressed(GtkWidget *widget, GdkEventButton *even
 {
 	if(GDK_2BUTTON_PRESS == event->type)
 		was_double_click = TRUE;
+
 	return FALSE;
 }
 
 static gboolean text_view_button_released(GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
-	// call query if it was a double click or a CTRL + selection
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkTextView *defn_text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
+	GtkTextBuffer *defn_text_buffer = gtk_text_view_get_buffer(defn_text_view);
+	GtkTextMark *insert_mark = NULL, *selection_mark = NULL;
+	GtkTextIter ins_iter = {0}, sel_iter = {0};
+	gchar *trial_text = NULL;
+	guint8 i = 0;
+	gboolean iter_move_success = FALSE;
+
+	// set the selection if it was a double click or a CTRL + mouse release
 	if(was_double_click || (GDK_CONTROL_MASK & event->state))
 	{
-		/* And request the "TARGETS" target for the primary selection */
+		// if it was a double click, try selecting diff. combinations
+		// for the sake of compound lemmas like 'work out', 'in a nutshell', etc.
+		if(was_double_click)
+		{
+			was_double_click = FALSE;
+
+			if(gtk_text_buffer_get_has_selection(defn_text_buffer))
+			{
+				// get the 'selection_bound' and 'insert' markers
+				selection_mark = gtk_text_buffer_get_selection_bound(defn_text_buffer);
+				insert_mark = gtk_text_buffer_get_mark(defn_text_buffer, "insert");
+
+				for(i = 0; ((i < 6) && (!iter_move_success)); i++)
+				{
+					// on every iteration of the loop, set the iters to the actual sel. marks
+					gtk_text_buffer_get_iter_at_mark(defn_text_buffer, &ins_iter, insert_mark);
+					gtk_text_buffer_get_iter_at_mark(defn_text_buffer, &sel_iter, selection_mark);
+
+					switch(i)
+					{
+						case 0:
+							// try selecting two words after the actual sel.
+							if(!gtk_text_iter_forward_visible_word_ends(&sel_iter, 2))
+								gtk_text_iter_forward_to_end(&sel_iter);
+							iter_move_success = TRUE;
+							break;
+						case 1:
+							// try selecting two words before the actual sel.
+							if(gtk_text_iter_backward_visible_word_starts(&ins_iter, 2))
+								iter_move_success = TRUE;
+							break;
+						case 2:
+							// try selecting one word before and after the actual sel.
+							if((gtk_text_iter_forward_visible_word_end(&sel_iter)) && (gtk_text_iter_backward_visible_word_start(&ins_iter)))
+								iter_move_success = TRUE;
+							break;
+						case 3:
+							// try selecting one word next to the actual sel.
+							if(!gtk_text_iter_forward_visible_word_end(&sel_iter))
+								gtk_text_iter_forward_to_end(&sel_iter);
+							iter_move_success = TRUE;
+							break;
+						case 4:
+							// try selecting one word before the actual sel.
+							if(gtk_text_iter_backward_visible_word_start(&ins_iter))
+								iter_move_success = TRUE;
+							break;
+						case 5:
+							// fallback to just the actual selection
+							iter_move_success = TRUE;
+							break;
+					}
+
+					if(iter_move_success)
+					{
+						// obtain the text for the set iters
+						trial_text = gtk_text_buffer_get_text(defn_text_buffer, &ins_iter, &sel_iter, FALSE);
+						
+						// search the trial selection in WordNet, on a successful look up iter_move_success is set
+						iter_move_success = wni_request_nyms(trial_text, NULL, 0, FALSE);
+
+						// free the obtained text
+						g_free(trial_text);
+						trial_text = NULL;
+					}
+				}
+
+
+				// set the 'insert' and 'selection_bound' markers respectivly to the newly placed iters
+				gtk_text_buffer_move_mark(defn_text_buffer, insert_mark, &ins_iter);
+				gtk_text_buffer_move_mark(defn_text_buffer, selection_mark, &sel_iter);
+			}
+		}
+
+		// request the "TARGETS" target for the primary selection
 		gtk_selection_convert(widget, GDK_SELECTION_PRIMARY, GDK_TARGET_STRING, event->time);
-		was_double_click = FALSE;
 	}
+
 	return FALSE;
 }
 
