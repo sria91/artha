@@ -8,13 +8,14 @@ Overview
 Artha is a cross-platform open-source thesaurus with WordNet as its database.
 
 The main focus of Artha is high usuability, with much simplicity. It has 
-distinct features like hot key combo, notifications, etc. Once the application 
-is launched, it sits in the system tray. The user can select text on any 
-window, and call Artha by pressing the set hot key combination, which pops up 
-Artha with the word looked-up. If the user wants notifications, rather than 
-the app. popping up, it can be done by enabling notifications, which results 
-in a (balloon tip) notification of the selected word's prime definition from 
-WordNet, from the system tray, when the hot hey is pressed.
+distinct features like hot key combo lookup, notifications, regex search, 
+spelling suggestions, etc. Once the application is launched, it sits on the 
+system tray. The user can select text on any window, and call Artha by 
+pressing the set hot key combination, which pops up Artha with the word 
+looked-up. If the user wants notifications, rather than the app. popping up, 
+it can be done by enabling notifications, which results in a (balloon tip) 
+notification of the selected word's prime definition from WordNet, from the 
+system tray, when the hot hey is pressed.
 
 Technically, Artha is written in pure C using the GTK+ widget kit & Glib, 
 making it cross-desktop and cross-platform. It uses libnotify for 
@@ -26,7 +27,7 @@ commence soon.
 
 Installation
 ------------
-Artha requires the development headers of GTK+-2.12.x, GLib-2.10 and 
+Artha requires the development headers of GTK+-2.12.x, GLib-2.14 and 
 WordNet-3.x (minimum required version numbers are specified).
 
 Simple install procedure:

@@ -41,7 +41,7 @@ In order to build artha, as described above, you will need the following
 within braces):
 
 - wordnet  >= 3.0	(wordnet-dev)
-- glib     >= 2.10	(libglib2.0-dev)
+- glib     >= 2.14	(libglib2.0-dev)
 - gtk+     >= 2.12	(libgtk2.0-dev)
 
 

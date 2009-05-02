@@ -893,30 +893,29 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 
 	if(regex_pattern)
 	{
+		// clear previously set relatives
+		relatives_clear_all(gui_builder);
+
 		text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 		text_buffer = gtk_text_view_get_buffer(text_view);
 
 		// compile a GRegex
 		regex = g_regex_new(regex_pattern, G_REGEX_MULTILINE|G_REGEX_CASELESS|G_REGEX_UNGREEDY|G_REGEX_OPTIMIZE, G_REGEX_MATCH_NOTEMPTY, NULL);
 
+		// set heading that Regex mode is now in action
+		gtk_text_buffer_set_text(text_buffer, "", -1);
+		gtk_text_buffer_get_start_iter(text_buffer, &cur);
+		gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_DETECTED, -1, TAG_LEMMA, NULL);
+		gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
+
 		if(regex)
 		{
-			// set heading that Regex mode is now in action
-			gtk_text_buffer_set_text(text_buffer, "", -1);
-			gtk_text_buffer_get_start_iter(text_buffer, &cur);
-			gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_DETECTED, -1, TAG_LEMMA, NULL);
-			gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
-
 			// do the actual regex matching and get the count
 			g_regex_match(regex, wordnet_terms->str, G_REGEX_MATCH_NOTEMPTY, &match_info);
 			count = g_match_info_get_match_count(match_info);
 
 			// make a header for the suggestions to follow
-			if(count < 1)
-			{
-				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_FAILED, -1, TAG_POS, NULL);
-			}
-			else
+			if(count > 0)
 			{
 				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_MATCH, NULL);
 			}
@@ -945,6 +944,13 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX, count, count > 0?STR_LOOKUP_HINT:"");
 			msg_context_id = gtk_statusbar_get_context_id(status_bar, "regex_mode_set");
 			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+		}
+
+		// if regex was invlaid (it would be NULL)
+		// or if the expr. fetched no results, set regex failed message
+		if(NULL == regex || 0 == count)
+		{
+			gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_FAILED, -1, TAG_POS, NULL);
 		}
 
 		g_free(regex_pattern);
@@ -2181,7 +2187,6 @@ static void create_text_view_tags(GtkBuilder *gui_builder)
 	gtk_text_buffer_create_tag(buffer, TAG_POS, "foreground", "red", "style", PANGO_STYLE_ITALIC, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_COUNTER, "left_margin", 15, "weight", PANGO_WEIGHT_BOLD, "foreground", "gray", NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_EXAMPLE, "foreground", "blue", "font", "Serif Italic 10", "left_margin", 45, NULL);
-//	gtk_text_buffer_create_tag(buffer, TAG_EXAMPLE, "foreground", "blue", "font", "FreeSerif Italic 11", "left_margin", 45, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_MATCH, "foreground", "DarkGreen", "weight", PANGO_WEIGHT_SEMIBOLD, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_SUGGESTION, "foreground", "blue" , "left_margin", 25, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_HIGHLIGHT, "background", "black", "foreground", "white", NULL);

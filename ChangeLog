@@ -1,3 +1,11 @@
+version 0.9.0 (Apr 26, 2009):
+	* Regex based search feature is now implimented. Accepted pattern will be 
+	  based on Wildmat syntax I.e. * (wildcard), ? (joker), [a|c-k] {2, } 
+	  (ranges), + can be used primarily.
+	* Double clicking on the definition textview, will now check for compound 
+	  words surrounding the actual selection, and if a valid match is found, 
+	  will jump to that for a look up rather than on the actual selection.
+
 version 0.8.0 (Feb 09, 2009):
 	* Artha will now give suggestions when a misspelled word is searched for. 
 	  Suggestions module added, which looks for libenchant at runtime.

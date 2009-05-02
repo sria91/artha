@@ -179,7 +179,7 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_STATUS_REGEX	"%d match(es) found! %s"
 
 #ifdef NOTIFY
-#define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When in the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
+#define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When on the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
 #define NOTIFY_QUERY_FAIL_TITLE	"Oops!"
 #define NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
 #endif
@@ -194,7 +194,7 @@ in any window and calling Artha will pop it up with the selected text's definiti
 
 #ifdef NOTIFY
 #define WELCOME_NOTIFY		"\n\nIf notifications are enabled, instead of popping up, Artha will \
-notify the first (prime) definition of the selection. Notifications can be enabled/disabled by \
+notify the first definition of the selection. Notifications can be enabled/disabled by \
 right-clicking on Artha's status icon on the system tray and selecting the required option."
 #endif
 

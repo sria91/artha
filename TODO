@@ -1,4 +1,19 @@
+Users Wish List:
+* Make the status icon's visiblity customizable as Always, Never and Auto.
+* Make hotkey customizable (hint: user GdkEventKey, which has the same
+  Mod1Mask, etc. as its a wrapper to X11)
+
+ToDo:
+
+* Search for 4 words and then search a invalid word. When it says "failed", 
+  press back and notice it goes to the the previous to previous word and not 
+  the previoud word.
+
 * Help docs and Prefernces windows are to be added.
+
+* Peculiar glitch: When font size is set to 9 in the formatting of example in 
+  defn. textview, and on searching "rambling" freezes. Just resize the window 
+  vertically a wee bit, just a pixel maybe and see the issue is gone.
 
 * When showing "Oops! Queried term not found!" as a notification, can show the 
   first few chars of what was queried for. E.g "'ied for' not found!"
@@ -47,18 +62,12 @@
 * Check tab order (gtk_container_set_focus_chain() can be used
   Source: http://www.kksou.com/php-gtk2/articles/change-tab-order---Example-4.php)
 
-* Double click on def. text should make a search again (GdkEvent). Also select 2 words 
-  before and after to see if its there in the dict as a lemma
-
 * Bring to foreground should be effective even when the window is visible, but in 
   background (I.e. when z-order not 0)
 
 * Clearing search history
 
 * Auto complete of the query combo using history or the whole dict. index?
-
-* Making hotkey customizable (hint: user GdkEventKey, which has the same Mod1Mask, 
-  etc. as its a wrapper to X11)
 
 * Should the sense number be displayed as a column in relative lists like ATTRIBUTES, etc.?
 

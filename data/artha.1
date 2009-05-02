@@ -1,7 +1,7 @@
 '\" t
 .\" $Id$
 .tr ~
-.TH Artha 1 "Jan 14, 2009" "Artha" "Artha \- The Open Thesaurus"
+.TH Artha 1 "Apr 27, 2009" "Artha" "Artha \- The Open Thesaurus"
 .SH NAME
 Artha \- An open cross-platform thesaurus based on WordNet
 .SH DESCRIPTION
@@ -12,7 +12,7 @@ the user selects some text in any window, and presses this set hot
 key combo, Artha looks up WordNet for the selected text and pops-up 
 with the results.
 .PP
-The hot key combo selection is done by Artha is in this Order:
+The hot key combo selection is done by Artha is in this order:
 .IP
 	* Ctrl + Alt + W
 .IP
@@ -62,6 +62,47 @@ has 'poor' and 'lean' alone as antonyms in simple mode. While in
 detailed mode, 'poor' further infers broke, skint, etc. which are 
 shown as children of 'poor'.
 .PP
+Regular expressions can be used to search for a term when you vaguely 
+know it and want to locate it in the thesaurus. Artha's regular 
+expression pattern closely follows Wildmat syntax by Rich Salz owing 
+to its simplicity.
+.IP
+* (wildcard) matches any number of (including 0) unknown characters
+.IP
+? (joker) matches one unknown character
+.IP
+[...] (range) matches one unknown character within the range specified
+.IP
+{m, n} (limits) upper & lower limits of the number of characters in 
+a range
+.IP
+[^...] (not in the range) matches one unknown character NOT within 
+the range specified
+.IP
+EXAMPLES:
+.IP
+Expr. 'cro*p' means the term you want to corner starts with 
+'cro' and end with 'p' while the number of characters in between 
+are unknown. It fetches crop, crop up, croup, crock up and crow step.
+.IP
+Exp. '*chester' means the word ends with a 'chester' while 
+the beginning and its number characters are unknown. It fetches 
+chester, manchester, rochester, winchester and toy manchester.
+.IP
+Expr. 'can????r' means the sought term starts with 'can' and 
+ends with 'r' while you are sure that there are 5 unknown characters 
+in between. It fetches canister and cannular.
+.IP
+Expr. 'andre*[x|y|z]' means the word starts with andre and ends 
+with either an x or y or z, and there could be any number of terms in 
+betweem these. It fetches andre malraux, andrei tarkovsky, andres 
+martinez, etc.
+.IP
+Expr. 'a[c|d|e]{2,}' means the word looked for starts with a 
+and then there are minimum 2 or more occurances of c, d or e. It 
+fetches acc, accede, ace, add, ade and aec.
+.IP
+.PP
 Should the user prefer system tray notifications (balloon tips), 
 rather than the application popping up with the definitions, it can 
 be done by enabling Notifications. This is done via the Notify 
@@ -76,6 +117,11 @@ Note: For the notifications feature to be present, Artha should
 have been compiled against that option. Also your system should 
 have the notification-daemon installed. If not, Artha will not 
 show the feature at all.
+.PP
+Suggestions is a feature that gives out possible near matches when 
+a misspelled word is searched for. To have this feature, your system 
+should have libenchant binaries installed and an English dict file 
+for the engine to refer (locale doesn't matter).
 .SH AVAILABILITY
 Artha has a World Wide Web site at
 \fBhttp://artha.sourceforge.net\fP. From this web site users can 

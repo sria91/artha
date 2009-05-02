@@ -1,3 +1,12 @@
+0.9.0 (Apr 26, 2009)
+	wildmat is a somewhat simplified form of regex which can be used by laymen and advanced users
+	alike. Artha now has regex based search for locating a term in the thesaurus. A conversion 
+	func. from the former to later pattern is done and GRegex is used to search the WordNet terms.
+	On startup, index.sense of WordNet is located and all terms are ripped and stored in the mem.
+	which will be used for the regex based searches. Apart from this, double click selecting a
+	term in the definition text view, now looks up for compund terms and if available, jumps to 
+	that instead of the actual term selected by double click.
+
 0.8.0 (Feb 10, 2009):
 	Since libenchant is a good wrapper over a lot of dictionaries, it is chosen for suggestions. 
 	When Artha loads, it will look for libenchant.so.1 and see if it can get the handles to its 

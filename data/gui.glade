@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Fri Jan 23 10:17:33 2009 -->
+<!--Generated with glade3 3.4.5 on Sun Apr 26 22:55:44 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="wndMain">
     <property name="title" translatable="yes">Artha ~ The Open Thesaurus</property>
@@ -103,7 +103,6 @@
                           <widget class="GtkTextView" id="txtDefinitions">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="tooltip_text">Looked-up word's definition results</property>
                             <property name="pixels_above_lines">4</property>
                             <property name="pixels_below_lines">4</property>
                             <property name="pixels_inside_wrap">2</property>
@@ -155,7 +154,6 @@
                               <widget class="GtkTreeView" id="treeSynonyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Synonyms</property>
                               </widget>
                             </child>
                           </widget>
@@ -181,10 +179,12 @@
                               <widget class="GtkTreeView" id="treeAntonyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Antonyms</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblAntonyms">
@@ -194,6 +194,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">1</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -207,10 +208,12 @@
                               <widget class="GtkTreeView" id="treeDerivatives">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Terms derived from the current search string</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblDerivatives">
@@ -220,10 +223,11 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">2</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
-			<child>
+                        <child>
                           <widget class="GtkScrolledWindow" id="scrollWndPertainyms">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
@@ -233,10 +237,12 @@
                               <widget class="GtkTreeView" id="treePertainyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Hypernyms (Relates to noun/verb)</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">3</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblPertainyms">
@@ -246,6 +252,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">3</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -259,10 +266,12 @@
                               <widget class="GtkTreeView" id="treeAttributes">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Attributes (is a value of/values)</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">4</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblAttributes">
@@ -272,6 +281,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">4</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -285,10 +295,12 @@
                               <widget class="GtkTreeView" id="treeSimilar">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Similar Terms</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">5</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblSimilar">
@@ -298,6 +310,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">5</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -311,10 +324,12 @@
                               <widget class="GtkTreeView" id="treeDomain">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Domain words/Domains used</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">6</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblDomain">
@@ -324,6 +339,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">6</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -337,10 +353,12 @@
                               <widget class="GtkTreeView" id="treeCauses">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">The search string causes to...</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">7</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblCauses">
@@ -350,6 +368,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">7</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -363,10 +382,12 @@
                               <widget class="GtkTreeView" id="treeEntails">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">The search string entails doing...</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">8</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblEntails">
@@ -376,6 +397,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">8</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -389,10 +411,12 @@
                               <widget class="GtkTreeView" id="treeHypernyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Hypernyms (Is a kind of...)</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">9</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblHypernyms">
@@ -402,6 +426,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">9</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -415,10 +440,12 @@
                               <widget class="GtkTreeView" id="treeHyponyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Hyponyms (Kinds)</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">10</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblHyponyms">
@@ -428,6 +455,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">10</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -441,10 +469,12 @@
                               <widget class="GtkTreeView" id="treeHolonyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Holonyms (Is a part of...)</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">11</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblHolonyms">
@@ -454,6 +484,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">11</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
@@ -467,10 +498,12 @@
                               <widget class="GtkTreeView" id="treeMeronyms">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="tooltip_text">Meronyms (Parts)</property>
                               </widget>
                             </child>
                           </widget>
+                          <packing>
+                            <property name="position">12</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkLabel" id="lblMeronyms">
@@ -480,6 +513,7 @@
                           </widget>
                           <packing>
                             <property name="type">tab</property>
+                            <property name="position">12</property>
                             <property name="tab_fill">False</property>
                           </packing>
                         </child>
