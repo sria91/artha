@@ -1,5 +1,5 @@
 version 0.9.0 (Apr 26, 2009):
-	* Regex based search feature is now implimented. Accepted pattern will be 
+	* Regex based search feature is now implemented. Accepted pattern will be 
 	  based on Wildmat syntax I.e. * (wildcard), ? (joker), [a|c-k] {2, } 
 	  (ranges), + can be used primarily.
 	* Double clicking on the definition textview, will now check for compound 

@@ -81,24 +81,24 @@ the range specified
 .IP
 EXAMPLES:
 .IP
-Expr. 'cro*p' means the term you want to corner starts with 
-'cro' and end with 'p' while the number of characters in between 
+Expr. `cro*p` means the term you want to corner starts with 
+`cro` and ends with `p` while the number of characters in between 
 are unknown. It fetches crop, crop up, croup, crock up and crow step.
 .IP
-Exp. '*chester' means the word ends with a 'chester' while 
+Expr. `*chester` means the searched word ends with a `chester` while 
 the beginning and its number characters are unknown. It fetches 
 chester, manchester, rochester, winchester and toy manchester.
 .IP
-Expr. 'can????r' means the sought term starts with 'can' and 
-ends with 'r' while you are sure that there are 5 unknown characters 
-in between. It fetches canister and cannular.
+Expr. `can????r` means the term sought starts with `can` and ends with 
+`r` while you are sure that there are 5 unknown characters in between. 
+It fetches canister and cannular.
 .IP
-Expr. 'andre*[x|y|z]' means the word starts with andre and ends 
-with either an x or y or z, and there could be any number of terms in 
-betweem these. It fetches andre malraux, andrei tarkovsky, andres 
+Expr. `andre*[x|y|z]` means the word searched for starts with andre and 
+ends with either an x or y or z, and there could be any number of terms 
+in betweem these. It fetches andre malraux, andrei tarkovsky, andres 
 martinez, etc.
 .IP
-Expr. 'a[c|d|e]{2,}' means the word looked for starts with a 
+Expr. `a[c|d|e]{2,}` means the word looked for starts with a 
 and then there are minimum 2 or more occurances of c, d or e. It 
 fetches acc, accede, ace, add, ade and aec.
 .IP
