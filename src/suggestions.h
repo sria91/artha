@@ -143,6 +143,7 @@ int		(*enchant_dict_check)			(EnchantDict * dict, const char *const word, ssize_
 char**		(*enchant_dict_suggest)			(EnchantDict * dict, const char *const word, ssize_t len, size_t * out_n_suggs) = NULL;
 void		(*enchant_dict_free_string_list)	(EnchantDict * dict, char **string_list) = NULL;
 
+// The function decl. is commented because it has the same prototype as dict_free_string_list
 // free suggestions is depricated, only if enchant_dict_free_string_list is not available, should it be used
 //void		(*enchant_dict_free_suggestions)	(EnchantDict * dict, char **suggestions) = NULL;
 

@@ -102,7 +102,7 @@ gboolean suggestions_init()
 		g_module_symbol(mod_enchant, FUNC_DICT_SUGGEST, (gpointer *) &enchant_dict_suggest);
 		g_module_symbol(mod_enchant, FUNC_DICT_FREE_STRINGS, (gpointer *) &enchant_dict_free_string_list);
 
-		// in older version of Enchant, enchant_dict_free_strings might be absent, they will have the
+		// in older version of Enchant, enchant_dict_free_string_list might be absent, they will have the
 		// now deprecated function enchant_dict_free_suggestions
 		if(NULL == enchant_dict_free_string_list)
 			g_module_symbol(mod_enchant, FUNC_DICT_FREE_SUGGESTS, (gpointer *) &enchant_dict_free_string_list);

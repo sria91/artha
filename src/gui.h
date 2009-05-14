@@ -55,8 +55,8 @@
 #endif
 
 #define NEW_LINE	"\r\n"
-#define ICON_FILE	"/artha.png"
-#define UI_FILE		"/gui.ui"
+#define ICON_FILE	"artha.png"
+#define UI_FILE		"gui.ui"
 
 #define ARTHA_RESPONSE_REPORT_BUG	1
 #define BUTTON_TEXT_BUG			"Report a _Bug"
@@ -172,11 +172,20 @@ GtkToolItem		*toolbar_notify = NULL;
 #define MSG_WN_ERROR		"Failed to open WordNet database files!\n\
 Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere, set the environment variable WNHOME to point to it."
 #define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
-#define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
 #define STR_REGEX_DETECTED	"Regular expression pattern detected"
 #define STR_REGEX_FAILED	"No matches found! Please check your expression and try again."
-#define STR_LOOKUP_HINT		"For compound words hold ctrl & drag-sel. whole term to look it up."
+#define STR_REGEX_FILE_MISSING	"File sense.index not found at %s\nPlease install it and restart Artha to do a regular expression based search."
+#define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
+#define STR_STATUS_LOOKUP_HINT	"For compound words hold ctrl & drag-sel. whole term to look it up."
 #define STR_STATUS_REGEX	"%d match(es) found! %s"
+#define STR_STATUS_SEARCHING	"Searching. Please wait..."
+#define STR_STATUS_REGEX_FILE_MISSING	"Error: index.sense not found!"
+
+#define STATUS_DESC_SEARCH_SUCCESS	"search_successful"
+#define STATUS_DESC_SEARCH_FAILURE	"search_failed"
+#define STATUS_DESC_REGEX_RESULTS	"regex_mode_results"
+#define STATUS_DESC_REGEX_SEARCHING	"regex_mode_searching"
+#define STATUS_DESC_REGEX_ERROR		"regex_mode_error"
 
 #ifdef NOTIFY
 #define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When on the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
@@ -223,13 +232,13 @@ the GNU General Public License as published by the Free Software Foundation, eit
 or (at your option) any later version.\n\nArtha is distributed in the hope that it will be useful, but WITHOUT \
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See \
 the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public \
-License along with Artha; if not, see <www.gnu.org/licenses>.\n\nWordNet 3.0 Disclaimer\nTHIS SOFTWARE AND \
+License along with Artha; if not, see http://www.gnu.org/licenses/.\n\nWordNet 3.0 Disclaimer\nTHIS SOFTWARE AND \
 DATABASE IS PROVIDED \"AS IS\" AND PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR \
 IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES \
 OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE, DATABASE OR \
 DOCUMENTATION WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS."
 
-gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>"};
+gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
 
 
 // Dynamically loaded gtk_show_uri function's prototype

@@ -53,6 +53,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_artha_OBJECTS = gui.$(OBJEXT) suggestions.$(OBJEXT)
 artha_OBJECTS = $(am_artha_OBJECTS)
+am__DEPENDENCIES_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -164,12 +165,11 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall @GTK_CFLAGS@ @libnotify_CFLAGS@
-AM_LDFLAGS = -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 $(WORDNET_LIB) -lnotify
 noinst_LIBRARIES = libwni.a
 libwni_a_SOURCES = wni.c wni.h
 artha_DEPENDENCIES = libwni.a
 artha_SOURCES = wni.h addons.h gui.c gui.h suggestions.c suggestions.h
-artha_LDADD = libwni.a
+artha_LDADD = libwni.a $(WORDNET_LIB) -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 -lnotify
 all: all-am
 
 .SUFFIXES:

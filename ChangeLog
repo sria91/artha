@@ -1,3 +1,8 @@
+version 0.9.1 (May 14, 2009):
+	* Null checks added to regex search variables/modules.
+	* Crash fixed in case of a missing sense.index file. Error is now thrown.
+	* Configure.ac and Makefile.am modified to suit building WordNet from source.
+
 version 0.9.0 (Apr 26, 2009):
 	* Regex based search feature is now implemented. Accepted pattern will be 
 	  based on Wildmat syntax I.e. * (wildcard), ? (joker), [a|c-k] {2, } 

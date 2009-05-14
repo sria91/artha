@@ -308,11 +308,11 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	GtkWidget *about_dialog = gtk_about_dialog_new();
 
 	if(hotkey_index != -1)
-		about_comments = g_strdup_printf("%s\r\n\r\n%s%c", STRING_ABOUT, ABOUT_HOTKEY_SET, hot_key_vals[hotkey_index - 1] - 32);
+		about_comments = g_strdup_printf("%s\r\n\r\n%s%c\r\n", STRING_ABOUT, ABOUT_HOTKEY_SET, hot_key_vals[hotkey_index - 1] - 32);
 	else
 		about_comments = STRING_ABOUT;
-	
-	g_object_set(about_dialog, "license", STRING_LICENCE, "copyright", STRING_COPYRIGHT, 
+
+	g_object_set(G_OBJECT(about_dialog), "license", STRING_LICENCE, "copyright", STRING_COPYRIGHT, 
 	"comments", about_comments, "authors", strv_authors, "version", PACKAGE_VERSION, 
 	"wrap-license", TRUE, "website-label", STRING_WEBSITE_LABEL, "website", STRING_WEBSITE, NULL);
 
@@ -880,7 +880,7 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 	gchar *regex_pattern = NULL, *lemma = NULL;
 	GRegex *regex = NULL;
 	GMatchInfo *match_info = NULL;
-	guint16 count = 0;
+	guint32 count = 0;
 	GtkTextView *text_view = NULL;
 	GtkTextBuffer *text_buffer = NULL;
 	GtkTextIter cur = {0};
@@ -889,24 +889,24 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 
 
 	// convert the wilmat expr. to PERL regex
-	regex_pattern = wildmat_to_regex(wildmat_exp);
+	if(wildmat_exp)
+		regex_pattern = wildmat_to_regex(wildmat_exp);
 
 	if(regex_pattern)
 	{
-		// clear previously set relatives
-		relatives_clear_all(gui_builder);
-
 		text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 		text_buffer = gtk_text_view_get_buffer(text_view);
 
-		// compile a GRegex
-		regex = g_regex_new(regex_pattern, G_REGEX_MULTILINE|G_REGEX_CASELESS|G_REGEX_UNGREEDY|G_REGEX_OPTIMIZE, G_REGEX_MATCH_NOTEMPTY, NULL);
-
-		// set heading that Regex mode is now in action
+		// clear text and get the iter
 		gtk_text_buffer_set_text(text_buffer, "", -1);
 		gtk_text_buffer_get_start_iter(text_buffer, &cur);
+
+		// set heading that Regex mode is now in action
 		gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_DETECTED, -1, TAG_LEMMA, NULL);
 		gtk_text_buffer_insert(text_buffer, &cur, NEW_LINE, -1);
+
+		// compile a GRegex
+		regex = g_regex_new(regex_pattern, G_REGEX_MULTILINE|G_REGEX_CASELESS|G_REGEX_UNGREEDY|G_REGEX_OPTIMIZE, G_REGEX_MATCH_NOTEMPTY, NULL);
 
 		if(regex)
 		{
@@ -941,8 +941,8 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 
 			// set the status bar accordingly with the count
 			gtk_statusbar_pop(status_bar, msg_context_id);
-			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX, count, count > 0?STR_LOOKUP_HINT:"");
-			msg_context_id = gtk_statusbar_get_context_id(status_bar, "regex_mode_set");
+			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX, count, count > 0?STR_STATUS_LOOKUP_HINT:"");
+			msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_RESULTS);
 			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
 		}
 
@@ -950,7 +950,7 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 		// or if the expr. fetched no results, set regex failed message
 		if(NULL == regex || 0 == count)
 		{
-			gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_FAILED, -1, TAG_POS, NULL);
+			gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_FAILED, -1, TAG_SUGGESTION, NULL);
 		}
 
 		g_free(regex_pattern);
@@ -962,11 +962,14 @@ static gboolean is_wildmat_expr(gchar *expr)
 	guint16 i = 0;
 	gchar ch = 0;
 
-	// if the passed expr. has any of the char below deem it as a wildmat expr.
-	while((ch = expr[i++]) != '\0')
+	if(expr)
 	{
-		if(ch == '*' || ch == '?' || ch == '[' || ch == ']' || ch =='{' || ch == '}' || ch == '+')
-			return TRUE;
+		// if the passed expr. has any of the char below deem it as a wildmat expr.
+		while((ch = expr[i++]) != '\0')
+		{
+			if(ch == '*' || ch == '?' || ch == '[' || ch == ']' || ch =='{' || ch == '}' || ch == '+')
+				return TRUE;
+		}
 	}
 
 	return FALSE;
@@ -1008,11 +1011,53 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	guint16 total_results = 0;
 
+
+	text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
+	buffer = gtk_text_view_get_buffer(text_view);
+
+
 	// Check if the fed string is a wildmat expr.
 	// If true, call the regex mod. to set the results and return
 	regex_text = g_strstrip(gtk_combo_box_get_active_text(combo_query));
 	if((results_set = is_wildmat_expr(regex_text)))
-		set_regex_results(regex_text, gui_builder);
+	{
+		// clear previously set relatives
+		relatives_clear_all(gui_builder);
+
+		if(wordnet_terms)
+		{
+			// set the status bar to inform that the search is on going
+			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_SEARCHING);
+			msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_SEARCHING);
+			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+
+			// update the main window children i.e. for status bar in particular
+			// without this, the window will go on a freeze without updating the status bar
+			// this forces to first redraw the window children and proceed
+			gdk_window_process_updates(((GtkWidget*)window)->window, TRUE);
+
+			set_regex_results(regex_text, gui_builder);
+		}
+		else
+		{
+			// report that the search index (sense.index) is missing
+			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX_FILE_MISSING);
+			msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_ERROR);
+			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+
+			gtk_text_buffer_set_text(buffer, "", -1);
+			gtk_text_buffer_get_end_iter(buffer, &cur);
+
+			lemma = g_strdup_printf(STR_REGEX_FILE_MISSING, SetSearchdir());
+			if(lemma)
+			{
+				gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, lemma, -1, TAG_POS, NULL);
+
+				g_free(lemma);
+				lemma = NULL;
+			}
+		}
+	}
 
 	g_free(regex_text);
 
@@ -1020,10 +1065,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	if(results_set) return;
 
 
-	// From here on normal search and suggestions start
-	text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
-	buffer = gtk_text_view_get_buffer(text_view);
-
+	// from here on normal look-up starts
 	search_str = g_strstrip(strip_invalid_edges(gtk_combo_box_get_active_text(combo_query)));
 
 	if(search_str)
@@ -1136,7 +1178,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				gtk_text_view_scroll_to_mark(text_view, freq_marker, 0, FALSE, 0, 0);*/
 
 				g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_QUERY_SUCCESS, total_results, msg_context_id);
-				msg_context_id = gtk_statusbar_get_context_id(status_bar, "search_successful");
+				msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_SUCCESS);
 				gtk_statusbar_push(status_bar, msg_context_id, status_msg);
 
 				lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
@@ -1260,7 +1302,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				gtk_window_present(window);
 
-				msg_context_id = gtk_statusbar_get_context_id(status_bar, "search_failed");
+				msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
 				gtk_statusbar_push(status_bar, msg_context_id, STR_STATUS_QUERY_FAILED);
 #ifdef NOTIFY
 			}
@@ -1762,7 +1804,7 @@ static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 rel
 	}
 }
 
-/*
+/* Defunct highlighting of trees relatives to senses
 static void highlight_senses_from_relative_trees(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view)
 {
 	GSList *wni_results = results;
@@ -2462,7 +2504,7 @@ static gboolean wordnet_terms_load()
 
 	if(SetSearchdir())
 	{
-		index_file_path = g_strconcat(SetSearchdir(), G_DIR_SEPARATOR_S, "index.sense", NULL);
+		index_file_path = g_strdup_printf(SENSEIDXFILE, SetSearchdir());
 		
 		if(g_file_get_contents(index_file_path, &contents, NULL, NULL))
 		{
@@ -2478,17 +2520,17 @@ static gboolean wordnet_terms_load()
 
 				if(ch == '%')
 				{
-					for(; contents[i] != '\n'; i++);
-					
+					for(; ((contents[i] != '\n') && (contents[i] != '\0')); i++);
+
 					ch = contents[i++];
 					word = g_string_append_c(word, ch);
-					
+
 					if(!g_string_equal(prev_word, word))
 					{
 						wordnet_terms = g_string_append(wordnet_terms, word->str);
 						g_string_erase(prev_word, 0, prev_word->len);
 						g_string_append(prev_word, word->str);
-						
+
 						count++;
 					}
 					word = g_string_erase(word, 0, word->len);
@@ -2500,7 +2542,11 @@ static gboolean wordnet_terms_load()
 
 			} while(ch != '\0');
 
-			wordnet_terms = g_string_overwrite(wordnet_terms, wordnet_terms->len - 1, &ch);
+			// put up the EOF char in place of the lastly appended '\n'
+			// Note: since it's a GString, after this '\n' there will be
+			// a default '\0' managed by GLib; GString->len gives you
+			// the length without counting this char.
+			wordnet_terms->str[wordnet_terms->len - 1] = ch;
 			
 			G_DEBUG("Total Dict. Terms Loaded: %d\n", ++count);
 

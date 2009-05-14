@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.50])
 
-AC_INIT([Artha], [0.9.0], [legends2k@yahoo.com], [artha])
+AC_INIT([Artha], [0.9.1], [legends2k@yahoo.com], [artha])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 
@@ -22,7 +22,20 @@ PKG_PROG_PKG_CONFIG
 AC_CHECK_HEADER([wn.h], , [
 AC_MSG_ERROR([You must have wordnet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details.])
 ])
-AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [echo "You must have WordNet installed to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
+
+# check for wordnet (libwordnet.so)
+# if not found WN (building WordNet from source gives libWN.a)
+# if not found wn (in some distros it's all small case)
+# then check other possible combinations; if none was found exit
+AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [
+AC_CHECK_LIB([WN], [wninit], [WORDNET_LIB=-lWN], [
+AC_CHECK_LIB([wn], [wninit], [WORDNET_LIB=-lwn], [
+AC_CHECK_LIB([WordNet], [wninit], [WORDNET_LIB=-lWordNet], [
+AC_CHECK_LIB([WORDNET], [wninit], [WORDNET_LIB=-lWORDNET], [echo "You must have WordNet library installed to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
+])
+])
+])
+])
 AC_SUBST([WORDNET_LIB])
 
 
