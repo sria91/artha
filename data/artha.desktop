@@ -7,5 +7,5 @@ Exec=artha
 Icon=artha
 Terminal=false
 Type=Application
-StartupNotify=false
+StartupNotify=true
 Categories=Utility;Languages;Literature;

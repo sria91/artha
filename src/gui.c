@@ -76,7 +76,7 @@ static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder);
 static gchar* wildmat_to_regex(gchar *wildmat);
 static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder);
 static gboolean is_wildmat_expr();
-static gboolean wordnet_terms_load();
+static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
 
 
 static int x_error_handler(Display *dpy, XErrorEvent *xevent)
@@ -940,10 +940,10 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 			g_regex_unref(regex);
 
 			// set the status bar accordingly with the count
-			gtk_statusbar_pop(status_bar, msg_context_id);
+			gtk_statusbar_pop(status_bar, status_msg_context_id);
 			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX, count, count > 0?STR_STATUS_LOOKUP_HINT:"");
-			msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_RESULTS);
-			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_RESULTS);
+			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 		}
 
 		// if regex was invlaid (it would be NULL)
@@ -1028,8 +1028,8 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		{
 			// set the status bar to inform that the search is on going
 			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_SEARCHING);
-			msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_SEARCHING);
-			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_SEARCHING);
+			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
 			// update the main window children i.e. for status bar in particular
 			// without this, the window will go on a freeze without updating the status bar
@@ -1042,8 +1042,8 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		{
 			// report that the search index (sense.index) is missing
 			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX_FILE_MISSING);
-			msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_ERROR);
-			gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_ERROR);
+			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
 			gtk_text_buffer_set_text(buffer, "", -1);
 			gtk_text_buffer_get_end_iter(buffer, &cur);
@@ -1089,7 +1089,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 		if((last_search != NULL && total_results != 0) || (total_results == 0 && !last_search_successful) || last_search == NULL)
 		{
-			gtk_statusbar_pop(status_bar, msg_context_id);
+			gtk_statusbar_pop(status_bar, status_msg_context_id);
 
 			G_MESSAGE("'%s' requested from WNI!\n", search_str);
 
@@ -1169,7 +1169,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 						gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 					}
 
-					msg_context_id++;
+					status_msg_context_id++;
 				}
 
 				// scroll to top code goes here
@@ -1177,9 +1177,9 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				gtk_text_buffer_add_mark(buffer, freq_marker, &cur);
 				gtk_text_view_scroll_to_mark(text_view, freq_marker, 0, FALSE, 0, 0);*/
 
-				g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_QUERY_SUCCESS, total_results, msg_context_id);
-				msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_SUCCESS);
-				gtk_statusbar_push(status_bar, msg_context_id, status_msg);
+				g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_QUERY_SUCCESS, total_results, status_msg_context_id);
+				status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_SUCCESS);
+				gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
 				lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
 
@@ -1302,8 +1302,8 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				gtk_window_present(window);
 
-				msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
-				gtk_statusbar_push(status_bar, msg_context_id, STR_STATUS_QUERY_FAILED);
+				status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
+				gtk_statusbar_push(status_bar, status_msg_context_id, STR_STATUS_QUERY_FAILED);
 #ifdef NOTIFY
 			}
 #endif
@@ -1803,60 +1803,6 @@ static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 rel
 		wni_results = g_slist_next(wni_results);
 	}
 }
-
-/* Defunct highlighting of trees relatives to senses
-static void highlight_senses_from_relative_trees(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view)
-{
-	GSList *wni_results = results;
-	GSList *properties_list = NULL, *term_list = NULL;
-	WNISynonymMapping *mapping = NULL;
-	GtkTextMark *mark = NULL;
-	GNode *node = NULL;
-	gboolean found = FALSE;
-	guint16 count = 0;
-
-	while(wni_results)
-	{
-		if(id == ((WNINym*)wni_results->data)->id)
-		{
-			properties_list = ((WNIProperties*)((WNINym*)wni_results->data)->data)->properties_list;
-
-			while(properties_list)
-			{
-				node = g_node_first_child((GNode*) properties_list->data);
-
-				while(node)
-				{
-					term_list = ((WNITreeList*) node->data)->word_list;
-					while(term_list)
-					{
-						count++;
-						if(count == relative_index + 1)
-						{
-							found = TRUE;
-							break;
-						}
-						term_list = g_slist_next(term_list);
-					}
-					if(found) break;
-					node = g_node_next_sibling(node);
-				}
-				if(found) break;
-				properties_list = g_slist_next(properties_list);
-			}
-			
-			mapping = (WNISynonymMapping*) ((GNode*) properties_list->data)->data;
-
-			mark = highlight_definition(mapping->id, mapping->sense, text_view);
-
-			gtk_text_view_scroll_to_mark(text_view, mark, 0.0, TRUE, 0, 0);
-
-			break;
-		}
-		wni_results = g_slist_next(wni_results);
-	}
-}
-*/
 
 static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data)
 {
@@ -2492,7 +2438,7 @@ static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder)
 #endif
 }
 
-static gboolean wordnet_terms_load()
+static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
 {
 	gchar *index_file_path = NULL;
 	gchar *contents = NULL;
@@ -2501,6 +2447,9 @@ static gboolean wordnet_terms_load()
 	guint32 i = 0;
 	guint32 count = 0;
 	gboolean ret_val = FALSE;
+	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
+	gchar status_msg[MAX_STATUS_MSG] = "";
 
 	if(SetSearchdir())
 	{
@@ -2511,6 +2460,16 @@ static gboolean wordnet_terms_load()
 			word = g_string_new("");
 			prev_word = g_string_new("");
 			wordnet_terms = g_string_new("");
+
+			// set the loading message on status bar
+			gtk_statusbar_pop(status_bar, status_msg_context_id);
+			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_INDEXING);
+			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_LOADING_INDEX);
+			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
+
+			// if visible, repaint the window after setting the status message, for it to get reflected
+			if(GTK_WIDGET_VISIBLE(window))
+				gdk_window_process_updates(((GtkWidget*)window)->window, TRUE);
 
 			do
 			{
@@ -2555,6 +2514,9 @@ static gboolean wordnet_terms_load()
 			g_string_free(prev_word, TRUE);
 			
 			ret_val = TRUE;
+
+			// clear the loading message from status bar
+			gtk_statusbar_pop(status_bar, status_msg_context_id);
 		}
 		
 		g_free(index_file_path);
@@ -2619,8 +2581,6 @@ int main(int argc, char *argv[])
 						msg_dialog = NULL;
 					}
 				}
-				
-				wordnet_terms_load();
 
 				window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 				if(window)
@@ -2765,19 +2725,23 @@ int main(int argc, char *argv[])
 					
 					mod_suggest = suggestions_init();
 
-					// set via GUI.ui
+					// this set via GUI.ui now, so this not required
 					//gtk_window_set_startup_id(GTK_WINDOW(window), APP_ID);
 
-					// To show or not to show? on startup - better show it the very first time, when the user sets the option
-					// start up hided, then don't show it
+					// if its a first run (anew/updated) save the preferences now
 					if(first_run)
-						// since its a first run (anew/updated) save the preferences once
 						save_preferences();
 
+					// show the window if it's a first run or a hot key couldn't be set
+					// if the window is not shown, set notify the startup is complete
 					if(first_run || x_error)
 						gtk_widget_show_all(window);
+					else
+						gdk_notify_startup_complete();
 
-					
+					// index all wordnet terms from the index.sense onto memory
+					wordnet_terms_load(gui_builder);
+
 					gtk_main();
 
 					// since every setting change will call save prefs.

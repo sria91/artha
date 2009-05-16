@@ -141,7 +141,7 @@ gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mod
 gint8		hotkey_index;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 gint		history_count = 0;
-guint		msg_context_id = 0;
+guint		status_msg_context_id = 0;
 GString		*wordnet_terms = NULL;
 
 #ifdef NOTIFY
@@ -175,12 +175,14 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_REGEX_DETECTED	"Regular expression pattern detected"
 #define STR_REGEX_FAILED	"No matches found! Please check your expression and try again."
 #define STR_REGEX_FILE_MISSING	"File sense.index not found at %s\nPlease install it and restart Artha to do a regular expression based search."
+#define STR_STATUS_INDEXING	"Indexing... please wait"
 #define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
 #define STR_STATUS_LOOKUP_HINT	"For compound words hold ctrl & drag-sel. whole term to look it up."
 #define STR_STATUS_REGEX	"%d match(es) found! %s"
 #define STR_STATUS_SEARCHING	"Searching. Please wait..."
 #define STR_STATUS_REGEX_FILE_MISSING	"Error: index.sense not found!"
 
+#define STATUS_DESC_LOADING_INDEX	"loading_index"
 #define STATUS_DESC_SEARCH_SUCCESS	"search_successful"
 #define STATUS_DESC_SEARCH_FAILURE	"search_failed"
 #define STATUS_DESC_REGEX_RESULTS	"regex_mode_results"
