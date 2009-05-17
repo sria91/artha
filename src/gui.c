@@ -27,7 +27,6 @@ static int x_error_handler(Display *dpy, XErrorEvent *xevent);
 static void key_grab(Display *dpy, guint keyval);
 static void key_ungrab(Display *dpy, guint keyval);
 #ifdef NOTIFY
-static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpointer user_data);
 static void notification_toggled(GObject *obj, gpointer user_data);
 #endif
 static gchar* strip_invalid_edges(gchar *selection);
@@ -137,20 +136,6 @@ static void key_ungrab(Display *dpy, guint keyval)
 }
 
 #ifdef NOTIFY
-static void notifier_clicked(NotifyNotification *notify, gchar *actionID, gpointer user_data)
-{
-	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-	GtkWidget *combo_query = GTK_WIDGET(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-
-	if(0 == wni_strcmp0(actionID, "lookup"))
-	{
-		gtk_window_present(window);
-		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
-	}
-
-}
-
 /*
 	This will be called for both notify check pop-up menu and notify tool bar button
 	Hence the first argument is GObject. Since both have the propery "active" as its
@@ -266,6 +251,12 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 		gtk_widget_hide(GTK_WIDGET(window));
 	else
 	{
+
+#ifdef NOTIFY
+		// close notifications, if any
+		notify_notification_close(notifier, &err);
+#endif
+
 		// Code to watch clipboard when popping up
 		// Should be enabled when the 'Watch Clipboard' settings is put up in Pref. window
 		/*xe.type = KeyPress;
@@ -1006,10 +997,10 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	gboolean results_set = FALSE;
 	gchar *regex_text = NULL;
 
-
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	guint16 total_results = 0;
+
 
 
 	text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
@@ -1031,10 +1022,11 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_SEARCHING);
 			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
-			// update the main window children i.e. for status bar in particular
-			// without this, the window will go on a freeze without updating the status bar
-			// this forces to first redraw the window children and proceed
-			gdk_window_process_updates(((GtkWidget*)window)->window, TRUE);
+			// if visible, update the statusbar; the window will usually go on a freeze
+			// without updating the statusbar, until GDK is idle
+			// this call forces GDK to first redraw the statusbar and proceed
+			if(GTK_WIDGET_VISIBLE(window))
+				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
 			set_regex_results(regex_text, gui_builder);
 		}
@@ -1061,7 +1053,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 	g_free(regex_text);
 
-	// If it was a regex and its results are now furbished, so return
+	// If it was a regex and its results are now furnished, so return
 	if(results_set) return;
 
 
@@ -1078,7 +1070,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		if(notifier)
 		{
 			notify_notification_close(notifier, NULL);
-			notify_notification_clear_actions(notifier);
 		}
 #endif
 
@@ -1089,7 +1080,15 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 		if((last_search != NULL && total_results != 0) || (total_results == 0 && !last_search_successful) || last_search == NULL)
 		{
+			// set the status bar and update the window
 			gtk_statusbar_pop(status_bar, status_msg_context_id);
+			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_SEARCHING);
+			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_SEARCHING);
+			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
+			
+			// if visible, repaint the statusbar after setting the status message, for it to get reflected
+			if(GTK_WIDGET_VISIBLE(window))
+				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
 			G_MESSAGE("'%s' requested from WNI!\n", search_str);
 
@@ -1239,7 +1238,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				definition = g_strconcat("<b><i>", partnames[((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->pos], 
 				"</i></b>. ", ((WNIDefinition*)((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->definitions->data)->definition, NULL);
 
-				notify_notification_add_action(notifier, "lookup", "Detailed Lookup", NOTIFY_ACTION_CALLBACK(notifier_clicked), gui_builder, NULL);
 				if(definition)
 				{
 					notify_notification_update(notifier, lemma, definition, "gtk-dialog-info");
@@ -2425,7 +2423,6 @@ static void destructor(Display *dpy, guint keyval, GtkBuilder *gui_builder)
 	if(notifier)
 	{
 		notify_notification_close(notifier, NULL);
-		notify_notification_clear_actions(notifier);
 
 		// Its better to be safe than to be sorry
 		// some times, notifier becomes NULL
@@ -2467,9 +2464,9 @@ static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
 			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_LOADING_INDEX);
 			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
-			// if visible, repaint the window after setting the status message, for it to get reflected
+			// if visible, repaint the statusbar after setting the status message, for it to get reflected
 			if(GTK_WIDGET_VISIBLE(window))
-				gdk_window_process_updates(((GtkWidget*)window)->window, TRUE);
+				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
 			do
 			{

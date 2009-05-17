@@ -1,6 +1,13 @@
-version 0.9.1 (May 14, 2009):
+version 0.9.1 (May 17, 2009):
 	* Null checks added to regex search variables/modules.
-	* Crash fixed in case of a missing sense.index file. Error is now thrown.
+	* Crash fixed in case of a missing sense.index file; an error is now thrown.
+	* Statusbar will now be updated for index load, normal lookups and regex searches.
+	* Incorrect decl. of the results count variable fixed; earlier it was showing 
+	  only the data type's upper limit as the maximum.
+	* Redundant action button 'Detailed Lookup' in notification removed;
+	  status icon can be used to bring up the application.
+	* Loading message set on status bar when indexing.
+	* Startup Notification to the Desktop manager fixed.
 	* Configure.ac and Makefile.am modified to suit building WordNet from source.
 
 version 0.9.0 (Apr 26, 2009):
@@ -31,16 +38,16 @@ version 0.8.0 (Feb 09, 2009):
 	* Crash when a link is clicked in the About box fixed.
 
 version 0.7.2 (Jan 31, 2009):
-	* Toolbar button added for toggling Notifications
+	* Toolbar button added for toggling Notifications.
 	* If the notification-daemon is missing in a the system, the notification 
 	  requests sent by Artha are received by libnotify but the user doesn't 
 	  see anything. This issue is fixed, by disabling notifications if the 
 	  notify_init() fails.
 	* Moved to .png from .svg because it is not supported in a few distros.
-	* Preferences (conf file) are now saved on load pref., if its a first run
-	* Preferences are now saved on every setting change, not on app. exit
-	* Fixed issues in configure script
-	* Changed automake script to sync with configure script
+	* Preferences (conf file) are now saved on load pref., if its a first run.
+	* Preferences are now saved on every setting change, not on app. exit.
+	* Fixed issues in configure script.
+	* Changed automake script to sync with configure script.
 	* Both Toolbar button and menu now reads "Notify", earlier it was Notify 
 	  and Notifications.
 	* All characters other than alpha numeric, -, _ and blank space are stripped
@@ -51,11 +58,11 @@ version 0.7.2 (Jan 31, 2009):
 
 version 0.7.1 (Jan 29, 2009):
 	* Fixed Tooltip for Meronyms in relative tabs/trees.
-	* Fixed tree store unreferencing when creating tree stores for relatives
-	* Focus to the Query field is now set on pop-up
-	* 'Report a Bug' button added to About dialog box
+	* Fixed tree store unreferencing when creating tree stores for relatives.
+	* Focus to the Query field is now set on pop-up.
+	* 'Report a Bug' button added to About dialog box.
 	* Fixed an issue regarding the welcome message, when notifications are disabled.
-	* libdus threads init function called using its GLib bindings
+	* libdus threads init function called using its GLib bindings.
 
 version 0.7.0 (Jan 23, 2009):
 	* 3 more hot key combos added (so now it is Ctrl + Alt + [W|A|T|Q]) to 
@@ -70,8 +77,8 @@ version 0.6.5:
 
 version 0.6.4:
 	* 'Attributes' tab gets renamed (Attributes/Attribute of) based on the 
-	  POS (NOUN/ADJ) of the term's attribute item
-	* Shortcut in Applications Menu using .desktop file implemented
+	  POS (NOUN/ADJ) of the term's attribute item.
+	* Shortcut in Applications Menu using .desktop file implemented.
 
 version 0.6.3:
 	* Man page added, with minimal briefing.
@@ -105,13 +112,13 @@ version 0.4.1:
 	* Issue in checking for duplicate terms against the current lists, in WNI, fixed.
 
 version 0.4.0:
-	* Code to populate list-based relatives added
+	* Code to populate list-based relatives added.
 	* Code to display 'familiarity' (based on polysemy count) added with colour-coding 
 	  based on weightage.
 	* Combo box for maintaining history of searched words added.
 
 version 0.3.0:
-	* GUI designed in Glade3, with Tabs and Toolbar
+	* GUI designed in Glade3, with Tabs and Toolbar.
 	* Code to fill-in formatted definitions with colour coding added.
 	* strip_adj_marker usage minimized in WNI, to only ADJ terms.
 

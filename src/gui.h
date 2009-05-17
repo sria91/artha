@@ -179,7 +179,7 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
 #define STR_STATUS_LOOKUP_HINT	"For compound words hold ctrl & drag-sel. whole term to look it up."
 #define STR_STATUS_REGEX	"%d match(es) found! %s"
-#define STR_STATUS_SEARCHING	"Searching. Please wait..."
+#define STR_STATUS_SEARCHING	"Searching... please wait"
 #define STR_STATUS_REGEX_FILE_MISSING	"Error: index.sense not found!"
 
 #define STATUS_DESC_LOADING_INDEX	"loading_index"

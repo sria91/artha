@@ -1,13 +1,18 @@
-0.9.1 (May 14, 2009)
-	Trying artha on Fedora showed that searching for library wordnet fails when one builds WordNet 
+0.9.1 (May 17, 2009)
+	Trying Artha on Fedora showed that searching for library wordnet fails when one builds WordNet 
 	from source as it gives a archive library output libWN.a and configure looks for libwordnet.so.
 	This is now corrected. When index.sense is missing during the start up, the wordnet_terms var. 
 	remains NULL and performing a regex search on it leads to a crash which is now fixed. Artha 
 	will throw an error saying that the index file was missing on startup. It was decided against 
 	populating the index file on start up using the other index files namely index.noun, index.verb, 
-	index.adj and index.adv. The reason is thatbuilding WordNet from source installs index.sense 
-	by default. In case of binaries it can be added to the dependencies if it is avaiable only as a 
-	separate package.
+	index.adj and index.adv. The reason is that building WordNet from source installs index.sense 
+	by default. In case of binaries it can be added to the dependencies, if it is avaiable only as a 
+	separate package. Status bar is now updated on index load, usual lookups and regex searches.
+	Ubuntu 9.04 has introduced new a notification system, wherein if the notification has any 
+	action button, the notification is shown up as a message box (already posts are showing up on 
+	the net that it sux :) Although, the 'Detailed Lookup' button in Artha was redundant (one can 
+	bring up the app. by clicking on the status bar icon). Hence the action button is now cleared.
+
 0.9.0 (Apr 26, 2009)
 	wildmat is a somewhat simplified form of regex which can be used by laymen and advanced users
 	alike. Artha now has regex based search for locating a term in the thesaurus. A conversion 
