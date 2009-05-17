@@ -254,7 +254,7 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 
 #ifdef NOTIFY
 		// close notifications, if any
-		notify_notification_close(notifier, &err);
+		notify_notification_close(notifier, NULL);
 #endif
 
 		// Code to watch clipboard when popping up
