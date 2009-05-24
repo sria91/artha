@@ -1000,6 +1000,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	guint16 total_results = 0;
+	guint8 total_pos = 0;
 
 
 
@@ -1015,6 +1016,8 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		// clear previously set relatives
 		relatives_clear_all(gui_builder);
 
+		gtk_statusbar_pop(status_bar, status_msg_context_id);
+		
 		if(wordnet_terms)
 		{
 			// set the status bar to inform that the search is on going
@@ -1100,7 +1103,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 			if(results)
 			{
-				total_results = 0;
+				total_results = 0; total_pos = 0;
 
 				G_MESSAGE("Results successful!\n");
 
@@ -1168,7 +1171,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 						gtk_text_buffer_insert(buffer, &cur, NEW_LINE, -1);
 					}
 
-					status_msg_context_id++;
+					total_pos++;
 				}
 
 				// scroll to top code goes here
@@ -1176,7 +1179,8 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				gtk_text_buffer_add_mark(buffer, freq_marker, &cur);
 				gtk_text_view_scroll_to_mark(text_view, freq_marker, 0, FALSE, 0, 0);*/
 
-				g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_QUERY_SUCCESS, total_results, status_msg_context_id);
+				gtk_statusbar_pop(status_bar, status_msg_context_id);
+				g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_QUERY_SUCCESS, total_results, total_pos);
 				status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_SUCCESS);
 				gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
@@ -1300,6 +1304,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				gtk_window_present(window);
 
+				gtk_statusbar_pop(status_bar, status_msg_context_id);
 				status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
 				gtk_statusbar_push(status_bar, status_msg_context_id, STR_STATUS_QUERY_FAILED);
 #ifdef NOTIFY
@@ -1507,7 +1512,7 @@ static gboolean window_main_key_press(GtkWidget *widget, GdkEventKey *event, gpo
 static void expander_clicked(GtkExpander *expander, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkPaned *vpaned = GTK_PANED(gtk_builder_get_object(gui_builder, "vpaned1"));
+	GtkPaned *vpaned = GTK_PANED(gtk_builder_get_object(gui_builder, VPANE));
 
 	gtk_paned_set_position(vpaned, -1);		// unset the pane's position so that it goes to the original state
 }
@@ -2203,7 +2208,7 @@ static gboolean load_preferences(GtkWindow *parent)
 	gchar **current_version_numbers = NULL;
 	guint8 i = 0;
 
-	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, ".conf", NULL);
+	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
 	key_file = g_key_file_new();
 
 	if(g_key_file_load_from_file(key_file, conf_file_path, G_KEY_FILE_KEEP_COMMENTS, NULL))
@@ -2333,7 +2338,7 @@ static void save_preferences()
 	gsize file_len = 0;
 	GError *err = NULL;
 
-	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, ".conf", NULL);
+	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
 	key_file = g_key_file_new();
 	
 	g_key_file_set_comment(key_file, NULL, NULL, SETTINGS_COMMENT, NULL);
@@ -2635,7 +2640,7 @@ int main(int argc, char *argv[])
 					{
 						// setup status icon
 						status_icon = gtk_status_icon_new_from_file(icon_file_path);
-						gtk_status_icon_set_tooltip(status_icon, "Artha ~ The Open Thesaurus");
+						gtk_status_icon_set_tooltip(status_icon, STRING_TITLE);
 						gtk_status_icon_set_visible(status_icon, !x_error);
 					}
 
@@ -2646,7 +2651,9 @@ int main(int argc, char *argv[])
 					{
 						if(notify_init(PACKAGE_NAME))
 						{
-							notifier = notify_notification_new_with_status_icon("Word", "Definition of the <b>word</b> in <u>Wordnet</u>", "gtk-dialog-info", status_icon);
+							// initialize summary as Artha (Package Name)
+							// this will however be modified to the looked up word before display
+							notifier = notify_notification_new_with_status_icon(PACKAGE_NAME, NULL, "gtk-dialog-info", status_icon);
 							notify_notification_set_urgency(notifier, NOTIFY_URGENCY_LOW);
 						}
 					}

@@ -57,6 +57,7 @@
 #define NEW_LINE	"\r\n"
 #define ICON_FILE	"artha.png"
 #define UI_FILE		"gui.ui"
+#define CONF_FILE_EXT	".conf"
 
 #define ARTHA_RESPONSE_REPORT_BUG	1
 #define BUTTON_TEXT_BUG			"Report a _Bug"
@@ -81,6 +82,7 @@
 #define LABEL_ATTRIBUTES		"lblAttributes"
 #define LABEL_TEXT_ATTRIBUTES		"Attributes"
 #define LABEL_TEXT_ATTRIBUTE_OF		"Attribute of"
+#define	VPANE				"vpaned1"
 
 #define MAX_CONCAT_STR		500
 #define MAX_STATUS_MSG		100
@@ -217,6 +219,7 @@ the definitions of the selected text. This feature is also required to enable No
 
 #define WELCOME_NOTE_HOTKEY_CHANGED	"Artha's hot key is now changed to <b>Ctrl + Alt + %c</b>."
 
+#define STRING_TITLE		"Artha ~ The Open Thesaurus"
 
 #define STRING_COPYRIGHT	"Copyright © 2009  Sundaram Ramaswamy. All Rights Reserved.\n\nWordNet 3.0 \
 Copyright 2006 by Princeton University.  All rights reserved."
