@@ -60,7 +60,7 @@
 #define CONF_FILE_EXT	".conf"
 
 #define ARTHA_RESPONSE_REPORT_BUG	1
-#define BUTTON_TEXT_BUG			"Report a _Bug"
+#define STR_REPORT_BUG		"Report a _Bug"
 
 #define SETTINGS_COMMENT	"Artha Preferences File"
 #define GROUP_SETTINGS		"Settings"
@@ -139,7 +139,7 @@ gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOr
 Bool 		x_error = False;
 GSList 		*results = NULL;
 gchar 		*last_search = NULL;
-gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, mod_suggest = FALSE;
+gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, mod_suggest = FALSE, auto_contract = FALSE;
 gint8		hotkey_index;
 guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 gint		history_count = 0;
@@ -171,7 +171,7 @@ GtkToolItem		*toolbar_notify = NULL;
 #define MODE_TOOLITEM_TOOLTIP	"Toggle between simple/advanced modes"
 
 #define STR_STATUS_QUERY_SUCCESS "Results returned: %d sense(s) in %d POS(s)!"
-#define MSG_WN_ERROR		"Failed to open WordNet database files!\n\
+#define STR_ERROR_WN		"Failed to open WordNet database files!\n\
 Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere, set the environment variable WNHOME to point to it."
 #define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
 #define STR_REGEX_DETECTED	"Regular expression pattern detected"

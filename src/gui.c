@@ -58,6 +58,7 @@ static GtkTextMark *highlight_definition(guint8 id, guint16 sense, GtkTextView *
 static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *text_view);
 static void highlight_senses_from_antonyms(guint8 category, guint16 relative_index, guint8 sub_level, GtkTextView *text_view);
 static void highlight_senses_from_domain(guint8 category, guint16 relative_index, GtkTextView *text_view);
+static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view);
 static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data);
 static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data);
 static void create_stores_renderers(GtkBuilder *gui_builder);
@@ -308,7 +309,7 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	"wrap-license", TRUE, "website-label", STRING_WEBSITE_LABEL, "website", STRING_WEBSITE, NULL);
 
 	if(fp_show_uri)
-		gtk_dialog_add_button(GTK_DIALOG(about_dialog), BUTTON_TEXT_BUG, ARTHA_RESPONSE_REPORT_BUG);
+		gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
 
 	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), NULL);
 	
@@ -830,10 +831,9 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 	// instead of invalidate rect redraw, we just toggle visibility
 	gtk_widget_show(expander);
 
-	// This is not required in all systems. With compiz, it works perfectly fine without this code.
-	// redraw the window after visibility changes
-	//if(GTK_WIDGET(gtk_builder_get_object(gui_builder, EXPANDER))->window != NULL)		// if its NULL, it means window is invisible, needn't redraw
-		//gdk_window_invalidate_rect(GTK_WIDGET(gtk_builder_get_object(gui_builder, EXPANDER))->window, NULL, TRUE);
+	// if the expander was contracted automatically, then expand it back again
+	if(!gtk_expander_get_expanded(GTK_EXPANDER(expander)) && auto_contract)
+		gtk_expander_set_expanded(GTK_EXPANDER(expander), TRUE);
 }
 
 static gchar* wildmat_to_regex(gchar *wildmat)
@@ -905,7 +905,7 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 			g_regex_match(regex, wordnet_terms->str, G_REGEX_MATCH_NOTEMPTY, &match_info);
 			count = g_match_info_get_match_count(match_info);
 
-			// make a header for the suggestions to follow
+			// make a header for the search results to follow
 			if(count > 0)
 			{
 				gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_SUGGEST_MATCHES, -1, TAG_MATCH, NULL);
@@ -972,6 +972,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+	GtkExpander *expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
 
 	GtkListStore *query_list_store = NULL;
 	GtkTreeIter query_list_iter = {0};
@@ -1014,7 +1015,17 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	if((results_set = is_wildmat_expr(regex_text)))
 	{
 		// clear previously set relatives
+		// clear search successful flag; without this when the prev. looked up
+		// word is again dbl clicked from the results, it won't jump to the word
 		relatives_clear_all(gui_builder);
+		last_search_successful = FALSE;
+
+		// contract the expander, since relatives aren't required here
+		if(gtk_expander_get_expanded(expander))
+		{
+			gtk_expander_set_expanded(expander, FALSE);
+			auto_contract = TRUE;
+		}
 
 		gtk_statusbar_pop(status_bar, status_msg_context_id);
 		
@@ -1299,6 +1310,13 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 						}
 
 						g_strfreev(suggestions);
+
+						// contract the expander, since relatives aren't required here
+						if(gtk_expander_get_expanded(expander))
+						{
+							gtk_expander_set_expanded(expander, FALSE);
+							auto_contract = TRUE;
+						}
 					}
 				}
 
@@ -1515,6 +1533,9 @@ static void expander_clicked(GtkExpander *expander, gpointer user_data)
 	GtkPaned *vpaned = GTK_PANED(gtk_builder_get_object(gui_builder, VPANE));
 
 	gtk_paned_set_position(vpaned, -1);		// unset the pane's position so that it goes to the original state
+
+	// if the user manually expands/contracts it, reset the auto flag
+	auto_contract = FALSE;
 }
 
 static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data)
@@ -2014,9 +2035,17 @@ static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data)
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	gint16 active_item = gtk_combo_box_get_active(combo_query);
 
-	if(-1 == active_item)
+	// in case if the search was successful and the index is 0 (current word)
+	// then prev. should move it 1st element, so set active_item = 0, which + 1 will make index as 1
+	// else if search had failed earlier, then prev. should take it to the 0th element
+	// so leave it as -1; if it is something lesser than -1, make it -1
+	if(-1 == active_item && last_search_successful)
 	{
 		active_item = 0;
+	}
+	else if(active_item < -1)
+	{
+		active_item = -1;
 	}
 
 	gtk_combo_box_set_active(combo_query, active_item + 1);
@@ -2576,7 +2605,7 @@ int main(int argc, char *argv[])
 				{
 					if(wninit() != 0)
 					{
-						msg_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, MSG_WN_ERROR, DEFAULTPATH);
+						msg_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, STR_ERROR_WN, DEFAULTPATH);
 						g_object_set(msg_dialog, "title", PACKAGE_NAME, NULL);
 						gtk_dialog_run(GTK_DIALOG(msg_dialog));
 						gtk_widget_destroy(msg_dialog);
