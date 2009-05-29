@@ -7,6 +7,7 @@ AC_INIT([Artha], [0.9.1], [legends2k@yahoo.com], [artha])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 
+
 # Checks for programs.
 AC_PROG_CC
 AC_LANG([C])
@@ -65,9 +66,8 @@ fi
 # Check for libnotify, if found, get the details of dbus and notification-daemon too
 PKG_CHECK_MODULES([libnotify], [libnotify >= 0.4.1], [NOTIFY_FOUND=1], [AC_MSG_RESULT(no)
 AC_MSG_WARN([
-Notifications feature is disabled since libnotify development headers were
-not found! If you need Notifications in Artha, please install them 
-(libnotify-dev >= 0.4.1) and rebuild.
+Desktop notifications feature is disabled since libnotify development headers were
+not found! If you need it please install them (libnotify-dev >= 0.4.1) and rebuild.
 
 If you have these installed already you may need to install pkg-config so 
 I can find them.])
@@ -92,11 +92,13 @@ I can find them.
 Notifications feature will be enabled in Artha!
 Make sure notification-daemon is installed to see the notifications.])
 
-		#AC_SUBST([libdbus_CFLAGS])
-		#AC_SUBST([libdbus_LIBS])
+# over write the result of pkg-config, since it links to a lot of redundant libraries
+# -latk-1.0 -lgio-2.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lpangocairo-1.0 -lcairo -lpango-1.0 -lfreetype -lfontconfig -ldbus-1 -lgobject-2.0
+# -ldbus-glib-1 is not included, since the only function used from this is dbus_g_thread_init which is by -lnotify itself
 
-		AC_SUBST([libnotify_CFLAGS])
+		libnotify_LIBS="-lnotify"
 		AC_SUBST([libnotify_LIBS])
+		AC_SUBST([libnotify_CFLAGS])
 
 		AC_DEFINE([NOTIFIER_SUPPORT], [1], [Notify - Notifications library present])
 	fi

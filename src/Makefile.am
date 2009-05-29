@@ -11,5 +11,5 @@ libwni_a_SOURCES = wni.c wni.h
 
 artha_DEPENDENCIES = libwni.a
 artha_SOURCES = wni.h addons.h gui.c gui.h suggestions.c suggestions.h
-artha_LDADD = libwni.a $(WORDNET_LIB) -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 -lnotify
+artha_LDADD = libwni.a $(WORDNET_LIB) -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 @libnotify_LIBS@
 

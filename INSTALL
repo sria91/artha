@@ -54,7 +54,7 @@ are available:
 - dbus-glib	>= 0.74		(libdbus-glib-1-dev)
 
 These 2 libraries are not a must for building Artha, however they are a must 
-to enable the Notifications feature of Artha.
+to have the passive desktop notifications feature in it.
 
 You will also need some build tools such as GNU gcc and gtk-builder-convert. 
 gtk-builder-convert is a part of libgtk2.0 development headers of version 
