@@ -35,7 +35,7 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
 static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpointer user_data);
 static void about_activate(GtkToolButton *menu_item, gpointer user_data);
-static void quit_activate(GObject *obj, gpointer user_data);
+static gboolean quit_activate(GObject *obj, gpointer user_data);
 static guint8 get_frequency(guint sense_count);
 static void relatives_clear_all(GtkBuilder *gui_builder);
 static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder);
@@ -65,6 +65,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder);
 static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data);
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data);
+static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static void setup_toolbar(GtkBuilder *gui_builder);
 static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
@@ -318,11 +319,18 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	if(hotkey_index != -1) g_free(about_comments);
 }
 
-static void quit_activate(GObject *obj, gpointer user_data)
+/* Multiple signals have this as the registered call back function.
+   The most important of them is "delete-event" of the main window 
+   which expects the return value of this function to 'gboolean' 
+   and not 'void' like other signals do. Hence it has gboolean as 
+   it's return type.
+*/
+static gboolean quit_activate(GObject *obj, gpointer user_data)
 {
 	G_DEBUG("Destroy called!\n");
 
 	gtk_main_quit();
+	return TRUE;
 }
 
 static guint8 get_frequency(guint sense_count)
@@ -361,12 +369,6 @@ static void relatives_clear_all(GtkBuilder *gui_builder)
 		}
 		else
 			gtk_widget_show(relative_tab);
-		/*temp_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(temp_tree_view));
-		if(temp_tree_store)
-			gtk_tree_store_clear(temp_tree_store);
-
-		if(!GTK_WIDGET_VISIBLE(relative_tab))
-			gtk_widget_show(relative_tab);*/
 	}
 }
 
@@ -380,8 +382,7 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 	GtkTreePath *expand_path = NULL;
 	gboolean direct_deleted = FALSE, has_indirect = FALSE;
 
-	g_object_ref(antonyms_tree_store);
-	gtk_tree_view_set_model(tree_antonyms, NULL);
+	G_STATIC_ASSERT(antonyms_tree_store);
 
 	if(advanced_mode)
 	{
@@ -421,9 +422,6 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 		antonyms = g_slist_next(antonyms);
 	}
 
-	gtk_tree_view_set_model(tree_antonyms, GTK_TREE_MODEL(antonyms_tree_store));
-	g_object_unref(antonyms_tree_store);
-
 	if(advanced_mode)
 	{
 		// if only Direct is present, then Indirect will be deleted, only indirect_iter becomes invalid
@@ -438,7 +436,9 @@ static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder)
 
 		// expand one level
 		expand_path = gtk_tree_path_new_from_indices(0, -1);
-		gtk_tree_view_expand_row(tree_antonyms, expand_path, direct_deleted);	// if direct list was deleted, then this is the indirect list that we are dealing, so expand, else don't
+
+		// if direct list was deleted, then this is the indirect list that we are dealing, so expand, else don't
+		gtk_tree_view_expand_row(tree_antonyms, expand_path, direct_deleted);
 		gtk_tree_path_free(expand_path);
 
 		// if there is a list in this path "1", then it should be indirect
@@ -534,9 +534,7 @@ static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFl
 
 	tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
 	tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
-
-	g_object_ref(tree_store);
-	gtk_tree_view_set_model(tree_view, NULL);
+	G_STATIC_ASSERT(tree_store);
 
 	while(properties)
 	{
@@ -601,9 +599,6 @@ static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFl
 
 		properties = g_slist_next(properties);
 	}
-
-	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(tree_store));
-	g_object_unref(tree_store);
 }
 
 static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id)
@@ -619,9 +614,7 @@ static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNI
 
 	tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
 	tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
-
-	g_object_ref(tree_store);
-	gtk_tree_view_set_model(tree_view, NULL);
+	G_STATIC_ASSERT(tree_store);
 
 	while(properties)
 	{
@@ -640,9 +633,6 @@ static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNI
 		}
 		properties = g_slist_next(properties);
 	}
-
-	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(tree_store));
-	g_object_unref(tree_store);
 }
 
 static void domains_load(GSList *properties, GtkBuilder *gui_builder)
@@ -653,8 +643,7 @@ static void domains_load(GSList *properties, GtkBuilder *gui_builder)
 	GtkTreeStore *class_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_class));
 	GtkTreeIter iter = {0}, class_iter[DOMAINS_COUNT] = {};
 
-	g_object_ref(class_tree_store);
-	gtk_tree_view_set_model(tree_class, NULL);
+	G_STATIC_ASSERT(class_tree_store);
 
 	for(i = 0; i < DOMAINS_COUNT; i++)
 	{
@@ -679,9 +668,6 @@ static void domains_load(GSList *properties, GtkBuilder *gui_builder)
 			gtk_tree_store_remove(class_tree_store, &class_iter[i]);
 	}
 
-	gtk_tree_view_set_model(tree_class, GTK_TREE_MODEL(class_tree_store));
-	g_object_unref(class_tree_store);
-
 	gtk_tree_view_expand_all(tree_class);
 }
 
@@ -692,7 +678,7 @@ static guint8 get_attribute_pos()
 	WNIPropertyItem *prop_item = NULL;
 	WNIPropertyMapping *prop_mapping = NULL;
 	WNIDefinitionItem *def_item = NULL;
-		
+
 	while(temp_results)
 	{
 		temp_nym = (WNINym*) temp_results->data;
@@ -1185,10 +1171,9 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 					total_pos++;
 				}
 
-				// scroll to top code goes here
-				/*gtk_text_buffer_get_start_iter(buffer, &cur);
-				gtk_text_buffer_add_mark(buffer, freq_marker, &cur);
-				gtk_text_view_scroll_to_mark(text_view, freq_marker, 0, FALSE, 0, 0);*/
+				/* scroll to the text view top to show the first definition
+				gtk_text_buffer_get_start_iter(buffer, &cur);
+				gtk_text_view_scroll_to_iter(text_view, &cur, 0.0, FALSE, 0.0, 0.0); */
 
 				gtk_statusbar_pop(status_bar, status_msg_context_id);
 				g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_QUERY_SUCCESS, total_results, total_pos);
@@ -2100,7 +2085,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	gtk_tool_item_set_tooltip_text(toolbar_quit, QUIT_TOOLITEM_TOOLTIP);
 	g_signal_connect(toolbar_quit, "clicked", G_CALLBACK(quit_activate), NULL);
 	gtk_toolbar_insert(toolbar, toolbar_quit, 0);
-
+	
 	toolbar_sep = gtk_separator_tool_item_new();
 	gtk_toolbar_insert(toolbar, toolbar_sep, 0);
 
@@ -2617,7 +2602,7 @@ int main(int argc, char *argv[])
 				if(window)
 				{
 					// Most Important: do not use the XServer's XGetDisplay, you will have to do XNextEvent (blocking) to 
-					// get the event call, so get GDK's display and its X's display equivalent
+					// get the event call, so get GDK's display; its X11 display equivalent
 					if (! ( dpy = gdk_x11_display_get_xdisplay(gdk_display_get_default()) ) )
 					{
 						g_error("Can't open Display %s!\n", gdk_display_get_name(gdk_display_get_default()));
@@ -2629,7 +2614,7 @@ int main(int argc, char *argv[])
 					XSynchronize(dpy, True);		// Without calling this you get the error call back dealyed, much delayed!
 					XSetErrorHandler(x_error_handler);	// Set the error handler for setting the flag
 
-					while(selected_key < (sizeof(hot_key_vals) / sizeof(guint)) )
+					while(selected_key < G_N_ELEMENTS(hot_key_vals))
 					{
 						key_grab(dpy, hot_key_vals[selected_key]);	// Register with XServer for hotkey callback
 
@@ -2638,9 +2623,9 @@ int main(int argc, char *argv[])
 							// subtract hot key value by 32 to get the char in upper case
 							G_DEBUG("Hotkey (Ctrl + Alt + %c) register succeeded!\n", hot_key_vals[selected_key] - 32);
 
-							// Add a filter function to get low level event handling, like X events.
+							// Add a filter function to handle low level events, like X events.
 							// For Param1 use gdk_get_default_root_window() instead of NULL or window, so that
-							// only when hotkey combo is pressed the filter func. will be called, unlike
+							// only when hotkey combo is pressed will the filter func. be called, unlike
 							// others, where it will be called for all events beforehand GTK handles
 							gdk_window_add_filter(gdk_get_default_root_window(), hotkey_pressed, gui_builder);
 							
@@ -2652,7 +2637,7 @@ int main(int argc, char *argv[])
 						selected_key++;
 					}
 					
-					if(selected_key == (sizeof(hot_key_vals) / sizeof(guint)) ) x_error = True;
+					if(selected_key == G_N_ELEMENTS(hot_key_vals)) x_error = True;
 
 					if(True == x_error) selected_key = -2;
 					
