@@ -16,9 +16,8 @@ artha_SOURCES = eggaccelerators.c eggaccelerators.h \
 		addons.h
 
 
-# @GTK_LIBS@ is not used to avoid unwanted libraries (like -latk, etc.)
-# passed to the linker
-artha_LDADD = $(WORDNET_LIB) -lgtk-x11-2.0 \
-		-lgthread-2.0 -lgmodule-2.0 \
-		@libdbus_LIBS@ libwni.a
+# @GTK_LIBS@ & libdbus_CFLAGS are not used to avoid unwanted 
+# libraries (like -latk, -lrt, etc.) passed to the linker
+artha_LDADD = $(WORDNET_LIB) -lgtk-x11-2.0 -lgmodule-2.0 \
+		-ldbus-1 -ldbus-glib-1 libwni.a
 
