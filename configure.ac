@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.50])
 
-AC_INIT([Artha], [0.9.1], [legends2k@yahoo.com], [artha])
+AC_INIT([Artha], [1.0.0], [legends2k@yahoo.com], [artha])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 
@@ -21,22 +21,29 @@ PKG_PROG_PKG_CONFIG
 
 # Check for wordnet-dev and wordnet (>=3.0)
 AC_CHECK_HEADER([wn.h], , [
-AC_MSG_ERROR([You must have wordnet development headers (wordnet-dev) to build. (http://wordnet.princeton.edu/obtain). Refer INSTALL file for further details.])
+AC_MSG_ERROR([
+You must have wordnet development headers (wordnet-dev) to build.
+(http://wordnet.princeton.edu/obtain).
+Refer INSTALL file for further details.])
 ])
 
-# check for wordnet (libwordnet.so)
+# check for wordnet (libwordnet.a)
 # if not found WN (building WordNet from source gives libWN.a)
 # if not found wn (in some distros it's all small case)
 # then check other possible combinations; if none was found exit
 AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [
-AC_CHECK_LIB([WN], [wninit], [WORDNET_LIB=-lWN], [
-AC_CHECK_LIB([wn], [wninit], [WORDNET_LIB=-lwn], [
-AC_CHECK_LIB([WordNet], [wninit], [WORDNET_LIB=-lWordNet], [
-AC_CHECK_LIB([WORDNET], [wninit], [WORDNET_LIB=-lWORDNET], [echo "You must have WordNet library installed to build."; echo "(http://wordnet.princeton.edu/obtain)"; exit 1])
-])
-])
-])
-])
+	AC_CHECK_LIB([WN], [wninit], [WORDNET_LIB=-lWN], [
+		AC_CHECK_LIB([wn], [wninit], [WORDNET_LIB=-lwn], [
+			AC_CHECK_LIB([WordNet], [wninit], [WORDNET_LIB=-lWordNet], [
+				AC_CHECK_LIB([WORDNET], [wninit], [WORDNET_LIB=-lWORDNET], [
+						echo "You must have WordNet library installed to build.";
+						echo "(http://wordnet.princeton.edu/obtain)";
+						exit 1
+					])
+				])
+			])
+		])
+	])
 AC_SUBST([WORDNET_LIB])
 
 
@@ -50,60 +57,23 @@ You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.14
 or above) development headers installed to build.
 
 If you have these installed already you may need to install pkg-config so 
-I can find them.
+that they can be located.
 ])])
 AC_SUBST([GTK_CFLAGS])
 AC_SUBST([GTK_LIBS])
 
-
-# check for gtk-builder-convert command
-AC_CHECK_PROGS([GTKBUILDERCONV], [gtk-builder-convert], [no])
-if test "$GTKBUILDERCONV" = "no"; then
-	AC_MSG_ERROR([Artha needs 'gtk-builder-convert' python script to build! Please install libgtk2.0 (version 2.12 or above) development headers for the same.])
-fi
-
-
-# Check for libnotify, if found, get the details of dbus and notification-daemon too
-PKG_CHECK_MODULES([libnotify], [libnotify >= 0.4.1], [NOTIFY_FOUND=1], [AC_MSG_RESULT(no)
-AC_MSG_WARN([
-Desktop notifications feature is disabled since libnotify development headers were
-not found! If you need it please install them (libnotify-dev >= 0.4.1) and rebuild.
-
-If you have these installed already you may need to install pkg-config so 
-I can find them.])
-[NOTIFY_FOUND=0]
-])
-
-
-if test "$NOTIFY_FOUND" = 1; then
-	PKG_CHECK_MODULES([libdbus], [dbus-1 >= 0.60 dbus-glib-1 >= 0.60], dbus_not_found=0, [
-	AC_MSG_RESULT(no)
-	AC_MSG_WARN([
+# check if dbus-1 alone is enough or dbus-glib-1 alone is enough
+PKG_CHECK_MODULES([libdbus], [dbus-1 >= 0.60 dbus-glib-1 >= 0.60], , [
+AC_MSG_RESULT(no)
+AC_MSG_ERROR([
 You must have the dbus and dbus-glib-1 (version 0.60 or above) 
-development headers installed for Notifications feature.
+development headers installed!
 
-If you have it installed already you may need to install pkg-config so 
-I can find them.
-	])
-	dbus_not_found=1
-	])
-	if test "$dbus_not_found" != 1; then
-		AC_MSG_NOTICE([
-Notifications feature will be enabled in Artha!
-Make sure notification-daemon is installed to see the notifications.])
-
-# over write the result of pkg-config, since it links to a lot of redundant libraries
-# -latk-1.0 -lgio-2.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lpangocairo-1.0 -lcairo -lpango-1.0 -lfreetype -lfontconfig -ldbus-1 -lgobject-2.0
-# -ldbus-glib-1 is not included, since the only function used from this is dbus_g_thread_init which is by -lnotify itself
-
-		libnotify_LIBS="-lnotify"
-		AC_SUBST([libnotify_LIBS])
-		AC_SUBST([libnotify_CFLAGS])
-
-		AC_DEFINE([NOTIFIER_SUPPORT], [1], [Notify - Notifications library present])
-	fi
-fi
-
+If it is installed already, you may need to install pkg-config so 
+that they can be located.
+])])
+AC_SUBST([libdbus_CFLAGS])
+AC_SUBST([libdbus_LIBS])
 
 
 AC_DEFUN([AC_DEFINE_DIR], [
@@ -140,13 +110,17 @@ if test "$no_x" = "yes"; then
 fi
 
 
-AC_CHECK_HEADERS([X11/Xlib.h X11/keysym.h], , [
-AC_MSG_ERROR([X Development headers not found!
+AC_CHECK_HEADERS([X11/Xlib.h X11/Xatom.h], , [
+AC_MSG_ERROR([
+Xlib Development headers not found!
 You need X11 development headers to build.])
 ])
 
 AC_CHECK_FUNC([strcmp], , [
-AC_MSG_ERROR([Failed to find strcmp()! The standard C library function strcmp is required to build.])
+AC_MSG_ERROR([
+Failed to find strcmp()!
+The standard C library function strcmp is required to build.
+])
 ])
 
 

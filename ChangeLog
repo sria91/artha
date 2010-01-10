@@ -1,3 +1,11 @@
+version 1.0.0 (Jan 10, 2010):
+	* New feature - Hotkey editor - for customizing hotkeys
+	* Instance Handler - Multiple instances are handeled gracefully maintianly 
+	  one single unique instance always, across a session
+	* Sure shot window focus to the user on hotkey summoning
+	* Notifications are now a plug-in; no need for dev. headers of libnotify to build
+	* Lot of code clean-ups and minor fixes
+
 version 0.9.1 (May 17, 2009):
 	* Null checks added to regex search variables/modules.
 	* Crash fixed in case of a missing sense.index file; an error is now thrown.

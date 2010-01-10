@@ -1,15 +1,14 @@
 Users Wish List:
 * Make the status icon's visiblity customizable as Always, Never and Auto.
-* Make hotkey customizable (hint: user GdkEventKey, which has the same
-  Mod1Mask, etc. as its a wrapper to X11)
+* Pronunciations
 
 ToDo:
 
 * Search for 4 words and then search a invalid word. When it says "failed", 
-  press back and notice it goes to the the previous to previous word and not 
-  the previoud word.
+  press back and notice it goes to the previous to previous word and not 
+  just the previoud word.
 
-* Help docs and Prefernces windows are to be added.
+* Help docs and Preferences windows are to be added with few more features.
 
 * Peculiar glitch: When font size is set to 9 in the formatting of example in 
   defn. textview, and on searching "rambling" freezes. Just resize the window 
@@ -18,34 +17,25 @@ ToDo:
 * When showing "Oops! Queried term not found!" as a notification, can show the 
   first few chars of what was queried for. E.g "'ied for' not found!"
 
-* Should removed dependency on libnotify, by making it a pluggable module.
-
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
 
 * Watch the X selection. I.e. selecting text and calling Artha by pressing the 
   staus icon should make Artha come up with the definitions.
 
 * When in minimized mode, with notifications, just look up the synonyms, which 
-  should reduce a lot of overhead. When 'Lookup' is clicked, do the actual 
+  should reduce a lot of overhead. When the try icon is clicked, then do the actual 
   WORDNET_INTERFACE_ALL request call, till then this flag can be defered.
 
 * When the drop down list is too big, make sure, it doesn't exceed out of the 
-  app. Instead let it have a scroll bar.
+  app. instead let it have a scroll bar.
 
 * When in simple mode, see the 'Parts' tab for 'rupee', it has lot of duplicates.
 
-* Search 'slippage', and see that the tab set is incorrect
-
-* When displaying antonym tree, if only direct antonyms exist, remove the parent 
-  node ("Direct") alone e.g. orthodox
-
 * Change Kind of (Hyperyms) to Kind of/Way to and Kinds (Hyponyms) to Kinds/Ways
-
-* Keep 2 buttons expand all/contract all for relative trees
 
 * Should Similar be made as 'Similar/Related/See also'? Checkout Hinduism's similar.
 
-* Make sure you free or unref any object that gets newly created or referred
+* Keep 2 buttons expand all/contract all for relative trees
 
 * Memory profiling should be done, check why it shoots from 3 to 9 to 12 to 
   15 MB when running (Check System Monitor)
@@ -53,17 +43,6 @@ ToDo:
 * Try, when the window is visible, searching 'man' and do the same when in tray 
   (with notifications). Performance is differing? (Once the performance got hit 
   when it was visible, but not very sure)
-
-* Try 'water' and then 'Vishnu' notice that the Holonyms/Part Of list's horizontal 
-  scroll bar is not gone, when it should scroll to top once TextView is loaded with text
-
-* Likewise scroll all the relative lists to top once they are populated
-
-* Check tab order (gtk_container_set_focus_chain() can be used
-  Source: http://www.kksou.com/php-gtk2/articles/change-tab-order---Example-4.php)
-
-* Bring to foreground should be effective even when the window is visible, but in 
-  background (I.e. when z-order not 0)
 
 * Clearing search history
 
@@ -73,16 +52,12 @@ ToDo:
 
 * Wrapped text should get aligned with the definition start and not the sense count start
 
-* Check if this is possible => farcry should be separated into "far cry" and sent to search
-
-* Pronunciations
+* Check if this is possible => farcry should be separated into "far cry" and searched
 
 Settings
 ~~~~~~~~
 Startup mode -> tray/show
-Should each example take a new line or all of the examples in a single line?
-Hotkey selection
-Notification system
-Watch clipboard
-Fonts and Colours preferred
+Notification system -> duration, etc.
+Watch clipboard/selection
+Fonts and Colours
 History storage pattern -> count/days to keep, should it be cleared on exit? etc.

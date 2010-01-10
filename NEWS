@@ -1,3 +1,23 @@
+1.0.0 (Jan 08, 2010)
+	After a long time, the most wanted and the earliest charted feature, hotkey coustomization, 
+	is done. Initially the famed eggcellrendererkeys from gnome-control-center was tried; but the 
+	same cell renderer for accelerators seems to have been avaiable for a long time under the name  
+	'GtkCellRendererAccel'. This is used for the same, and it exactly fits the purpose. Handling 
+	multiple instances, to make sure only a single instance runs at a given time, was a long 
+	standing requirement. This is achieved using D-Bus. libnotify's dependency is now completely 
+	removed; it's availability will be determined @ run time; if available, it's functions will 
+	be dynamically linked and called to show notifications. gtk_window_present to display Artha's 
+	main window as the foremost was not working properly. libtomboy helped here, with it's function 
+	tomboy_window_present_hardcore; with this when ever the hotkey is pressed, the window not only 
+	comes to the foreground, but also grab's the foucs properly. gtk-builder-convert tool dependency 
+	is also removed since the latest release of Glade (glade3) gives XML output that is directly 
+	parse-able by GtkBuilder. Cluttered welcome message boxes are now removed since the hotkey is 
+	now customizable. Overall code is now restructured with a few other minor bugs fixes. Autoconf 
+	and Automake files had a uninstall issue which is fixed and both the files are now cleaner with 
+	lesser number of checks for development headers. All in all it's a vital release with a major 
+	feature addition and lot of changes to code and build structure; this is the actual release 
+	that truly meets all the primary goals set during Artha's genesis :)
+
 0.9.1 (May 17, 2009)
 	Trying Artha on Fedora showed that searching for library wordnet fails when one builds WordNet 
 	from source as it gives a archive library output libWN.a and configure looks for libwordnet.so.

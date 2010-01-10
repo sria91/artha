@@ -36,8 +36,8 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the <X11/keysym.h> header file. */
-#undef HAVE_X11_KEYSYM_H
+/* Define to 1 if you have the <X11/Xatom.h> header file. */
+#undef HAVE_X11_XATOM_H
 
 /* Define to 1 if you have the <X11/Xlib.h> header file. */
 #undef HAVE_X11_XLIB_H
@@ -47,9 +47,6 @@
 
 /* Path where icon files are placed */
 #undef ICON_DIR
-
-/* Notify - Notifications library present */
-#undef NOTIFIER_SUPPORT
 
 /* Name of package */
 #undef PACKAGE
@@ -65,6 +62,9 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
