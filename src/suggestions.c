@@ -1,6 +1,6 @@
-/**
+/* suggestions.c
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,21 +13,31 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, see <http://www.gnu.org/licenses/>.
+ * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 
 /*
-	Code suggestions.c
-
-	Dynamic loading of libenchant for spell checks using 
-	GLib's GModule. Function prototypes are taken from 
-	suggestions.h
-*/
+ * Dynamic loading of libenchant's functions for spell checks.
+ */
 
 
+#include <sys/types.h>
+#include <gmodule.h>
 #include "suggestions.h"
+#include "wni.h"
 
+#define ENCHANT_FILE		"libenchant.so.1"
+#define DICT_TAG_ENGLISH	"en"
+#define DICT_ENGLISH_PREFIX	"en_"
+#define	DICT_TAG_MAX_LENGTH	7
+
+// Global variables
+
+GModule *mod_enchant = NULL;
+EnchantBroker *enchant_broker = NULL;
+EnchantDict *enchant_dict = NULL;
 
 gchar** suggestions_get(gchar *lemma)
 {
@@ -37,12 +47,12 @@ gchar** suggestions_get(gchar *lemma)
 	GSList *str_list = NULL, *temp_list = NULL;
 
 	// check if Enchant broker and English dictionary are initialized
-	// also check if WordNet database files are opened
-	if(enchant_broker && enchant_dict && (1 == OpenDB))
+	if(enchant_broker && enchant_dict)
 	{
 		if(enchant_dict_check(enchant_dict, lemma, -1))
 		{
 			suggestions = enchant_dict_suggest(enchant_dict, lemma, -1, &suggestions_count);
+
 			for(i = 0; i < suggestions_count; i++)
 			{
 				if(wni_request_nyms(suggestions[i], NULL, 0, FALSE))
@@ -92,20 +102,20 @@ gboolean suggestions_init()
 
 	if(g_module_supported() && (mod_enchant = g_module_open(ENCHANT_FILE, G_MODULE_BIND_LAZY)))
 	{
-		g_module_symbol(mod_enchant, FUNC_BROKER_INIT, (gpointer *) &enchant_broker_init);
-		g_module_symbol(mod_enchant, FUNC_BROKER_FREE, (gpointer *) &enchant_broker_free);
-		g_module_symbol(mod_enchant, FUNC_BROKER_LIST_DICTS, (gpointer *) &enchant_broker_list_dicts);
-		g_module_symbol(mod_enchant, FUNC_BROKER_DICT_EXISTS, (gpointer *) &enchant_broker_dict_exists);
-		g_module_symbol(mod_enchant, FUNC_BROKER_REQ_DICT, (gpointer *) &enchant_broker_request_dict);
-		g_module_symbol(mod_enchant, FUNC_BROKER_FREE_DICT, (gpointer *) &enchant_broker_free_dict);
-		g_module_symbol(mod_enchant, FUNC_DICT_CHECK, (gpointer *) &enchant_dict_check);
-		g_module_symbol(mod_enchant, FUNC_DICT_SUGGEST, (gpointer *) &enchant_dict_suggest);
-		g_module_symbol(mod_enchant, FUNC_DICT_FREE_STRINGS, (gpointer *) &enchant_dict_free_string_list);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_broker_init), (gpointer *) &enchant_broker_init);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_broker_free), (gpointer *) &enchant_broker_free);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_broker_list_dicts), (gpointer *) &enchant_broker_list_dicts);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_broker_dict_exists), (gpointer *) &enchant_broker_dict_exists);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_broker_request_dict), (gpointer *) &enchant_broker_request_dict);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_broker_free_dict), (gpointer *) &enchant_broker_free_dict);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_check), (gpointer *) &enchant_dict_check);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_suggest), (gpointer *) &enchant_dict_suggest);
+		g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_free_string_list), (gpointer *) &enchant_dict_free_string_list);
 
 		// in older version of Enchant, enchant_dict_free_string_list might be absent, they will have the
 		// now deprecated function enchant_dict_free_suggestions
 		if(NULL == enchant_dict_free_string_list)
-			g_module_symbol(mod_enchant, FUNC_DICT_FREE_SUGGESTS, (gpointer *) &enchant_dict_free_string_list);
+			g_module_symbol(mod_enchant, G_STRINGIFY(enchant_dict_free_string_list), (gpointer *) &enchant_dict_free_string_list);
 
 		// check if we have obtained the essential function pointers
 		if(NULL != enchant_broker_init && NULL != enchant_broker_free && NULL != enchant_broker_dict_exists &&
@@ -115,6 +125,9 @@ gboolean suggestions_init()
 			enchant_broker = enchant_broker_init();
 			if(enchant_broker)
 			{
+				/* if the preset dict. doesn't exist and if list dict func. exists
+				   then try to enumerate the dictionaries and see if a compatible one can be found
+				 */
 				if(!enchant_broker_dict_exists(enchant_broker, dict_tag) && enchant_broker_list_dicts)
 				{
 					dict_tag[0] = '\0';

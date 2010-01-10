@@ -1,6 +1,6 @@
-/**
+/* wni.h
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,20 +13,40 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, see <http://www.gnu.org/licenses/>.
+ * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* wni.h: WordNet Interface Header */
- 
-#ifndef WNI_H
-#define WNI_H
 
-#include <string.h>
+/*
+ * WordNet Interface Header
+ * This header exposes the functions required to query data from wordnet
+ */
+
+ 
+#ifndef __WNI_H__
+#define __WNI_H__
 
 #include <glib.h>
-#include <glib/gprintf.h>
 
-#include <wn.h>
+G_BEGIN_DECLS
+
+#ifdef HAVE_CONFIG_H
+	#include <config.h>
+
+	#if DEBUG_LEVEL >= 2
+		#define G_MESSAGE(format, args...) g_message(format, ##args)
+	#else
+		#define G_MESSAGE(format, args...) 
+	#endif		/* DEBUG_LEVEL >= 2 */
+
+	#if DEBUG_LEVEL >= 3
+		#include <glib/gprintf.h>
+		#define G_PRINTF(format, args...) g_printf(format, ##args)
+	#else
+		#define G_PRINTF(format, args...) 
+	#endif		/* DEBUG_LEVEL >= 3 */
+#endif		/* HAVE_CONFIG_H */
 
 
 /* For adjectives, indicates synset type */
@@ -40,22 +60,6 @@
 #define SYNONYM_MAPPING		1
 #define ANTONYM_MAPPING		2
 #define PROPERTY_MAPPING	3
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-
-#if DEBUG_LEVEL >= 2
-	#define G_MESSAGE(format, args...) g_message(format, ##args)
-#else
-	#define G_MESSAGE(format, args...) 
-#endif
-
-#if DEBUG_LEVEL >= 3
-	#define G_PRINTF(format, args...) g_printf(format, ##args)
-#else
-	#define G_PRINTF(format, args...) 
-#endif
-#endif
 
 // WNI Data Structures Used
 typedef enum
@@ -196,14 +200,12 @@ struct _tree_list
 typedef struct _tree_list WNITreeList;
 
 
-G_BEGIN_DECLS
-
-// WNI Exposed functions
-extern gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode);
-extern void wni_free(GSList **response_list);
-extern int wni_strcmp0(const char *s1, const char *s2);
+// WNI ~ Exposed functions
+gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode);
+void wni_free(GSList **response_list);
+int wni_strcmp0(const char *s1, const char *s2);
 
 G_END_DECLS
 
-#endif
+#endif		/* __WNI_H__ */
 

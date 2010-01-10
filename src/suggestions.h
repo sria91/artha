@@ -1,6 +1,6 @@
-/**
+/* suggestions.h
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,44 +13,21 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, see <http://www.gnu.org/licenses/>.
+ * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 
 /*
-	Header suggestions.h
-
-	Dynamic loading of libenchant for spell checks using 
-	GLib's GModule. Prototypes must match with those in 
-	enchant.h and enchant-provider.h
-*/
-
-#ifndef SUGGESTIONS_H
-#define SUGGESTIONS_H
+ * Dynamic linking of libenchant for spell checks using GModule.
+ * Prototypes must match with enchant.h and enchant-provider.h
+ */
 
 
-#include <sys/types.h>
-#include <gmodule.h>
-#include "wni.h"
+#ifndef __SUGGESTIONS_H__
+#define __SUGGESTIONS_H__
 
-
-#define ENCHANT_FILE		"libenchant.so.1"
-#define DICT_TAG_ENGLISH	"en"
-#define DICT_ENGLISH_PREFIX	"en_"
-#define	DICT_TAG_MAX_LENGTH	7
-
-
-#define FUNC_BROKER_INIT	"enchant_broker_init"
-#define FUNC_BROKER_FREE	"enchant_broker_free"
-#define FUNC_BROKER_DICT_EXISTS	"enchant_broker_dict_exists"
-#define FUNC_BROKER_LIST_DICTS	"enchant_broker_list_dicts"
-#define FUNC_BROKER_REQ_DICT	"enchant_broker_request_dict"
-#define FUNC_BROKER_FREE_DICT	"enchant_broker_free_dict"
-#define FUNC_DICT_CHECK		"enchant_dict_check"
-#define FUNC_DICT_SUGGEST	"enchant_dict_suggest"
-#define FUNC_DICT_FREE_STRINGS	"enchant_dict_free_string_list"
-#define FUNC_DICT_FREE_SUGGESTS	"enchant_dict_free_suggestions"
-
+G_BEGIN_DECLS
 
 //Structure Prototypes
 
@@ -126,8 +103,6 @@ typedef void	(*EnchantDictDescribeFn)		(const char * const lang_tag, const char 
 							 const char * const provider_desc, const char * const provider_file,
 							 void * user_data);
 
-G_BEGIN_DECLS
-
 
 EnchantBroker*	(*enchant_broker_init)			(void) = NULL;
 void		(*enchant_broker_free)			(EnchantBroker * broker) = NULL;
@@ -153,11 +128,5 @@ char*		(*enchant_broker_get_error)		(EnchantBroker * broker) = NULL;
 
 G_END_DECLS
 
-// Global variables
-
-GModule *mod_enchant = NULL;
-EnchantBroker *enchant_broker = NULL;
-EnchantDict *enchant_dict = NULL;
-
-#endif
+#endif		/* __SUGGESTIONS_H__ */
 

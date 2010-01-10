@@ -1,6 +1,6 @@
-/**
+/* wni.c
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,22 +13,30 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, see <http://www.gnu.org/licenses/>.
+ * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
-/*
-   wni.c: WordNet Interface module, which does the actual talking to 
-   libwordnet. Sits b/w the application and the wordnet database files, 
-   receives requests for a given search string, if found in WordNet, 
-   populates the requested lists.
 
-   TODO: When in simple mode, see pertainyms of 'verbally' and hypernyms of 'conquest', 
-   should, duplicate check for them in these simple mode case, be done? Likewise, see 
-   'rupee's Meronyms in Simple mode, it lists cent and paise around 5 times!
+
+/*
+ * WordNet Interface code
+ * This does the actual talking to libwordnet. Sits b/w the application 
+ * and the wordnet database files, receives requests for a given search 
+ * string, if found in WordNet, populates the requested lists.
+ */
+
+
+/*
+   TODO: When in simple mode, see pertainyms of 'verbally' and hypernyms of
+   'conquest'; Should duplicate check for them in these simple mode cas be 
+   done? Likewise, see 'rupee' Meronyms in Simple mode, it lists cent and 
+   paise around 5 times!
 */
 
-#include "wni.h"
 
+#include <string.h>
+#include <wn.h>
+#include "wni.h"
 
 // WNI Global Variable
 GSList *global_list = NULL;
@@ -459,7 +467,7 @@ static gchar* parse_definition(gchar *str)
 	guint16 i = 0, len = 0;
 	guint8 brace_met = FALSE;
 	guint8 double_quotes_met = 0;
-	guint8 just_ended = FALSE;
+	gboolean just_ended = FALSE;
 	gchar ch = 0;
 	gchar *temp_ch = NULL;
 
