@@ -1,8 +1,4 @@
-AM_CFLAGS = -Wall @GTK_CFLAGS@ @libnotify_CFLAGS@
-
-# AM_LDFLAGS is only to pass global linker flags and not for 
-# passing libraries; hence per-build _LDADD is used below. 
-#AM_LDFLAGS = $(WORDNET_LIB) -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 -lnotify
+AM_CFLAGS = -Wall @GTK_CFLAGS@ @libdbus_CFLAGS@
 
 bin_PROGRAMS = artha
 
@@ -10,6 +6,19 @@ noinst_LIBRARIES = libwni.a
 libwni_a_SOURCES = wni.c wni.h
 
 artha_DEPENDENCIES = libwni.a
-artha_SOURCES = wni.h addons.h gui.c gui.h suggestions.c suggestions.h
-artha_LDADD = libwni.a $(WORDNET_LIB) -lgtk-x11-2.0 -lgthread-2.0 -lgmodule-2.0 @libnotify_LIBS@
+artha_SOURCES = eggaccelerators.c eggaccelerators.h \
+		mod_notify.c mod_notify.h \
+		suggestions.c suggestions.h \
+		hotkey_editor.c hotkey_editor.h \
+		gui.c gui.h \
+		tomboyutil.c tomboyutil.h \
+		instance_handler.c instance_handler.h \
+		addons.h
+
+
+# @GTK_LIBS@ is not used to avoid unwanted libraries (like -latk, etc.)
+# passed to the linker
+artha_LDADD = $(WORDNET_LIB) -lgtk-x11-2.0 \
+		-lgthread-2.0 -lgmodule-2.0 \
+		@libdbus_LIBS@ libwni.a
 

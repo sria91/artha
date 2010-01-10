@@ -1,6 +1,6 @@
-/* addons.h
+/* hotkey_editor.h
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009, 2010 Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,32 +17,22 @@
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
- 
+
 /*
- * Modules that are looked up at run time for additional features
- * by Artha (plugins) will have function prototypes here.
+ * Header that exposes hotkey_editor's functions
  */
 
- 
-#ifndef __ADDONS_H__
-#define __ADDONS_H__
+
+#ifndef __HOTKEY_EDITOR_H__
+#define __HOTKEY_EDITOR_H__
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-/* Exposed functions of the 'Suggestions' module */
-
-gboolean 	suggestions_init();
-gchar** 	suggestions_get(gchar* lemma);
-gboolean 	suggestions_uninit();
-
-
-/* Exposed functions of 'Notify' module */
-gboolean	mod_notify_init(GtkStatusIcon *status_icon);
-gboolean	mod_notify_uninit(void);
+GtkWidget* create_hotkey_editor(void);
 
 G_END_DECLS
 
-#endif		/* __ADDONS_H__ */
+#endif		/* __HOTKEY_EDITOR_H__ */
 

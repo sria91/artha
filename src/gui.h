@@ -1,6 +1,6 @@
-/**
+/* gui.h
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,64 +13,76 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, see <http://www.gnu.org/licenses/>.
+ * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 
-/* gui.h: GUI Header */
+/*
+ * GUI Header declarations
+ */
 
 
-#include "wni.h"
-#include <gtk/gtk.h>
+#ifndef __GUI_H__
+#define __GUI_H__
+
+
 #include <X11/Xlib.h>
-#include <X11/keysym.h>
+#include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
+#include <wn.h>
 
+/* custom headers */
+#include "wni.h"
+#include "instance_handler.h"
+#include "eggaccelerators.h"
+#include "hotkey_editor.h"
+#include "mod_notify.h"
+#include "tomboyutil.h"
+
+/* pluggable module headers */
 #include "addons.h"
 
+/* if built using make, include config.h;
+   depending on the DEBUG_LEVEL, set the G_DEBUG macro
+ */
 #ifdef HAVE_CONFIG_H
+	#include <config.h>
 
-#include <config.h>
+	#if DEBUG_LEVEL >= 1
+		#define G_DEBUG(format, args...) g_debug(format, ##args)
+	#else
+		#define G_DEBUG(format, ...) 
+	#endif		/* DEBUG_LEVEL */
+#endif		/* HAVE_CONFIG_H */
 
-//#ifdef G_OS_UNIX
-#ifdef NOTIFIER_SUPPORT
-	#define NOTIFY
-#endif
-//#endif
 
+/* general constants */
+#define NEW_LINE		"\r\n"
+#define ICON_FILE		"artha.png"
+#define UI_FILE			"gui.glade"
+#define MAX_CONCAT_STR		500
+#define MAX_STATUS_MSG		100
+#define	MAX_SENSE_DIGITS	5
+
+/* about box constants */
 #define MAILTO_PREFIX "mailto:"
-
-#if DEBUG_LEVEL >= 1
-	#define G_DEBUG(format, args...) g_debug(format, ##args)
-#else
-	#define G_DEBUG(format, ...) 
-#endif
-
-#endif
-
-#ifdef NOTIFY
-#include <libnotify/notify.h>
-#include <dbus/dbus-glib.h>
-#endif
-
-#define NEW_LINE	"\r\n"
-#define ICON_FILE	"artha.png"
-#define UI_FILE		"gui.ui"
-#define CONF_FILE_EXT	".conf"
-
 #define ARTHA_RESPONSE_REPORT_BUG	1
 #define STR_REPORT_BUG		"Report a _Bug"
 
-#define SETTINGS_COMMENT	"Artha Preferences File"
+/* conf file constants */
+#define CONF_FILE_EXT	".conf"
+#define SETTINGS_COMMENT	" Artha Preferences File"
 #define GROUP_SETTINGS		"Settings"
-#define KEY_HOTKEY_INDEX	"Hotkey"
+#define KEY_ACCEL_KEY		"Accel_Key"
+#define KEY_ACCEL_MODS		"Accel_Mods"
+#define KEY_ACCEL_FLAGS		"Accel_Flags"
 #define KEY_VERSION		"Version"
 #define KEY_MODE		"DetailedMode"
-#ifdef NOTIFY
-	#define KEY_NOTIFICATIONS "Notifications"
-#endif
+#define KEY_NOTIFICATIONS	"Notifications"
 
+/* UI element names - refer gui.glade */
 #define WINDOW_MAIN			"wndMain"
 #define BUTTON_SEARCH			"btnSearch"
 #define TEXT_VIEW_DEFINITIONS		"txtDefinitions"
@@ -82,10 +94,12 @@
 #define LABEL_ATTRIBUTES		"lblAttributes"
 #define LABEL_TEXT_ATTRIBUTES		"Attributes"
 #define LABEL_TEXT_ATTRIBUTE_OF		"Attribute of"
-#define	VPANE				"vpaned1"
+#define	VPANE				"vpanedMain"
+#define DIALOG_HOTKEY			"dlgHotkeyChooser"
+#define DIALOG_HOTKEY_LABEL		"lblHotkey"
+#define DIALOG_HOTKEY_HBOX		"hboxHotkey"
 
-#define MAX_CONCAT_STR		500
-#define MAX_STATUS_MSG		100
+/* Relative IDs */
 
 #define TREE_SYNONYMS		0
 #define TREE_ANTONYMS		1
@@ -103,24 +117,7 @@
 
 #define TOTAL_RELATIVES		TREE_MERONYMS + 1
 
-// Artha Global variables
-
-// Names of relative tree tab widgets from UI file
-// Note that the 'tree" prefix will be stripped and will be used within code
-gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
-"treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
-
-#define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
-gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
-
-//gchar *list_type[] = {"MEMBER OF", "SUBSTANCE OF", "PART OF", "MEMBERS", "HAS SUBSTANCE", "PARTS"};
-//gchar *hypernym_type[] = {"INSTANCE OF", "INSTANCES"};
-
-#define FAMILIARITY_COUNT	8
-gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
-gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
-//none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give
-
+/* GtkTextView tag constants */
 #define	TAG_LEMMA	"tag_lemma"
 #define TAG_POS		"tag_pos"
 #define TAG_COUNTER	"tag_counter"
@@ -129,49 +126,30 @@ gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOr
 #define TAG_MATCH	"tag_match"
 #define TAG_SUGGESTION	"tag_suggestion"
 
-#define STR_SUGGEST_MATCHES		"Matches found:"
-
-#define DIRECT_ANTONYM_HEADER		"Direct Antonyms"
-#define	INDIRECT_ANTONYM_HEADER		"Indirect Antonyms"
-#define	INDIRECT_ANTONYM_COLUMN_HEADER	"Indirect via Similar Term"
-
-#define	MAX_SENSE_DIGITS	5
-Bool 		x_error = False;
-GSList 		*results = NULL;
-gchar 		*last_search = NULL;
-gboolean 	was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, mod_suggest = FALSE, auto_contract = FALSE;
-gint8		hotkey_index;
-guint 		hot_key_vals[] = {GDK_w, GDK_a, GDK_t, GDK_q};
-gint		history_count = 0;
-guint		status_msg_context_id = 0;
-GString		*wordnet_terms = NULL;
-
-#ifdef NOTIFY
-gboolean 		notifier_enabled = FALSE;
-NotifyNotification	*notifier = NULL;
-GtkCheckMenuItem	*menu_notify = NULL;
-GtkToolItem		*toolbar_notify = NULL;
-#endif
-
-// Artha App. Strings
+/* App. Strings */
+#define STR_SUGGEST_MATCHES			"Matches found:"
+#define STR_ANTONYM_HEADER_DIRECT		"Direct Antonyms"
+#define	STR_ANTONYM_HEADER_INDIRECT		"Indirect Antonyms"
+#define	STR_ANTONYM_HEADER_INDIRECT_VIA		"Indirect via Similar Term"
 
 #define STR_TOOLITEM_QUIT	"Q_uit"
 #define STR_TOOLITEM_ABOUT	"_About"
 #define STR_TOOLITEM_NOTIFY	"N_otify"
+#define STR_TOOLITEM_HOTKEY	"_Hotkey"
 #define STR_TOOLITEM_MODE	"_Detailed"
 #define STR_TOOLITEM_NEXT	"_Next"
 #define STR_TOOLITEM_PREV	"_Previous"
 
-#define ABOUT_HOTKEY_SET	"The hot key set to summon Artha is Ctrl + Alt + "
-
-#define QUIT_TOOLITEM_TOOLTIP	"Exit altogether. To minimize to system tray, press Esc or click the Close Window (X) button or the system tray icon"
-#define ABOUT_TOOLITEM_TOOLTIP	"About Artha -> Copyright, Credits, Licence, etc."
-#define PREV_TOOLITEM_TOOLTIP	"Go to the previous search term"
-#define NEXT_TOOLITEM_TOOLTIP	"Go to the next search term"
-#define MODE_TOOLITEM_TOOLTIP	"Toggle between simple/advanced modes"
+#define TOOLITEM_TOOLTIP_QUIT	"Exit altogether. To minimize to system tray, press Esc or click the Close Window (X) button or the system tray icon"
+#define TOOLITEM_TOOLTIP_ABOUT	"About Artha -> Copyright, Credits, Licence, etc."
+#define TOOLITEM_TOOLTIP_PREV	"Go to the previous search term"
+#define TOOLITEM_TOOLTIP_NEXT	"Go to the next search term"
+#define TOOLITEM_TOOLTIP_MODE	"Toggle between simple/advanced modes"
+#define TOOLITEM_TOOLTIP_HOTKEY	"View/Modify the hotkey to summon Artha from inside a window, after selecting some text in it"
+#define TOOLITEM_TOOLTIP_NOTIFY	"Notify: When on the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
 
 #define STR_STATUS_QUERY_SUCCESS "Results returned: %d sense(s) in %d POS(s)!"
-#define STR_ERROR_WN		"Failed to open WordNet database files!\n\
+#define STR_MSG_WN_ERROR	"Failed to open WordNet database files!\n\
 Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere, set the environment variable WNHOME to point to it."
 #define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
 #define STR_REGEX_DETECTED	"Regular expression pattern detected"
@@ -184,6 +162,9 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_STATUS_SEARCHING	"Searching... please wait"
 #define STR_STATUS_REGEX_FILE_MISSING	"Error: index.sense not found!"
 
+#define STR_NOTIFY_QUERY_FAIL_TITLE	"Oops!"
+#define STR_NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
+
 #define STATUS_DESC_LOADING_INDEX	"loading_index"
 #define STATUS_DESC_SEARCH_SUCCESS	"search_successful"
 #define STATUS_DESC_SEARCH_FAILURE	"search_failed"
@@ -191,63 +172,94 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STATUS_DESC_REGEX_SEARCHING	"regex_mode_searching"
 #define STATUS_DESC_REGEX_ERROR		"regex_mode_error"
 
-#ifdef NOTIFY
-#define NOTIFY_TOOLITEM_TOOLTIP	"Notify: When on the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
-#define NOTIFY_QUERY_FAIL_TITLE	"Oops!"
-#define NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
-#endif
+#define STR_MSG_WELCOME_TITLE		"Welcome to Artha!"
+#define STR_MSG_WELCOME_HOTKEY_HEADER	"Artha can be summoned with a hotkey when required. Selecting text in any window and pressing that (hotkey) combination \
+will pop up Artha with the selected text looked up."
+#define STR_MSG_WELCOME_ARBITRARY_SUCCEEDED	"Since this is the first launch an arbitrary hotkey <b>%s</b> is set."
+#define STR_MSG_WELCOME_HOTKEY_FOOTER	"This can be changed via the hotkey button in the toolbar.\n\nRefer manual ('man artha' in terminal) for detailed help."
+#define STR_MSG_WELCOME_HOTKEY_FAILED	"Unable to set the previously chosen hotkey <b>%s</b> for Artha. This could be because of some other application \
+registered with the same key combination."
+#define STR_MSG_HOTKEY_NOTSET		"You have enabled notifications; but notifications can only be shown upon pressing a hotkey combination which is \
+currently not set. It can be set via the hotkey button in the toolbar."
 
-#define WELCOME_TITLE		"Welcome to Artha!"
-#define WELCOME_UPGRADED	"Thank you for updating Artha to a newer version!"
-#define WELCOME_HOTKEY_NORMAL	"The hot key set for Artha is <b>Ctrl + Alt + %c</b>."
+#define STR_APP_TITLE		"Artha ~ The Open Thesaurus"
 
-#define WELCOME_HOTKEY_INFO	" Press this key combination to call Artha from the system tray. Selecting text \
-in any window and calling Artha will pop it up with the selected text's definitions."
-#define WELCOME_MANUAL		"\n\nRefer manual ('man artha' in terminal) for detailed info/help."
+#define STR_COPYRIGHT		"Copyright © 2009, 2010  Sundaram Ramaswamy\n\nWordNet 3.0 \
+Copyright 2006 - 2010 by Princeton University.  All rights reserved."
 
-#ifdef NOTIFY
-#define WELCOME_NOTIFY		"\n\nIf notifications are enabled, instead of popping up, Artha will \
-notify the first definition of the selection. Notifications can be enabled/disabled by \
-right-clicking on Artha's status icon on the system tray and selecting the required option."
-#endif
+#define STR_WEBSITE		"http://artha.sourceforge.net/"
 
-#define WELCOME_NOHOTKEY	"Artha tried to set one of the hot key combos \
-<b>Ctrl + Alt + [W|A|T|Q]</b> and found all of them to be already occupied by some other \
-application. Release atleast one of them and restart Artha to use the hot key feature.\n\nIf this \
-feature is enabled Artha can be called from any window, selecting some text, it will pop up with \
-the definitions of the selected text. This feature is also required to enable Notifications."
+#define STR_BUG_WEBPAGE		"http://launchpad.net/artha/+filebug"
 
-#define WELCOME_NOTE_HOTKEY_CHANGED	"Artha's hot key is now changed to <b>Ctrl + Alt + %c</b>."
+#define STR_WEBSITE_LABEL	"Artha Homepage"
 
-#define STRING_TITLE		"Artha ~ The Open Thesaurus"
+#define STR_ABOUT		"A handy off-line thesaurus based on WordNet"
 
-#define STRING_COPYRIGHT	"Copyright © 2009  Sundaram Ramaswamy. All Rights Reserved.\n\nWordNet 3.0 \
-Copyright 2006 by Princeton University.  All rights reserved."
-
-#define STRING_WEBSITE		"http://artha.sourceforge.net/"
-
-#define STRING_BUG_WEBPAGE	"http://launchpad.net/artha/+filebug"
-
-#define STRING_WEBSITE_LABEL	"Artha Homepage"
-
-#define STRING_ABOUT		"A handy off-line thesaurus based on WordNet"
-
-#define STRING_LICENCE "Artha is free software; you can redistribute it and/or modify it under the terms of \
+#define STR_LICENCE "Artha is free software; you can redistribute it and/or modify it under the terms of \
 the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, \
 or (at your option) any later version.\n\nArtha is distributed in the hope that it will be useful, but WITHOUT \
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See \
 the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public \
-License along with Artha; if not, see http://www.gnu.org/licenses/.\n\nWordNet 3.0 Disclaimer\nTHIS SOFTWARE AND \
-DATABASE IS PROVIDED \"AS IS\" AND PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR \
-IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES \
-OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE, DATABASE OR \
-DOCUMENTATION WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS."
+License along with Artha; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth \
+Floor, Boston, MA  02110-1301  USA.\n\nWordNet 3.0 Disclaimer\nTHIS SOFTWARE AND DATABASE IS PROVIDED \"AS IS\" AND \
+PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED.  BY WAY OF EXAMPLE, BUT NOT \
+LIMITATION, PRINCETON UNIVERSITY MAKES NO REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY \
+PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE, DATABASE OR DOCUMENTATION WILL NOT INFRINGE ANY \
+THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS."
+
+typedef enum
+{
+	MSG_DB_LOAD_ERROR,
+	MSG_HOTKEY_FAILED,
+	MSG_HOTKEY_SUCCEEDED_FIRST_RUN,
+	MSG_HOTKEY_FAILED_FIRST_RUN,
+	MSG_HOTKEY_NOTSET
+} MessageResposeCode;
+
+
+/* Global variables */
 
 gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
 
+/* Names of relative tree tab widgets from UI file
+   Note that the 'tree" prefix will be stripped and will be used within code */
+gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
+"treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
 
-// Dynamically loaded gtk_show_uri function's prototype
+#define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
+gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
+
+#define FAMILIARITY_COUNT	8
+gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
+gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
+/* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
+
+Display			*dpy = NULL;
+Bool 			x_error = False;
+GSList 			*results = NULL;
+gchar 			*last_search = NULL;
+gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE;
+gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE;
+guint32			last_hotkey_time = 0;
+guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
+guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
+GtkAccelKey		app_hotkey = {0};
+GtkDialog		*hotkey_editor_dialog = NULL;
+gint			history_count = 0, notify_toolbar_index = -1;
+guint			status_msg_context_id = 0;
+GString			*wordnet_terms = NULL;
+NotifyNotification	*notifier = NULL;
+GtkCheckMenuItem	*menu_notify = NULL;
+
+
+/* gtk_show_uri was introduced only in GTK+ 2.14, other than that all other functions referred by 
+ * Artha are <= 2.12; hence use gtk_show_uri only if it's available; link it dynamically */
+
+/* dynamically loaded gtk_show_uri function's prototype */
 typedef gboolean (*ShowURIFunc) (GdkScreen *screen, const gchar *uri, guint32 timestamp, GError **error);
+
+/* function ptr to gtk_show_uri */
 ShowURIFunc fp_show_uri = NULL;
 
+#endif		/* __GUI_H__ */
 
