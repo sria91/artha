@@ -54,7 +54,6 @@
                             <property name="visible">True</property>
                             <property name="add_tearoffs">True</property>
                             <property name="tearoff_title">History</property>
-                            <property name="button_sensitivity">on</property>
                           </object>
                           <packing>
                             <property name="position">1</property>
