@@ -1,6 +1,6 @@
 version 1.0.0 (Jan 10, 2010):
-	* New feature - Hotkey editor - for customizing hotkeys
-	* Instance Handler - Multiple instances are handeled gracefully maintianly 
+	* New feature - hotkey editor - for customizing hotkeys
+	* Instance Handler - Multiple instances are handled gracefully, maintaining 
 	  one single unique instance always, across a session
 	* Sure shot window focus to the user on hotkey summoning
 	* Notifications are now a plug-in; no need for dev. headers of libnotify to build
@@ -20,7 +20,7 @@ version 0.9.1 (May 17, 2009):
 
 version 0.9.0 (Apr 26, 2009):
 	* Regex based search feature is now implemented. Accepted pattern will be 
-	  based on Wildmat syntax I.e. * (wildcard), ? (joker), [a|c-k] {2, } 
+	  based on Wildmat syntax I.e. * (wild card), ? (joker), [a|c-k] {2, } 
 	  (ranges), + can be used primarily.
 	* Double clicking on the definition textview, will now check for compound 
 	  words surrounding the actual selection, and if a valid match is found, 
@@ -37,8 +37,8 @@ version 0.8.0 (Feb 09, 2009):
 	* Mouse wheel can now scroll through the history list.
 	* When WordNet dict files couldn't be opened, the user is shown a message.
 	* Relative tabs reordered based on most-used ones and complexity.
-	* The current hot key set will now be displayed in the About dialog.
-	* When no hot key could be set, Artha won't be persistent.
+	* The current hotkey set will now be displayed in the About dialog.
+	* When no hotkey could be set, Artha won't be persistent.
 	* Bug in saving preferences fixed.
 	* Bug in filtering invalid characters on search fixed.
 	* Bug in finding relatives with more then one sense mapping fixed.
@@ -73,10 +73,10 @@ version 0.7.1 (Jan 29, 2009):
 	* libdus threads init function called using its GLib bindings.
 
 version 0.7.0 (Jan 23, 2009):
-	* 3 more hot key combos added (so now it is Ctrl + Alt + [W|A|T|Q]) to 
-	  the list of hot keys. Artha will try setting them in this order. If 
+	* 3 more hotkey combos added (so now it is Ctrl + Alt + [W|A|T|Q]) to 
+	  the list of hotkeys. Artha will try setting them in this order. If 
 	  none succeeds, the Notifications feature is disabled properly.
-	* On first run or when the hot key changes w.r.t the prev. run, Artha 
+	* On first run or when the hotkey changes w.r.t the prev. run, Artha 
 	  shows a message box with details as a help to the user.
 
 version 0.6.5:
@@ -103,7 +103,7 @@ version 0.6.1:
 	* Autoconf and automake employed.
 	* ChangeLog, NEWS, TODO, README, COPYING & AUTHORS are added.
 
-verison 0.6.0:
+version 0.6.0:
 	* Previous and Next buttons were added.
 	* Bug fix to prevent searching a word twice (in case of searching a word already in 
 	  history list) added.
@@ -115,7 +115,7 @@ version 0.5.0:
 
 version 0.4.1:
 	* Code to populate tree-based relatives added.
-	* Bold face for multiple occuring, higher weightage relatives implimented in 
+	* Bold face for multiple occurring, higher weightage relatives implemented in 
 	  relative lists.
 	* Issue in checking for duplicate terms against the current lists, in WNI, fixed.
 

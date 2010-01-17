@@ -1,12 +1,12 @@
 Users Wish List:
-* Make the status icon's visiblity customizable as Always, Never and Auto.
+* Make the status icon's visibility customizable as Always, Never and Auto.
 * Pronunciations
 
-ToDo:
+To Do:
 
 * Search for 4 words and then search a invalid word. When it says "failed", 
   press back and notice it goes to the previous to previous word and not 
-  just the previoud word.
+  just the previous word.
 
 * Help docs and Preferences windows are to be added with few more features.
 
@@ -20,11 +20,11 @@ ToDo:
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
 
 * Watch the X selection. I.e. selecting text and calling Artha by pressing the 
-  staus icon should make Artha come up with the definitions.
+  status icon should make Artha come up with the definitions.
 
 * When in minimized mode, with notifications, just look up the synonyms, which 
   should reduce a lot of overhead. When the try icon is clicked, then do the actual 
-  WORDNET_INTERFACE_ALL request call, till then this flag can be defered.
+  WORDNET_INTERFACE_ALL request call, till then this flag can be deferred.
 
 * When the drop down list is too big, make sure, it doesn't exceed out of the 
   app. instead let it have a scroll bar.
@@ -56,7 +56,7 @@ ToDo:
 
 Settings
 ~~~~~~~~
-Startup mode -> tray/show
+Start-up mode -> tray/show
 Notification system -> duration, etc.
 Watch clipboard/selection
 Fonts and Colours

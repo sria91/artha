@@ -23,7 +23,7 @@ PKG_PROG_PKG_CONFIG
 AC_CHECK_HEADER([wn.h], , [
 AC_MSG_ERROR([
 You must have wordnet development headers (wordnet-dev) to build.
-(http://wordnet.princeton.edu/obtain).
+(http://wordnet.princeton.edu/download).
 Refer INSTALL file for further details.])
 ])
 
@@ -37,7 +37,7 @@ AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [
 			AC_CHECK_LIB([WordNet], [wninit], [WORDNET_LIB=-lWordNet], [
 				AC_CHECK_LIB([WORDNET], [wninit], [WORDNET_LIB=-lWORDNET], [
 						echo "You must have WordNet library installed to build.";
-						echo "(http://wordnet.princeton.edu/obtain)";
+						echo "(http://wordnet.princeton.edu/download)";
 						exit 1
 					])
 				])
@@ -116,10 +116,10 @@ Xlib Development headers not found!
 You need X11 development headers to build.])
 ])
 
-AC_CHECK_FUNC([strcmp], , [
+AC_CHECK_FUNCS([strcmp strlen], , [
 AC_MSG_ERROR([
-Failed to find strcmp()!
-The standard C library function strcmp is required to build.
+Failed to find function(s) strcmp or strlen!
+These standard C library functions are required to build.
 ])
 ])
 

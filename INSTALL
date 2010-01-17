@@ -45,7 +45,7 @@ within braces):
 	- gtk+     	>= 2.12		(libgtk2.0-dev)
 	- dbus-glib	>= 0.74		(libdbus-glib-1-dev)
 
-WordNet can be obtained from http://wordnet.princeton.edu/obtain. Debian & 
+WordNet can be obtained from http://wordnet.princeton.edu/download. Debian & 
 Fedora based operating systems may have the package in their repositories.
 
 Optionally, Artha will use the following "runtime" libraries, if they are 

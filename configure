@@ -4279,7 +4279,7 @@ else
 
 as_fn_error "
 You must have wordnet development headers (wordnet-dev) to build.
-(http://wordnet.princeton.edu/obtain).
+(http://wordnet.princeton.edu/download).
 Refer INSTALL file for further details." "$LINENO" 5
 
 fi
@@ -4491,7 +4491,7 @@ if test "x$ac_cv_lib_WORDNET_wninit" = x""yes; then :
 else
 
 						echo "You must have WordNet library installed to build.";
-						echo "(http://wordnet.princeton.edu/obtain)";
+						echo "(http://wordnet.princeton.edu/download)";
 						exit 1
 
 fi
@@ -4967,17 +4967,25 @@ fi
 done
 
 
-ac_fn_c_check_func "$LINENO" "strcmp" "ac_cv_func_strcmp"
-if test "x$ac_cv_func_strcmp" = x""yes; then :
+for ac_func in strcmp strlen
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+eval as_val=\$$as_ac_var
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
 
 else
 
 as_fn_error "
-Failed to find strcmp()!
-The standard C library function strcmp is required to build.
+Failed to find function(s) strcmp or strlen!
+These standard C library functions are required to build.
 " "$LINENO" 5
 
 fi
+done
 
 
 

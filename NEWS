@@ -1,7 +1,7 @@
 1.0.0 (Jan 08, 2010)
-	After a long time, the most wanted and the earliest charted feature, hotkey coustomization, 
+	After a long time, the most wanted and the earliest charted feature, hotkey customization, 
 	is done. Initially the famed eggcellrendererkeys from gnome-control-center was tried; but the 
-	same cell renderer for accelerators seems to have been avaiable for a long time under the name  
+	same cell renderer for accelerators seems to have been available for a long time under the name  
 	'GtkCellRendererAccel'. This is used for the same, and it exactly fits the purpose. Handling 
 	multiple instances, to make sure only a single instance runs at a given time, was a long 
 	standing requirement. This is achieved using D-Bus. libnotify's dependency is now completely 
@@ -26,7 +26,7 @@
 	will throw an error saying that the index file was missing on startup. It was decided against 
 	populating the index file on start up using the other index files namely index.noun, index.verb, 
 	index.adj and index.adv. The reason is that building WordNet from source installs index.sense 
-	by default. In case of binaries it can be added to the dependencies, if it is avaiable only as a 
+	by default. In case of binaries it can be added to the dependencies, if it is available only as a 
 	separate package. Status bar is now updated on index load, usual lookups and regex searches.
 	Ubuntu 9.04 has introduced new a notification system, wherein if the notification has any 
 	action button, the notification is shown up as a message box (already posts are showing up on 
@@ -78,8 +78,8 @@
 	call to initialize threads in dbus.
 
 0.7.0 (Jan 23, 2009):
-	Since the help is yet to be created, a message box is put for first runs and hot key changes, 
-	so as to notify the user. Instead of sticking to Ctrl + Alt + W, 3 more hot key tries are 
+	Since the help is yet to be created, a message box is put for first runs and hotkey changes, 
+	so as to notify the user. Instead of sticking to Ctrl + Alt + W, 3 more hotkey tries are 
 	added to the list. Artha tries to set them one by one. If none are available, summoning and 
 	notifications are disabled.
 

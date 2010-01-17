@@ -7,20 +7,20 @@ Overview
 --------
 Artha is a cross-platform open-source thesaurus with WordNet as its database.
 
-The main focus of Artha is high usuability, with much simplicity. It has 
+The main focus of Artha is high usability, with much simplicity. It has 
 distinct features like:
 
-	* hotkey press - word lookup (select text and press a hotkey for look-up)
-	* regex-based search (find words using wildcards like *, ?, etc.)
-	* passive desktop notifications (of word definitions for uninterruped workflow)
-	* spelling suggestions (when the exactly spelling is vaguely/not known)
+	* hotkey press - word look-up (select text and press a hotkey for look-up)
+	* regex-based search (find words using wild-cards like *, ?, etc.)
+	* passive desktop notifications (of word definitions for uninterrupted workflow)
+	* spelling suggestions (when the exact spelling is vague/not known)
 
 Once launched, Artha sits on the system tray. The user can select text on any window, 
 and summon Artha by pressing the user-set hotkey combination, which pops up Artha with 
-the word looked-up. Should you want passive notifications without Artha's window 
+the word looked up. Should you want passive notifications without Artha's window 
 popping up so that your workflow is undisturbed, it can be done by enabling the 
 'Notifications' option. This results in a desktop notification (balloon tip) of the 
-selected word's prime definition from WordNet, from the system tray, when the hothey 
+selected word's prime definition from WordNet, from the system tray, when the hotkey 
 is pressed.
 
 Technically, Artha is written in pure C using the GTK+ widget kit & Glib, 
@@ -42,7 +42,7 @@ Simple install procedure:
   or
   $ gzip -cd <package_name>			# alternative to above
 
-  $ cd artha-<version>				# change to the toplevel directory
+  $ cd artha-<version>				# change to the top-level directory
   $ ./configure					# run the `configure' script
   $ make					# build artha
   [ Become root by 'su' or 'sudo' ]
