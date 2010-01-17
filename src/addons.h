@@ -34,7 +34,7 @@ G_BEGIN_DECLS
 /* Exposed functions of the 'Suggestions' module */
 
 gboolean 	suggestions_init();
-gchar** 	suggestions_get(gchar* lemma);
+gchar** 	suggestions_get(const gchar* lemma);
 gboolean 	suggestions_uninit();
 
 

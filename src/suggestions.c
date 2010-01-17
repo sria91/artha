@@ -23,14 +23,13 @@
  */
 
 
+#include <string.h>
 #include <sys/types.h>
 #include <gmodule.h>
 #include "suggestions.h"
 #include "wni.h"
 
 #define ENCHANT_FILE		"libenchant.so.1"
-#define DICT_TAG_ENGLISH	"en"
-#define DICT_ENGLISH_PREFIX	"en_"
 #define	DICT_TAG_MAX_LENGTH	7
 
 // Global variables
@@ -39,7 +38,9 @@ GModule *mod_enchant = NULL;
 EnchantBroker *enchant_broker = NULL;
 EnchantDict *enchant_dict = NULL;
 
-gchar** suggestions_get(gchar *lemma)
+const gchar* dict_lang_tag = "en";
+
+gchar** suggestions_get(const gchar *lemma)
 {
 	gchar **suggestions = NULL;
 	gchar **valid_suggestions = NULL;
@@ -80,6 +81,22 @@ gchar** suggestions_get(gchar *lemma)
 	return valid_suggestions;
 }
 
+/* 
+   checks if the passed LANG (code) is a form of the language we're interested in; this
+   is to know if the lang is the same, omitting the locale e.g. en_IN is suitable for 'en'
+ */
+gboolean is_lang_suitable(const gchar *lang_code)
+{
+	if(strlen(lang_code) >= strlen(dict_lang_tag))
+	{
+		if(lang_code[0] == dict_lang_tag[0] && lang_code[1] == dict_lang_tag[1] && 
+		('_' == lang_code[2] || '\0' == lang_code[2] || '-' == lang_code[2]))
+			return TRUE;
+	}
+	
+	return FALSE;
+}
+
 void find_dictionary(const char * const lang_tag, const char * const provider_name,
 						  const char * const provider_desc,
 						  const char * const provider_file,
@@ -88,17 +105,42 @@ void find_dictionary(const char * const lang_tag, const char * const provider_na
 	gchar *str_dict_tag = user_data;
 
 	if(str_dict_tag[0] == '\0')
-		if(g_str_has_prefix(lang_tag, DICT_ENGLISH_PREFIX))
+	{
+		if(is_lang_suitable(lang_tag))
 		{
 			g_snprintf(str_dict_tag, DICT_TAG_MAX_LENGTH, "%s", lang_tag);
 			G_PRINTF("Alternative dict '%s' selected!\n", lang_tag);
 		}
+	}
+}
+
+gboolean try_sys_lang(gchar *copy_dict_tag, guint8 max_length)
+{
+	const gchar *sys_lang = g_getenv("LANG");
+	gchar *temp_str = NULL;
+
+	if(sys_lang)
+	{
+		if(is_lang_suitable(sys_lang))
+		{
+			g_strlcpy(copy_dict_tag, sys_lang, max_length);
+
+			/* some machines have not only the lang but also the char encoding
+			   e.g. "en_IN.UTF-8"; keep only the language "en_IN" and truncate 
+			   the encoding "UTF-8", if present */
+			temp_str = g_strstr_len(copy_dict_tag, -1, ".");
+			if(temp_str) *temp_str = '\0';
+
+			return TRUE;
+		}
+	}
+	
+	return FALSE;
 }
 
 gboolean suggestions_init()
 {
-	gboolean dict_initialized = FALSE;
-	gchar dict_tag[DICT_TAG_MAX_LENGTH] = DICT_TAG_ENGLISH;
+	gchar dict_tag[DICT_TAG_MAX_LENGTH] = "";
 
 	if(g_module_supported() && (mod_enchant = g_module_open(ENCHANT_FILE, G_MODULE_BIND_LAZY)))
 	{
@@ -125,36 +167,53 @@ gboolean suggestions_init()
 			enchant_broker = enchant_broker_init();
 			if(enchant_broker)
 			{
-				/* if the preset dict. doesn't exist and if list dict func. exists
-				   then try to enumerate the dictionaries and see if a compatible one can be found
-				 */
-				if(!enchant_broker_dict_exists(enchant_broker, dict_tag) && enchant_broker_list_dicts)
+				/* if the sys. lang is suitable, copy that
+				   else copy the default lang tag */
+				if(try_sys_lang(dict_tag, DICT_TAG_MAX_LENGTH))
 				{
-					dict_tag[0] = '\0';
-
-					G_PRINTF("Suggestions: Couldn't find dict 'en'. Looking for alternatives...\n");
-					enchant_broker_list_dicts(enchant_broker, find_dictionary, dict_tag);
+					if(enchant_broker_dict_exists(enchant_broker, dict_tag))
+					{
+						enchant_dict = enchant_broker_request_dict(enchant_broker, dict_tag);
+						return TRUE;
+					}
+					
+					G_PRINTF("Suggestions: Couldn't get '%s' dict. Looking for alternatives...\n", dict_lang_tag);
 				}
 
+				g_strlcpy(dict_tag, dict_lang_tag, DICT_TAG_MAX_LENGTH);
+
+				/* if the req. dict. doesn't exist and if list dict func. exists then try to enumerate 
+				   the dictionaries and see if a compatible one can be found */
+				if(!enchant_broker_dict_exists(enchant_broker, dict_tag) && enchant_broker_list_dicts)
+				{
+					G_PRINTF("Suggestions: Couldn't get '%s' dict. Looking for alternatives...\n", dict_lang_tag);
+
+					dict_tag[0] = '\0';
+					enchant_broker_list_dicts(enchant_broker, find_dictionary, dict_tag);
+				}
+				
 				if(dict_tag[0] != '\0')
 				{
 					enchant_dict = enchant_broker_request_dict(enchant_broker, dict_tag);
-					if(enchant_dict) dict_initialized = TRUE;
-				}
-
-				if(!dict_initialized)
-				{
-					enchant_broker_free(enchant_broker);
-					enchant_broker = NULL;
-
-					g_module_close(mod_enchant);
-					mod_enchant = NULL;
+					return TRUE;
 				}
 			}
 		}
 	}
-	
-	return dict_initialized;
+
+	if(enchant_broker)
+	{
+		enchant_broker_free(enchant_broker);
+		enchant_broker = NULL;
+	}
+
+	if(mod_enchant)
+	{
+		g_module_close(mod_enchant);
+		mod_enchant = NULL;
+	}
+
+	return FALSE;
 }
 
 gboolean suggestions_uninit()

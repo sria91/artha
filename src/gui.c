@@ -89,7 +89,7 @@ static int x_error_handler(Display *dpy, XErrorEvent *xevent)
 {
 	if(BadAccess == xevent->error_code)
 	{
-		g_warning("Hot key combo already occupied!\n");
+		g_warning("Hotkey combo already occupied!\n");
 	}
 	else
 		g_error("X Server Error: %d\n", xevent->error_code);
@@ -979,7 +979,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	if(results_set) return;
 
 
-	// from here on normal look-up starts
+	// from here on normal lookup starts
 	search_str = g_strstrip(strip_invalid_edges(gtk_combo_box_get_active_text(combo_query)));
 
 	if(search_str)
@@ -1252,8 +1252,8 @@ static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data)
 	GtkToolbar *tool_bar = GTK_TOOLBAR(gtk_builder_get_object(gui_builder, TOOLBAR));
 	GtkToolItem *toolbar_prev = NULL, *toolbar_next = NULL;
 	GtkTreeModel *tree_model = NULL;
-	gint16 selected_item = gtk_combo_box_get_active(combo_query);
-	guint total_items = 0;
+	gint selected_item = gtk_combo_box_get_active(combo_query);
+	gint total_items = 0;
 
 	if(selected_item != -1)
 	{
@@ -1365,7 +1365,7 @@ static gboolean text_view_button_released(GtkWidget *widget, GdkEventButton *eve
 						// obtain the text for the set iters
 						trial_text = gtk_text_buffer_get_text(defn_text_buffer, &ins_iter, &sel_iter, FALSE);
 						
-						// search the trial selection in WordNet, on a successful look up iter_move_success is set
+						// search the trial selection in WordNet, on a successful lookup iter_move_success is set
 						iter_move_success = wni_request_nyms(trial_text, NULL, 0, FALSE);
 
 						// free the obtained text
@@ -2353,7 +2353,7 @@ static void lookup_ignorable_modifiers ()
 
 gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean grab)
 {
-	guint i = 0;
+	guint i = 0, actual_mods = 0;;
 	Window rootwin = XDefaultRootWindow(dpy);
 	guint mod_masks [] =
 	{
@@ -2367,13 +2367,15 @@ gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean gr
 		num_lock_mask  | caps_lock_mask | scroll_lock_mask,
 	};
 
+	egg_keymap_resolve_virtual_modifiers (gdk_keymap_get_default(), binding->accel_mods, &actual_mods);
+
 	for (i = 0; (i < G_N_ELEMENTS (mod_masks) && (False == x_error)); i++) 
 	{
 		if (grab)
 		{
 			XGrabKey (dpy, 
 				  XKeysymToKeycode(dpy, binding->accel_key), 
-				  binding->accel_mods | mod_masks [i], 
+				  actual_mods | mod_masks [i], 
 				  rootwin, 
 				  False, 
 				  GrabModeAsync,
@@ -2383,7 +2385,7 @@ gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean gr
 		{
 			XUngrabKey (dpy,
 				    XKeysymToKeycode(dpy, binding->accel_key),
-				    binding->accel_mods | mod_masks [i], 
+				    actual_mods | mod_masks [i], 
 				    rootwin);
 		}
 	}
@@ -2767,7 +2769,7 @@ int main(int argc, char *argv[])
 					
 					mod_suggest = suggestions_init();
 
-					// show the window if it's a first run or a hot key couldn't be set
+					// show the window if it's a first run or a hotkey couldn't be set
 					// if the window is not shown, set notify the startup is complete
 					if(first_run || x_error)
 						gtk_widget_show_all(window);

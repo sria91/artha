@@ -146,7 +146,7 @@
 #define TOOLITEM_TOOLTIP_NEXT	"Go to the next search term"
 #define TOOLITEM_TOOLTIP_MODE	"Toggle between simple/advanced modes"
 #define TOOLITEM_TOOLTIP_HOTKEY	"View/Modify the hotkey to summon Artha from inside a window, after selecting some text in it"
-#define TOOLITEM_TOOLTIP_NOTIFY	"Notify: When on the system tray, if called by the hot key, instead of popping up, Artha will show a notification of the selected term's definition"
+#define TOOLITEM_TOOLTIP_NOTIFY	"Notify: When on the system tray, if called by the hotkey, instead of popping up, Artha will show a notification of the selected term's definition"
 
 #define STR_STATUS_QUERY_SUCCESS "Results returned: %d sense(s) in %d POS(s)!"
 #define STR_MSG_WN_ERROR	"Failed to open WordNet database files!\n\
