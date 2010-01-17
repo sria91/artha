@@ -108,12 +108,13 @@ int wni_strcmp0(const char *s1, const char *s2)
 
 static int depth_check(guint8 depth, SynsetPtr synptr)
 {
-    if(depth >= MAXDEPTH)
-    {
-	g_error("WordNet library error: Error Cycle detected\n   %s\n", synptr->words[0]);
-	depth = -1;		/* reset to get one more trace then quit */
-    }
-    return(depth);
+	if(depth >= MAXDEPTH)
+	{
+		g_warning("WordNet library error: Error Cycle detected\n%s\n", synptr->words[0]);
+		depth = -1;		/* reset to get one more trace then quit */
+	}
+
+	return(depth);
 }
 
 
@@ -1090,6 +1091,7 @@ static void grow_tree(gchar *lemma, SynsetPtr synptr, guint8 ptr, GNode **root, 
 					node_list = g_slist_prepend(node_list, implication);
 				//}
 			}
+
 			if(node_list)
 			{
 				//tree_list = (WNITreeList*) g_malloc0(sizeof(WNITreeList));
@@ -1106,6 +1108,7 @@ static void grow_tree(gchar *lemma, SynsetPtr synptr, guint8 ptr, GNode **root, 
 					grow_tree(lemma, cursyn, HYPERPTR, &cur_tree, depth);
 				}
 			}
+
 			if(depth && cur_tree != NULL)
 			{
 				depth = depth_check(depth, cursyn);
@@ -1198,6 +1201,7 @@ static void trace_inherit(gchar *lemma, SynsetPtr synptr, GNode **root, guint8 d
 					}
 				}
 			}
+
 			free_synset(cursyn);
 		}
 	}
@@ -1600,7 +1604,7 @@ static void definitions_free(GSList **list)
 
 	while(temp_list)
 	{
-		if(temp_list->data);
+		if(temp_list->data)
 		{
 			temp_def = (WNIDefinition*) temp_list->data;
 			G_PRINTF("(%d) %s\n", temp_def->tag_count, temp_def->definition);
