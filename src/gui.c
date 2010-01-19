@@ -68,7 +68,7 @@ static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
-static void setup_toolbar(GtkBuilder *gui_builder);
+static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dialog);
 static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
 static gboolean load_preferences(GtkWindow *parent);
@@ -79,7 +79,7 @@ static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
 static void lookup_ignorable_modifiers(void);
 gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean grab);
 static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey);
-static void setup_hotkey_editor(GtkBuilder *gui_builder);
+static void setup_hotkey_editor(GtkBuilder *gui_builder, GtkWidget **hotkey_editor_dialog);
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data);
 static void destructor(GtkBuilder *gui_builder);
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code);
@@ -1987,7 +1987,7 @@ static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpo
 	return FALSE;
 }
 
-static void setup_toolbar(GtkBuilder *gui_builder)
+static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dialog)
 {
 	GtkToolbar *toolbar = NULL;
 	GtkToolItem *toolbar_item = NULL;
@@ -2027,7 +2027,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_HOTKEY);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
 	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_HOTKEY);
-	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(show_hotkey_editor), gui_builder);
+	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(show_hotkey_editor), hotkey_editor_dialog);
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
 
 	/* if mod notify is present */
@@ -2427,9 +2427,9 @@ static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_ho
 	return(grab_ungrab_with_ignorable_modifiers(&app_hotkey, setup_hotkey));
 }
 
-static void setup_hotkey_editor(GtkBuilder *gui_builder)
+static void setup_hotkey_editor(GtkBuilder *gui_builder, GtkWidget **hotkey_editor_dialog)
 {
-	hotkey_editor_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
+	*hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
 	GtkLabel *hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
 	GtkContainer *hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_HBOX));	
 
@@ -2438,13 +2438,13 @@ static void setup_hotkey_editor(GtkBuilder *gui_builder)
 
 	gtk_label_set_mnemonic_widget(hotkey_label, hotkey_accel_cell);
 
-	g_signal_connect(hotkey_editor_dialog, "response", G_CALLBACK(gtk_widget_hide), NULL);
+	g_signal_connect(GTK_WIDGET(*hotkey_editor_dialog), "response", G_CALLBACK(gtk_widget_hide), NULL);
 }
 
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
 {
 	GtkAccelKey hotkey_backup = app_hotkey;
-	gint hotkey_dialog_response = gtk_dialog_run(hotkey_editor_dialog);
+	gint hotkey_dialog_response = gtk_dialog_run(GTK_DIALOG(user_data));
 
 	/* if prev. hotkey and app_hotkey are not the same and 'Apply' wasn't clicked
 	   then revert hotkey before saving the preferences */
@@ -2577,21 +2577,15 @@ static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_co
 int main(int argc, char *argv[])
 {
 	GtkBuilder *gui_builder = NULL;
-	GtkWidget *window = NULL, *button_search = NULL, *combo_query = NULL, *combo_entry = NULL;
+	GtkWidget *window = NULL, *button_search = NULL, *combo_query = NULL, *combo_entry = NULL, *hotkey_editor_dialog = NULL;
 	GtkStatusIcon *status_icon = NULL;
-	
 	GtkMenu *popup_menu = NULL;
-
 	GtkExpander *expander = NULL;
-	
 	GdkPixbuf *app_icon = NULL;
-	
-	gchar *ui_file_path = NULL, *icon_file_path = NULL;
-	
 	GModule *app_mod = NULL;
-
-	gboolean first_run = FALSE;
 	GError *err = NULL;
+	gboolean first_run = FALSE;
+	gchar *ui_file_path = NULL, *icon_file_path = NULL;
 
 	g_set_application_name(PACKAGE_NAME);
 
@@ -2682,7 +2676,7 @@ int main(int argc, char *argv[])
 					/* save preferences here - after all setting based loads are done */
 					save_preferences();
 					
-					setup_hotkey_editor(gui_builder);
+					setup_hotkey_editor(gui_builder, &hotkey_editor_dialog);
 
 					icon_file_path = g_build_filename(ICON_DIR, ICON_FILE, NULL);
 					if(g_file_test(icon_file_path, G_FILE_TEST_IS_REGULAR))
@@ -2733,7 +2727,7 @@ int main(int argc, char *argv[])
 
 					create_text_view_tags(gui_builder);
 
-					setup_toolbar(gui_builder);
+					setup_toolbar(gui_builder, hotkey_editor_dialog);
 
 					/* do main window specific connects */
 					g_signal_connect_swapped(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), window);
@@ -2784,8 +2778,11 @@ int main(int argc, char *argv[])
 					// since every setting change will call save prefs.
 					// saving the pref. on exit isn't required
 					//save_preferences(selected_key + 1);
-	
+
+					/* GtkBuilder drops references to any held, except toplevel widgets */
+					gtk_widget_destroy(hotkey_editor_dialog);	
 					gtk_widget_destroy(window);
+					
 					
 					destructor(gui_builder);
 				}

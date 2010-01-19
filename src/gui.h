@@ -244,7 +244,6 @@ guint32			last_hotkey_time = 0;
 guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
 GtkAccelKey		app_hotkey = {0};
-GtkDialog		*hotkey_editor_dialog = NULL;
 gint			history_count = 0, notify_toolbar_index = -1;
 guint			status_msg_context_id = 0;
 GString			*wordnet_terms = NULL;
