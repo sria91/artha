@@ -1,3 +1,21 @@
+1.0.1 (Jan 20, 2010)
+	Suggestions feature was first implemented with the logic to look for 'en' dict and if not 
+	found, some arbitrary 'eb_*' dict was chosen by enumeration. This was done on the reasoning 
+	that in some legacy systems LANG environment variable wouldn't be set. But then, with this 
+	release, it looks for the variable, if found, it uses it to see if the user has a English 
+	variant set, if so, then it tries to load that locale of English dictionary's availability.
+	Hotkey modifiers like Super, Hyper, etc. didn't work since the function to resolve those 
+	mods was not called before registering with the X server. This was found in UbuntuForums.
+	The previous release had a couple of major bugs. One was a possible memory leak where in a 
+	top level widget obtained from GtkBuilder was not destroyed. Then, in a few distros, like 
+	Fedora, OpenSUSE, etc. which have an older WordNet package, when Detailed mode is set, it's 
+	library hits the max depth for words like 'muzzle', 'mortify', etc. Artha catches these 
+	gracefully, but treats them as errors, while now they are treated as warnings, and stops 
+	search beyond allowed depth. With WordNet now having a revamped web site, the links seem to 
+	have changed. These and inconsistency with compund words like hotkey, lookup, etc. are fixed.
+	In KDE, the default property value for 'sensitivity' of GtkComboBoxEntry seems to be FALSE, 
+	so KDE-ians were not able to enter any search text, now it's fixed by setting in GUI xml.
+
 1.0.0 (Jan 08, 2010)
 	After a long time, the most wanted and the earliest charted feature, hotkey customization, 
 	is done. Initially the famed eggcellrendererkeys from gnome-control-center was tried; but the 

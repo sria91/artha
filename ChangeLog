@@ -1,11 +1,13 @@
 version 1.0.1 (Jan 19, 2010):
+	* Suggestions will now be made with the localised dictionary given priority
 	* WordNet library database cyclic errors now treated as warnings for Detailed 
 	  mode to work on platforms with older WordNet builds like Fedora, OpenSUSE, etc.
+	  (http://bugs.launchpad.net/artha/+bug/508250)
 	* Special hotkey modifiers like Super, Hyper, etc. will now work on all keyboards
 	* Fixed couple of potential leaks (wni.c - incorrect termination of if stmt. and 
 	  gui.c - destruction of hotkey editor obtained via gtk_builder_get_object 
 	  are now corrected)
-	* Altered sensitivity of GtkComboBoxEntry for platforms like KDE 4.3
+	* Altered sensitivity of GtkComboBoxEntry for desktop environments like KDE 4.3
 	* Made compund words uniform throughout all text docs
 
 version 1.0.0 (Jan 10, 2010):
