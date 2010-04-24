@@ -1435,7 +1435,7 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 {
 	guint definitions_set = 0, i = 0;
 	gchar *morphword = NULL;
-	gboolean morphword_in_file = TRUE;			// This bit denotes if the lemma is in exceptions file, then no need to do prediction tech. and vice-versa
+	gboolean morphword_in_file = TRUE;	// this flag denotes if the lemma is in exceptions file, then no need to predict and vice-versa
 
 	if(NULL == search_str)
 		return FALSE;
@@ -1449,22 +1449,28 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 			wni_free(response_list);
 
 		search_str = g_strdup(search_str);
-		// WordNet has index only in lowercase and spaces are in underscore form.
-		// Note that strtolower not only changes case, it also ends the string at the point where a '(' occurs.
-		// See WordNet strtolower's doc.
+
+		/* WordNet has index only in lowercase and spaces are in underscore form. 
+		 * Note that strtolower not only changes case, it also ends the string at 
+		 * the point where a '(' occurs. Refer WordNet's manual strtolower(). */
 		strtolower(strsubst(g_strstrip(search_str), ' ', '_'));
-		if(g_utf8_strlen(search_str, -1) > 0)
+
+		/* apart from checking for the length to be non-zero, checks for the search_str to be not ".", "-" and "_" 
+		 * are put up since is_defined() returns success for these actually futile searches; alternatively in_wn() 
+		 * can be also be used to check if a search_str is avaiable in WN; it rightly returns 0 for these 'strings' */
+		if(	g_utf8_strlen(search_str, -1) > 0 && 
+			wni_strcmp0(search_str, ".") && 
+			wni_strcmp0(search_str, "-") && 
+			wni_strcmp0(search_str, "_") )
 		{
 			for(i = 1; i <= NUMPARTS; i++)
 			{
-
 				// search for the unmorphed occurance of the search string
 				if(((definitions_set = is_defined(search_str, i)) != 0) && response_list)
 					populate(search_str, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
 
-
-				// i -1 is because of the issue Wordnet has in Ubuntu which it doesn't have in Windows
-				// Searching for 'automata' returns NULL in Ubuntu and "automaton" in Windows
+				/* (i - 1) because Wordnet in Ubuntu returns NULL for 'automata' for i = 1 to NUMPARTS, while 
+				   "automaton" is rightly returned in Windows; so reducing it by 1, makes it work right in Ubuntu too */
 				if(morphword_in_file && (morphword = morphstr(search_str, i - 1)) != NULL)
 				{
 					do
@@ -1475,11 +1481,13 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 							populate(morphword, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
 					} while((morphword = morphstr(NULL, i - 1)) != NULL );
 				}
-				// This is the actual search mech. which should work fine
-				// In the first go if it's not present in the excp. file, then its not there at all
+
+				/* This is the actual search mech. which should work fine; in the first go 
+				   if it's not present in the excp. file, then its not there at all */
 				else if((morphword = morphstr(search_str, i)) != NULL)
 				{
 					morphword_in_file = FALSE;
+
 					do
 					{
 						//G_PRINTF("i: %d, %s\n", i, morphword);
@@ -1498,8 +1506,10 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 
 		// point the requested list ptr to the generated global list
 		if(global_list)
+		{
 			*response_list = global_list;
-		global_list = NULL;
+			global_list = NULL;
+		}
 	}
 	
 	return (definitions_set != 0);

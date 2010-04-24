@@ -4,30 +4,13 @@ Users Wish List:
 
 To Do:
 
-* Search for 4 words and then search a invalid word. When it says "failed", 
-  press back and notice it goes to the previous to previous word and not 
-  just the previous word.
-
 * Help docs and Preferences windows are to be added with few more features.
 
-* Peculiar glitch: When font size is set to 9 in the formatting of example in 
-  defn. textview, and on searching "rambling" freezes. Just resize the window 
-  vertically a wee bit, just a pixel maybe and see the issue is gone.
-
-* When showing "Oops! Queried term not found!" as a notification, can show the 
-  first few chars of what was queried for. E.g "'ied for' not found!"
-
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
-
-* Watch the X selection. I.e. selecting text and calling Artha by pressing the 
-  status icon should make Artha come up with the definitions.
 
 * When in minimized mode, with notifications, just look up the synonyms, which 
   should reduce a lot of overhead. When the try icon is clicked, then do the actual 
   WORDNET_INTERFACE_ALL request call, till then this flag can be deferred.
-
-* When the drop down list is too big, make sure, it doesn't exceed out of the 
-  app. instead let it have a scroll bar.
 
 * When in simple mode, see the 'Parts' tab for 'rupee', it has lot of duplicates.
 
@@ -37,9 +20,6 @@ To Do:
 
 * Keep 2 buttons expand all/contract all for relative trees
 
-* Memory profiling should be done, check why it shoots from 3 to 9 to 12 to 
-  15 MB when running (Check System Monitor)
-
 * Try, when the window is visible, searching 'man' and do the same when in tray 
   (with notifications). Performance is differing? (Once the performance got hit 
   when it was visible, but not very sure)
@@ -47,8 +27,6 @@ To Do:
 * Clearing search history
 
 * Auto complete of the query combo using history or the whole dict. index?
-
-* Should the sense number be displayed as a column in relative lists like ATTRIBUTES, etc.?
 
 * Wrapped text should get aligned with the definition start and not the sense count start
 

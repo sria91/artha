@@ -1,4 +1,5 @@
-AM_CFLAGS = -Wall @GTK_CFLAGS@ @libdbus_CFLAGS@
+AM_CFLAGS = -Wall -Wextra -ansi -pedantic -std=c99 -Wno-unused-parameter \
+-fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@ @libdbus_CFLAGS@
 
 bin_PROGRAMS = artha
 
@@ -18,6 +19,7 @@ artha_SOURCES = eggaccelerators.c eggaccelerators.h \
 
 # @GTK_LIBS@ & libdbus_CFLAGS are not used to avoid unwanted 
 # libraries (like -latk, -lrt, etc.) passed to the linker
-artha_LDADD = $(WORDNET_LIB) -lgtk-x11-2.0 -lgmodule-2.0 \
-		-ldbus-1 -ldbus-glib-1 libwni.a
+artha_LDADD = libwni.a $(WORDNET_LIB) -lX11 -ldbus-1 \
+		-ldbus-glib-1 -lgtk-x11-2.0 -lgdk-x11-2.0 \
+		-lgmodule-2.0 -lgobject-2.0 -lglib-2.0
 

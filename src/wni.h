@@ -37,14 +37,14 @@ G_BEGIN_DECLS
 	#if DEBUG_LEVEL >= 2
 		#define G_MESSAGE(format, args...) g_message(format, ##args)
 	#else
-		#define G_MESSAGE(format, args...) 
+		#define G_MESSAGE(format, args...) ((void) 0)
 	#endif		/* DEBUG_LEVEL >= 2 */
 
 	#if DEBUG_LEVEL >= 3
 		#include <glib/gprintf.h>
 		#define G_PRINTF(format, args...) g_printf(format, ##args)
 	#else
-		#define G_PRINTF(format, args...) 
+		#define G_PRINTF(format, args...) ((void) 0)
 	#endif		/* DEBUG_LEVEL >= 3 */
 #endif		/* HAVE_CONFIG_H */
 

@@ -182,9 +182,8 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 		gui_builder = GTK_BUILDER(user_data);
 		combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		
-		// get the clipboard text and strip off any invalid characters
+		// get the clipboard text and pass it to query
 		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
-		//strip_invalid_edges(selection);
 
 		if(selection)
 		{
@@ -565,7 +564,7 @@ static void domains_load(GSList *properties, GtkBuilder *gui_builder)
 	WNIClassItem *class_item = NULL;
 	GtkTreeView *tree_class = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[TREE_DOMAIN]));
 	GtkTreeStore *class_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_class));
-	GtkTreeIter iter = {0}, class_iter[DOMAINS_COUNT] = {};
+	GtkTreeIter iter = {0}, class_iter[DOMAINS_COUNT] = {{0}};
 
 	g_assert(class_tree_store);
 
@@ -954,7 +953,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		}
 		else
 		{
-			// report that the search index (sense.index) is missing
+			// report that the search index (index.sense) is missing
 			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX_FILE_MISSING);
 			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_REGEX_ERROR);
 			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
@@ -1183,7 +1182,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		{
 			if(notifier && notifier_enabled && (!GTK_WIDGET_VISIBLE(window)))
 			{
-				notify_notification_update(notifier, STR_NOTIFY_QUERY_FAIL_TITLE, STR_NOTIFY_QUERY_FAIL_BODY, "gtk-dialog-warning");
+				notify_notification_update(notifier, search_str, STR_STATUS_QUERY_FAILED, "gtk-dialog-warning");
 				if(FALSE == notify_notification_show(notifier, &err))
 				{
 					g_warning("%s\n", err->message);
@@ -2750,8 +2749,8 @@ int main(int argc, char *argv[])
 					{
 						if(g_module_symbol(app_mod, "gtk_show_uri", (gpointer*) &fp_show_uri))
 						{
-							gtk_about_dialog_set_email_hook(about_email_hook, fp_show_uri, NULL);
-							gtk_about_dialog_set_url_hook(about_url_hook, fp_show_uri, NULL);
+							gtk_about_dialog_set_email_hook(about_email_hook, (gpointer*) fp_show_uri, NULL);
+							gtk_about_dialog_set_url_hook(about_url_hook, (gpointer*) fp_show_uri, NULL);
 						}
 						else
 							G_DEBUG("Cannot find gtk_show_uri function symbol!\n");

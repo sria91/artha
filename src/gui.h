@@ -53,7 +53,7 @@
 	#if DEBUG_LEVEL >= 1
 		#define G_DEBUG(format, args...) g_debug(format, ##args)
 	#else
-		#define G_DEBUG(format, ...) 
+		#define G_DEBUG(format, ...) ((void) 0)
 	#endif		/* DEBUG_LEVEL */
 #endif		/* HAVE_CONFIG_H */
 
@@ -154,16 +154,13 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_QUERY_FAILED	"Queried string not found in thesaurus!"
 #define STR_REGEX_DETECTED	"Regular expression pattern detected"
 #define STR_REGEX_FAILED	"No matches found! Please check your expression and try again."
-#define STR_REGEX_FILE_MISSING	"File sense.index not found at %s\nPlease install it and restart Artha to do a regular expression based search."
+#define STR_REGEX_FILE_MISSING	"File index.sense not found at %s\nPlease install it and restart Artha to do a regular expression based search."
 #define STR_STATUS_INDEXING	"Indexing... please wait"
-#define STR_STATUS_QUERY_FAILED	"Oops! Search string not found!"
+#define STR_STATUS_QUERY_FAILED	"Queried term not found!"
 #define STR_STATUS_LOOKUP_HINT	"For compound words hold ctrl & drag-sel. whole term to look it up."
 #define STR_STATUS_REGEX	"%d match(es) found! %s"
 #define STR_STATUS_SEARCHING	"Searching... please wait"
 #define STR_STATUS_REGEX_FILE_MISSING	"Error: index.sense not found!"
-
-#define STR_NOTIFY_QUERY_FAIL_TITLE	"Oops!"
-#define STR_NOTIFY_QUERY_FAIL_BODY	"Queried term not found!"
 
 #define STATUS_DESC_LOADING_INDEX	"loading_index"
 #define STATUS_DESC_SEARCH_SUCCESS	"search_successful"
