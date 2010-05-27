@@ -29,7 +29,11 @@
 #include "suggestions.h"
 #include "wni.h"
 
-#define ENCHANT_FILE		"libenchant.so.1"
+#ifdef _WIN32
+#	define ENCHANT_FILE		"libenchant.dll"
+#else
+#	define ENCHANT_FILE		"libenchant.so.1"
+#endif
 #define	DICT_TAG_MAX_LENGTH	7
 
 // Global variables
@@ -56,7 +60,7 @@ gchar** suggestions_get(const gchar *lemma)
 
 			for(i = 0; i < suggestions_count; i++)
 			{
-				if(wni_request_nyms(suggestions[i], NULL, 0, FALSE))
+				if(wni_request_nyms(suggestions[i], NULL, (WNIRequestFlags) 0, FALSE))
 				{
 					str_list = g_slist_prepend(str_list, g_strdup(suggestions[i]));
 					++valid_count;
@@ -68,7 +72,7 @@ gchar** suggestions_get(const gchar *lemma)
 				valid_suggestions = g_new0(gchar*, valid_count + 1);
 
 				for(temp_list = str_list; temp_list; temp_list = g_slist_next(temp_list))
-					valid_suggestions[--valid_count] = temp_list->data;
+					valid_suggestions[--valid_count] = (gchar*) temp_list->data;
 
 				g_slist_free(str_list);
 			}
@@ -109,7 +113,7 @@ void find_dictionary(const char * const lang_tag, const char * const provider_na
 		if(is_lang_suitable(lang_tag))
 		{
 			g_snprintf(str_dict_tag, DICT_TAG_MAX_LENGTH, "%s", lang_tag);
-			G_PRINTF("Alternative dict '%s' selected!\n", lang_tag);
+			G_MESSAGE("Alternative dict '%s' selected!\n", lang_tag);
 		}
 	}
 }
@@ -177,7 +181,7 @@ gboolean suggestions_init()
 						return TRUE;
 					}
 					
-					G_PRINTF("Suggestions: Couldn't get '%s' dict. Looking for alternatives...\n", dict_lang_tag);
+					G_MESSAGE("Suggestions: Couldn't get '%s' dict. Looking for alternatives...\n", dict_lang_tag);
 				}
 
 				g_strlcpy(dict_tag, dict_lang_tag, DICT_TAG_MAX_LENGTH);
@@ -186,7 +190,7 @@ gboolean suggestions_init()
 				   the dictionaries and see if a compatible one can be found */
 				if(!enchant_broker_dict_exists(enchant_broker, dict_tag) && enchant_broker_list_dicts)
 				{
-					G_PRINTF("Suggestions: Couldn't get '%s' dict. Looking for alternatives...\n", dict_lang_tag);
+					G_MESSAGE("Suggestions: Couldn't get '%s' dict. Looking for alternatives...\n", dict_lang_tag);
 
 					dict_tag[0] = '\0';
 					enchant_broker_list_dicts(enchant_broker, find_dictionary, dict_tag);
@@ -195,6 +199,7 @@ gboolean suggestions_init()
 				if(dict_tag[0] != '\0')
 				{
 					enchant_dict = enchant_broker_request_dict(enchant_broker, dict_tag);
+					G_MESSAGE("Suggestions module successfully loaded", NULL);
 					return TRUE;
 				}
 			}
@@ -212,6 +217,8 @@ gboolean suggestions_init()
 		g_module_close(mod_enchant);
 		mod_enchant = NULL;
 	}
+	
+	G_MESSAGE("Failed to load suggestions module", NULL);
 
 	return FALSE;
 }

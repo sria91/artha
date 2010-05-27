@@ -28,6 +28,12 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
+
+#ifdef X11_AVAILABLE
+
 #include "eggaccelerators.h"
 
 #include <stdlib.h>
@@ -198,3 +204,4 @@ egg_keymap_resolve_virtual_modifiers (GdkKeymap              *keymap,
   *concrete_mods = concrete;
 }
 
+#endif		/* X11_AVAILABLE */

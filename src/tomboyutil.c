@@ -27,6 +27,12 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
+
+#ifdef X11_AVAILABLE
+
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
@@ -180,3 +186,4 @@ tomboy_window_present_hardcore (GtkWindow *window)
 	gtk_window_present (window);
 }
 
+#endif		/* X11_AVAILABLE */

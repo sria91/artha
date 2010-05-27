@@ -26,7 +26,6 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
-#include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
 
 #define STR_INVALID_HOTKEY "The shortcut \"%s\" cannot be used because \
@@ -156,8 +155,12 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 	/* try registering the new key combo */
 	if(grab_ungrab_with_ignorable_modifiers(&temp_key, TRUE))
 	{
+		/* unregistering previous hotkey is not necessary on Win32
+		   since the same prev. hotkey is modified to the new one */
+#ifndef G_OS_WIN32
 		/* unregister the previous hotkey */
 		grab_ungrab_with_ignorable_modifiers(key_entry, FALSE);
+#endif
 
 		/* set the value in the list store to the newly set key combo
 		   so that it gets reflected in the Accel Cell Renderer */

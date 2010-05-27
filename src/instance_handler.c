@@ -23,6 +23,13 @@
  */
 
 
+
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
+
+#ifdef DBUS_AVAILABLE
+
 #include <dbus/dbus.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <gtk/gtk.h>
@@ -104,3 +111,4 @@ gboolean instance_handler_register_signal(GtkWindow *window)
 	return dbus_connection_add_filter(bus, signal_receiver, (void*) window, NULL);
 }
 
+#endif		/* DBUS_AVAILABLE */
