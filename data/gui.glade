@@ -43,6 +43,7 @@
                             <property name="visible">True</property>
                             <property name="label" translatable="yes">_Query</property>
                             <property name="use_underline">True</property>
+                            <property name="mnemonic_widget">cboQuery</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
