@@ -25,12 +25,18 @@
 
 
 #include "mod_notify.h"
+#include "wni.h"
 #include <gmodule.h>
+
 #ifdef HAVE_CONFIG_H
-#	include <config.h>
+#	include "config.h"
 #endif
 
-#define NOTIFY_FILE		"libnotify.so.1"
+#ifdef G_OS_WIN32
+#	define NOTIFY_FILE		"libnotify-1.dll"
+#else
+#	define NOTIFY_FILE		"libnotify.so.1"
+#endif
 
 GModule *mod_notify = NULL;
 extern NotifyNotification *notifier;
@@ -56,12 +62,14 @@ gboolean mod_notify_init(GtkStatusIcon *status_icon)
 				/* initialize summary as Artha (Package Name)
 				   this will, however, be modified to the looked up word before display */
 				notifier = notify_notification_new_with_status_icon(PACKAGE_NAME, NULL, "gtk-dialog-info", status_icon);
+				G_MESSAGE("Notification module successfully loaded", NULL);
 
 				return TRUE;
 			}
 		}
 	}
-	
+
+	G_MESSAGE("Failed to load notifications module", NULL);
 	return FALSE;
 }
 
@@ -72,7 +80,9 @@ gboolean mod_notify_uninit(void)
 		/* close notifications, if open */
 		notify_notification_close(notifier, NULL);
 
+#ifndef G_OS_WIN32
 		g_object_unref(G_OBJECT(notifier));
+#endif
 		notifier = NULL;
 
 		notify_uninit();

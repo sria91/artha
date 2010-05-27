@@ -32,13 +32,6 @@
 G_BEGIN_DECLS
 
 typedef struct _NotifyNotification        	NotifyNotification;
-typedef struct _NotifyNotificationPrivate 	NotifyNotificationPrivate;
-
-struct _NotifyNotification
-{
-	GObject parent_object;
-	NotifyNotificationPrivate *priv;
-};
 
 gboolean	(*notify_init)		(const char *app_name);
 void		(*notify_uninit)	(void);
