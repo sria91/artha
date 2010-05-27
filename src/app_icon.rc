@@ -1,0 +1,80 @@
+/* app_icon.rc
+ * Artha - Free cross-platform open thesaurus
+ * Copyright (C) 2009, 2010 Sundaram Ramaswamy, legends2k@yahoo.com
+ *
+ * Artha is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Artha is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+
+/*
+ * Resource script for artha.exe based based on 
+ * http://msdn.microsoft.com/en-us/library/aa381058(VS.85).aspx
+
+ * MinGW's windres compiles this into an object file which is linked to the 
+ * final binary: Tips from http://www.rodneybeede.com/Compiling_a_C___Windows_\
+ * executable_with_embedded_version_information_and_icon.html
+ */
+
+
+/* defines for VERSIONINFO block */
+#define VOS__WINDOWS32			0x00000004L
+
+/* VS_VERSION.dwFileType */
+#define VFT_UNKNOWN             0x00000000L
+#define VFT_APP                 0x00000001L
+#define VFT_DLL                 0x00000002L
+#define VFT_DRV                 0x00000003L
+#define VFT_FONT                0x00000004L
+#define VFT_VXD                 0x00000005L
+#define VFT_STATIC_LIB          0x00000007L
+
+#include "config.h"
+
+
+/* Type: version
+   Name: 1 */
+1 VERSIONINFO
+ FILEVERSION APP_VERSION
+ PRODUCTVERSION APP_VERSION
+ FILEFLAGSMASK 0x0L
+ FILEFLAGS 0x0L
+ FILEOS VOS__WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE 0x0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "Comments", "Mail your suggestions, queries and bugs to legends2k@yahoo.com"
+      VALUE "CompanyName", PACKAGE_URL
+      VALUE "FileDescription", "The open cross-platform thesaurus based on WordNet"
+      VALUE "FileVersion", PACKAGE_VERSION
+      VALUE "InternalName", PACKAGE_STRING
+      VALUE "LegalCopyright", "Copyright \251 2010 Sundaram Ramaswamy, legends2k@yahoo.com"
+      VALUE "OriginalFilename", "artha.exe"
+      VALUE "ProductName", "Artha ~ The Open Thesaurus"
+      VALUE "ProductVersion", PACKAGE_VERSION
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END
+
+/* Type: icon
+   Name: 2 */
+2 ICON "../data/artha.ico"

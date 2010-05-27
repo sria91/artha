@@ -1,5 +1,5 @@
 Artha - An open cross-platform thesaurus based on WordNet
-=======================================================================================
+===============================================================================
 Copyright (c) 2009, 2010  Sundaram Ramaswamy, <legends2k@yahoo.com>
 
 
@@ -12,29 +12,32 @@ distinct features like:
 
 	* hotkey press - word look-up (select text and press a hotkey for look-up)
 	* regex-based search (find words using wild-cards like *, ?, etc.)
-	* passive desktop notifications (of word definitions for uninterrupted workflow)
+	* passive desktop notifications (of word definitions for uninterrupted 
+	  workflow)
 	* spelling suggestions (when the exact spelling is vague/not known)
 
-Once launched, Artha sits on the system tray. The user can select text on any window, 
-and summon Artha by pressing the user-set hotkey combination, which pops up Artha with 
-the word looked up. Should you want passive notifications without Artha's window 
-popping up so that your workflow is undisturbed, it can be done by enabling the 
-'Notifications' option. This results in a desktop notification (balloon tip) of the 
-selected word's prime definition from WordNet, from the system tray, when the hotkey 
-is pressed.
+Once launched, Artha sits on the system tray. The user can select text on any 
+window, and summon Artha by pressing the user-set hotkey combination, which 
+pops up Artha with the word looked up. Should you want passive notifications 
+without Artha's window popping up so that your workflow is undisturbed, it can 
+be done by enabling the 'Notifications' option. This results in a desktop 
+notification (balloon tip) of the selected word's prime definition from 
+WordNet, from the system tray, when the hotkey is pressed.
 
 Technically, Artha is written in pure C using the GTK+ widget kit & Glib, 
 making it cross-desktop and cross-platform. It uses libnotify for the desktop 
-notifications and lienchant for spelling suggestions. It may be used as a advanced 
-replacement for WordWeb in GNU/Linux environments. Currently different flavours 
-of GNU/Linux are targeted, but porting to other UNIX-like systems, Mac OS X and 
-Windows will commence soon.
+notifications and lienchant for spelling suggestions. It may be used as a 
+advanced replacement for WordWeb in GNU/Linux environments. Currently different
+flavours of GNU/Linux are targeted, but porting to other UNIX-like systems and 
+Mac OS X will commence soon.
 
 
 Installation
 ------------
 Artha requires the development headers of GTK+-2.12.x, GLib-2.14 and 
-WordNet-3.x (minimum required version numbers are specified).
+WordNet-3.x (minimum required version numbers are specified). If you are 
+building for Windows you need to set up MinGW and MSYS with pkg-config.
+See 'INSTALL' file for a how-to on this.
 
 Simple install procedure:
 

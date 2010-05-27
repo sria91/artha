@@ -1,3 +1,18 @@
+version 1.0.2 (May 27, 2010):
+	* Ported code to Win32 ~ added alternative code for special cases like 
+	  hotkey hook, selection capture, single instance check, etc.
+	* libnotify for Win32 (shared library) written from scratch
+	* Notification lookups are made a lot lightweight so that the notification 
+	  turnaround is much quicker; a proper lookup is made only on a window show
+	* If the user has disabled hotkey in prev. run, registers a new one in 
+	  current run, then the hookup doesn't happen. This is fixed now.
+	* On a futile look-up, notification shows the incorrect term now
+	* Query combo box mnemonic (Alt + Q) bug fixed.
+	* Fixed indirect dependencies (gold linker deb issue: 553965)
+	* Fixed incorrectly named "sense.index" to "index.sense" 
+	  (deb issue: 571948)
+	* Fixed a crash on looking up ".", "-" and "_" (lp issue: 531475)
+
 version 1.0.1 (Jan 19, 2010):
 	* Suggestions will now be made with the localised dictionary given priority
 	* WordNet library database cyclic errors now treated as warnings for Detailed 

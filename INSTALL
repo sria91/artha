@@ -1,5 +1,5 @@
 Artha - An open cross-platform thesaurus based on WordNet
-=============================================================================
+===============================================================================
 Copyright (c) 2009, 2010  Sundaram Ramaswamy, <legends2k@yahoo.com>
 
 
@@ -33,8 +33,9 @@ which will configure Artha to get installed in /usr.
 System Requirements
 -------------------
 Artha has been tested and is known to run well on several GNU/Linux 
-distributions and on i386, x86-64 & PPC platforms, but will probably run 
-well on other UNIX-like systems (BSD, Solaris, etc.) and architectures too.
+distributions (i386, x86-64 & PPC) platforms and Windows (XP and above), but 
+will probably run well on other UNIX-like systems (BSD, Solaris, etc.) and 
+architectures too.
 
 In order to build artha, as described above, you will need the following 
 "development" libraries installed (typical binary package names are given 
@@ -46,17 +47,105 @@ within braces):
 	- dbus-glib	>= 0.74		(libdbus-glib-1-dev)
 
 WordNet can be obtained from http://wordnet.princeton.edu/download. Debian & 
-Fedora based operating systems may have the package in their repositories.
+Fedora based operating systems may have WordNet's development package in their 
+repositories. WordNet 3.0 for Windows is not officially released by Princeton 
+University, but can be downloaded from 
+http://en.sourceforge.jp/projects/sfnet_wordnet30forwin/
 
 Optionally, Artha will use the following "runtime" libraries, if they are 
 available:
-	- notify	(libnotify.so.1)
-	- enchant	(libenchant.so.1)
+	- notify	(libnotify.so.1 / libnotify-1.dll)
+	- enchant	(libenchant.so.1 / libenchant.dll)
 
 
 These 2 libraries are not mandatory for building Artha; however if they are 
 not present, additional features - passive desktop notifications and spelling 
-suggestions - will not be exposed by Artha.
+suggestions - will not be exposed by Artha. libnotify is not offically 
+released for Windows, so a minimal Win32 libnotify implementation was written 
+and is now part of Artha (src/libnotify.c and src/libnotify.h).
 
-You will also need GNU's gcc and autotools (autoconf and automake) to build.
+You will need GNU's gcc and autotools (autoconf and automake) to build. On 
+Windows one needs to setup MinGW, MSYS and GTK+ development headers.
 
+
+Setting up the build system on Windows
+--------------------------------------
+Setting up MSYS on Windows is a pain, the author of this file didn't get it 
+right easily, he went through many iterations to finally succeed. It is 
+written here so that it is documented somewhere and anyone trying to do it 
+will find it useful. Before beginning, remove all previous versions of MinGW, 
+MSYS and GTK+ dev and meticulously follow the below steps.
+
+Steps
+~~~~~
+
+1. One can install MinGW from http://www.mingw.org/ or prefer to use TDM's 
+MinGW compilation (like me) ~ a single file installation, clean and 
+uncluttered. Get it from http://www.tdragon.net/recentgcc/ . Install it to 
+C:/MinGW; believe me it's better to stick to this directory or any path where 
+there's no space in between. Add "<installation_path>/bin" to PATH. Now the 
+"gcc" command on cmd prompt should give you "gcc: no input files".
+You're on for MSYS now!
+
+2. Download MSYS and msysDTK setup files. MSYS 1.0.11 is not the latest version
+of MSYS, but still it's the last version which has a single file installer, 
+later on they've moved to per-binary archive download. Same goes to DTK, 
+so one has to install 1.0.11 and update specific binaries inside individually.
+Files to be downloaded from http://sourceforge.net/projects/mingw/files/ are:
+
+	* MSYS-1.0.11.exe (http://sourceforge.net/projects/mingw/files/)
+	* msysDTK-1.0.1.exe (http://sourceforge.net/projects/mingw/files/)
+	* autoconf-2.65-1-msys-1.0.13-bin.tar.lzma
+	* autogen-5.9.2-2-msys-1.0.11-bin.tar.lzma
+	* automake-1.11.1-1-msys-1.0.13-bin.tar.lzma
+	* m4-1.4.13-1-msys-1.0.11-bin.tar.lzma
+	* libtool-2.2.7a-2-msys-1.0.13-bin.tar.lzma
+
+Install MSYS first ~ make sure its post installation batch script runs 
+successfully (it will ask you for MinGW's installation folder path ~ give it). 
+Once it succeeds, install msysDTK.
+
+3. Extract all the individually downloaded autoconf, automake, m4, autogen and 
+libtool's compressed archives into a single directory. You should get two dirs 
+namely bin and share. Move them to your MSYS <installation_dir>/1.0. You'll 
+actually be merging these dirs with the already existing bin and share 
+directories. Now start MSYS and try the commands "gcc", "autoconf", 
+"autoreconf", "automake", "libtool" with their --version argument. You should 
+see the appropriate version numbers listed for each tool you updated. Hey, your
+MinGW and MSYS installations are successful!
+
+4. Download GTK+ Win32 development bundle from ftp.gnome.org or just google 
+for gtk+-bundle_2.18.7-20100213_win32.zip. It's better to stick to 2.18, for 
+Artha's case it worked best. Extract it to C:/GTK+. Add the bin directory 
+(C:/GTK+/bin) to PATH. Now start cmd (not MSYS) and give 
+
+	pkg-config --cflags --libs gtk+-2.0
+
+You should get a long list of directories and libraries names in the format 
+understandable by GCC. "Yay! GTK+ is also done, I am all set now!" ~ No, still 
+pkg-config won't work in MSYS. Need to fix that.
+
+5. Create a new environment variable PKG_CONFIG_PATH and set its value to 
+/c/gtk+/bin and copy C:/GTK+/share/aclocal/pkg.m4 to C:/MSYS/1.0/share/aclocal 
+assuming C:/GTK+ and C:/MSYS are your chosen directories for the installations.
+
+6. Now shoot up MSYS terminal and try the above pkg-config command, it should 
+output the same output it gave in the cmd earlier window. There! Now you're 
+golden!
+
+Unlike Linux, where WordNet 3.0 development headers are available on many 
+distros as a package in their repos, on Windows the official release by 
+Princeton University is only 2.1; so download WordNet 3.0 for Linux and compile
+it on MSYS. Earlier the author thought it isn't feasible, but thanks to a 
+project he found @ http://en.sourceforge.jp/projects/sfnet_wordnet30forwin/ 
+which proced otherwise. A prebuild WN3.0 package (.h and .a) for Win32 can be 
+downloaded from the 'Downloads' section of Artha's homepage.
+
+When running the configure script, make sure you feed it with WordNet's 
+path which contains the header (wn.h) and the static library (libwn.a).
+E.g.
+
+./configure CFLAGS="-I/e/artha/wn_3.0/inc/" LDFLAGS="-L/e/artha/wn_3.0/lib/"
+
+This should satisfy configure when it looks for WordNet; pkg-config will 
+do the same for GTK+, but for WordNet one has to give it manually.

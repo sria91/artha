@@ -1,3 +1,15 @@
+1.0.2 (May 27, 2010)
+	Finally, Artha is truly cross-platform now! A M$ Windows build is made with exactly the 
+	same features available on Linux. No mismatch or feature cutdowns between the two versions. 
+	To meet this requirement, the biggest hinderance was that libnotify or notification daemon 
+	doesn't exist on Windows; so a libnotify shared library was written from scratch with pure 
+	Win32 APIs. This is written to work with only one app. at a given time; this should be 
+	improved to support many applications ~ concurrency; Later, this can be developed into a 
+	separate project "libnotify for Win32" which can be used by any app. that needs libnotify
+	in Windows environment. Notification turn around is a lot quicker now since the lookup when 
+	in notification mode is made a lot lightweight. A setup installer for Windows is created 
+	using Inno Setup.
+
 1.0.1 (Jan 20, 2010)
 	Suggestions feature was first implemented with the logic to look for 'en' dict and if not 
 	found, some arbitrary 'eb_*' dict was chosen by enumeration. This was done on the reasoning 
