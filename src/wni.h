@@ -32,21 +32,38 @@
 G_BEGIN_DECLS
 
 #ifdef HAVE_CONFIG_H
-	#include <config.h>
+#	include "config.h"
 
-	#if DEBUG_LEVEL >= 2
-		#define G_MESSAGE(format, args...) g_message(format, ##args)
-	#else
-		#define G_MESSAGE(format, args...) ((void) 0)
-	#endif		/* DEBUG_LEVEL >= 2 */
+#	if DEBUG_LEVEL >= 1
+#		define G_DEBUG(format, ...) g_debug(format, __VA_ARGS__)
+#	endif		/* DEBUG_LEVEL >= 1 */
 
-	#if DEBUG_LEVEL >= 3
-		#include <glib/gprintf.h>
-		#define G_PRINTF(format, args...) g_printf(format, ##args)
-	#else
-		#define G_PRINTF(format, args...) ((void) 0)
-	#endif		/* DEBUG_LEVEL >= 3 */
+#	if DEBUG_LEVEL >= 2
+#		define G_MESSAGE(format, ...) g_message(format, __VA_ARGS__)
+#	endif		/* DEBUG_LEVEL >= 2 */
+
+#	if DEBUG_LEVEL >= 3
+#		include <glib/gprintf.h>
+#		define G_PRINTF(format, ...) g_printf(format, __VA_ARGS__)
+#	endif		/* DEBUG_LEVEL >= 3 */
+
 #endif		/* HAVE_CONFIG_H */
+
+#ifndef __noop
+#define __noop(...) ((void) 0)
+#endif
+
+#ifndef G_DEBUG
+#define G_DEBUG __noop
+#endif
+
+#ifndef G_MESSAGE
+#define G_MESSAGE __noop
+#endif
+
+#ifndef G_PRINTF
+#define G_PRINTF __noop
+#endif
 
 
 /* For adjectives, indicates synset type */

@@ -26,10 +26,17 @@
 #include "gui.h"
 
 
+#ifdef X11_AVAILABLE
 static int x_error_handler(Display *dpy, XErrorEvent *xevent);
+#endif	// X11_AVAILABLE
 static void notification_toggled(GObject *obj, gpointer user_data);
 static gchar* strip_invalid_edges(gchar *selection);
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
+#ifdef G_OS_WIN32
+static inline gboolean is_alt_pressed();
+static inline void print_last_error();
+static gchar* win32_capture_selection();
+#endif
 static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
 static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpointer user_data);
@@ -58,7 +65,7 @@ static void expander_clicked(GtkExpander *expander, gpointer user_data);
 static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data);
 static GtkTextMark *highlight_definition(guint8 id, guint16 sense, GtkTextView *text_view);
 static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *text_view);
-static void highlight_senses_from_antonyms(guint8 category, guint16 relative_index, guint8 sub_level, GtkTextView *text_view);
+static void highlight_senses_from_antonyms( guint8 category, guint16 relative_index, guint16 sub_level, GtkTextView *text_view);
 static void highlight_senses_from_domain(guint8 category, guint16 relative_index, GtkTextView *text_view);
 static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view);
 static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data);
@@ -76,15 +83,19 @@ static void save_preferences();
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
+#ifdef X11_AVAILABLE
 static void lookup_ignorable_modifiers(void);
-gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean grab);
+#endif //X11_AVAILABLE
 static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey);
+gboolean grab_ungrab_with_ignorable_modifiers(GtkAccelKey *binding, gboolean grab);
 static void setup_hotkey_editor(GtkBuilder *gui_builder, GtkWidget **hotkey_editor_dialog);
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data);
 static void destructor(GtkBuilder *gui_builder);
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code);
+static gboolean window_visibility_toggled(GtkWidget *widget, GdkEventVisibility *event, gpointer user_data);
 
 
+#ifdef X11_AVAILABLE
 static int x_error_handler(Display *dpy, XErrorEvent *xevent)
 {
 	if(BadAccess == xevent->error_code)
@@ -94,9 +105,9 @@ static int x_error_handler(Display *dpy, XErrorEvent *xevent)
 	else
 		g_error("X Server Error: %d\n", xevent->error_code);
 
-	x_error = True;
 	return -1;
 }
+#endif	// X11_AVAILABLE
 
 /*
 	This will be called for both notify check pop-up menu and notify tool bar button
@@ -162,9 +173,75 @@ static gchar* strip_invalid_edges(gchar *selection)
 	return selection;
 }
 
+#ifdef G_OS_WIN32
+
+static inline gboolean is_alt_pressed()
+{
+	return (0 != (0x8000 & GetAsyncKeyState(VK_MENU)));
+}
+
+static inline void print_last_error()
+{
+	g_warning("Error getting selection (Win32): %ld", GetLastError());
+}
+
+static gchar* win32_capture_selection()
+{
+	GUITHREADINFO guiThread = {sizeof(GUITHREADINFO)};
+	gchar *selection = NULL;
+	INPUT input[KEY_COUNT] = {{INPUT_KEYBOARD}, {INPUT_KEYBOARD}, {INPUT_KEYBOARD}, {INPUT_KEYBOARD}};
+	const WORD inputKey[2] = {VK_CONTROL, VK_INSERT};
+	HGLOBAL hglb = NULL;
+	LPSTR charArrayFromClipboard = NULL;
+
+	if(GetGUIThreadInfo(0, &guiThread))
+	{
+		if(is_alt_pressed())
+		{
+			input[0].ki.wVk = VK_MENU;
+			input[0].ki.dwFlags = KEYEVENTF_KEYUP;
+			SendInput(1, input, sizeof(INPUT));
+			input[0].ki.dwFlags = 0;
+			G_MESSAGE("Virtually released ALT!\n", NULL);
+		}
+
+		input[0].ki.wVk = input[2].ki.wVk = inputKey[0];
+		input[1].ki.wVk = input[3].ki.wVk = inputKey[1];
+
+		input[2].ki.dwFlags = (input[3].ki.dwFlags |= KEYEVENTF_KEYUP);
+		SendInput(KEY_COUNT, input, sizeof(INPUT));
+
+		Sleep(200);
+
+		if(OpenClipboard(NULL))
+		{
+			if((hglb = GetClipboardData(CF_TEXT)))
+			{
+				if((charArrayFromClipboard = (LPSTR) GlobalLock(hglb)))
+				{
+					selection = g_strdup(charArrayFromClipboard);
+					GlobalUnlock(hglb);
+				}
+				else
+					print_last_error();
+			}
+			else
+				print_last_error();
+
+			CloseClipboard();
+		}
+		else
+			print_last_error();
+	}
+	else
+		print_last_error();
+
+	return selection;
+}
+#endif
+
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data)
 {
-	XEvent *xe = (XEvent*) xevent;
 	gchar *selection = NULL;
 	GtkBuilder *gui_builder = NULL;
 	GtkComboBoxEntry *combo_query = NULL;
@@ -172,18 +249,33 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 	GtkButton *button_search = NULL;
 	GtkWindow *window = NULL;
 
+#ifdef X11_AVAILABLE
+	XEvent *xe = (XEvent*) xevent;
+
 	// Since you have not registerd filter_add for NULL, no need to check the key code, you will get a call only when its the hotkey, else it won't be called
 	// Try this by removing below if and try to print debug text
 	if(xe->type == KeyPress)
 	{
+#elif defined G_OS_WIN32
+	PMSG msg = (PMSG) xevent;
+
+	if(WM_HOTKEY == msg->message)
+	{
+#endif
 		hotkey_processing = TRUE;
+		
+#ifdef X11_AVAILABLE
 		last_hotkey_time = xe->xkey.time;
+
+		// get the clipboard text and strip off any invalid characters
+		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
+		//strip_invalid_edges(selection);
+#elif defined G_OS_WIN32
+		selection = win32_capture_selection();
+#endif
 
 		gui_builder = GTK_BUILDER(user_data);
 		combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-		
-		// get the clipboard text and pass it to query
-		selection = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY));
 
 		if(selection)
 		{
@@ -203,13 +295,27 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 		{
 			// see if in case notify is selected, should we popup or we should just notify "No selection made!"
 			window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+#ifdef X11_AVAILABLE
 			tomboy_window_present_hardcore(window);
+#else
+			gtk_window_present(window);
+#endif
 			gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 		}
 
 		hotkey_processing = FALSE;
+
 		return GDK_FILTER_REMOVE;
 	}
+#ifdef G_OS_WIN32
+	else if(WM_ARTHA_RELAUNCH == msg->message)
+	{
+		gui_builder = GTK_BUILDER(user_data);
+		window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+		gtk_window_present(window);
+		return GDK_FILTER_REMOVE;
+	}
+#endif
 
 	return GDK_FILTER_CONTINUE;
 }
@@ -228,8 +334,11 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 		/* close notifications, if any */
 		if(notifier)
 			notify_notification_close(notifier, NULL);
-
+#ifdef X11_AVAILABLE
 		tomboy_window_present_hardcore(window);
+#else
+		gtk_window_present(window);
+#endif /* X11_AVAILABLE */
 		combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 	}
@@ -266,7 +375,11 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 
 	g_object_set(G_OBJECT(about_dialog), "license", STR_LICENCE, "copyright", STR_COPYRIGHT, 
 	"comments", STR_ABOUT, "authors", strv_authors, "version", PACKAGE_VERSION, 
-	"wrap-license", TRUE, "website-label", STR_WEBSITE_LABEL, "website", STR_WEBSITE, NULL);
+	"wrap-license", TRUE, 
+#ifndef G_OS_WIN32
+"website-label", STR_WEBSITE_LABEL, /* this is disabled for Windows since gtk_show_uri doesn't work there */
+#endif
+	"website", PACKAGE_URL, NULL);
 
 	if(fp_show_uri)
 		gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
@@ -284,7 +397,7 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 */
 static gboolean quit_activate(GObject *obj, gpointer user_data)
 {
-	G_DEBUG("Destroy called!\n");
+	G_DEBUG("Destroy called!\n", NULL);
 
 	gtk_main_quit();
 	return TRUE;
@@ -895,7 +1008,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	WNIDefinitionItem *def_item = NULL;
 	WNIDefinition *defn = NULL;
 
-	gint16 count = 0;
+	glong count = 0;
 	gchar *str_list_item = NULL;
 	gchar str_count[MAX_SENSE_DIGITS] = "";
 
@@ -919,7 +1032,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	// Check if the fed string is a wildmat expr.
 	// If true, call the regex mod. to set the results and return
 	regex_text = g_strstrip(gtk_combo_box_get_active_text(combo_query));
-	if((results_set = is_wildmat_expr(regex_text)))
+	if(!(notifier && notifier_enabled && !GTK_WIDGET_VISIBLE(window)) && (results_set = is_wildmat_expr(regex_text)))
 	{
 		// clear previously set relatives
 		// clear search successful flag; without this when the prev. looked up
@@ -1010,7 +1123,14 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 			G_MESSAGE("'%s' requested from WNI!\n", search_str);
 
-			wni_request_nyms(search_str, &results, WORDNET_INTERFACE_ALL, advanced_mode);
+			/* if it's only for notification, then instead of an unwanted 
+			   heavy look-up, just make the simplest notify lookup (quickie) */
+			if(notifier && notifier_enabled && !GTK_WIDGET_VISIBLE(window))
+				count = 0;
+			else
+				count = WORDNET_INTERFACE_ALL;
+
+			wni_request_nyms(search_str, &results, (WNIRequestFlags) count, advanced_mode);
 
 			// clear prior text in definitons text view & relatives
 			gtk_text_buffer_set_text(buffer, "", -1);
@@ -1020,7 +1140,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			{
 				total_results = 0; total_pos = 0;
 
-				G_MESSAGE("Results successful!\n");
+				G_MESSAGE("Results successful!\n", NULL);
 
 				def_list = ((WNIOverview*)((WNINym*)results->data)->data)->definitions_list;
 				while(def_list)
@@ -1048,7 +1168,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 							g_snprintf(str_count, MAX_SENSE_DIGITS, "%3d", total_results);
 							gtk_text_buffer_create_mark(buffer, str_count, &cur, TRUE);
 
-							g_snprintf(str_count, MAX_SENSE_DIGITS, "%2d. ", count);
+							g_snprintf(str_count, MAX_SENSE_DIGITS, "%2d. ", (int)count);
 							
 							gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, str_count, -1, TAG_COUNTER, NULL);
 							gtk_text_buffer_insert(buffer, &cur, defn->definition, -1);
@@ -1060,7 +1180,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 							while(example)
 							{
-								gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, example->data, -1, TAG_EXAMPLE, NULL);
+								gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, (gchar*) example->data, -1, TAG_EXAMPLE, NULL);
 								example = g_slist_next(example);
 								// for each example come to appear in a new line enabled this line and 
 								// comment the next two buffer inserts of "; " and new line
@@ -1141,7 +1261,17 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 					}
 				}
 
-				relatives_load(gui_builder, TRUE);
+				/* don't populate relatives if in notify mode; clear the last_search 
+				   so that if the user opens the window next lookup works */
+				if(notifier && notifier_enabled && !GTK_WIDGET_VISIBLE(window))
+				{
+					g_free(search_str);
+					search_str = NULL;
+				}
+				else
+				{
+					relatives_load(gui_builder, TRUE);
+				}
 
 				if(last_search) g_free(last_search);
 				last_search = search_str;
@@ -1158,9 +1288,8 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				if(NULL == lemma)
 					lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
 
-				definition = g_strconcat("<b><i>", 
-				partnames[((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->pos], 
-				"</i></b>. ", ((WNIDefinition*)((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->definitions->data)->definition, NULL);
+				definition = g_strconcat(partnames[((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->pos], 
+					". ", ((WNIDefinition*)((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->definitions->data)->definition, NULL);
 
 				if(definition)
 				{
@@ -1174,7 +1303,12 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				}
 			}
 			else
+#ifdef X11_AVAILABLE
+			
 				tomboy_window_present_hardcore(window);
+#else
+				gtk_window_present(window);
+#endif // X11_AVAILABLE
 
 			last_search_successful = TRUE;
 		}
@@ -1223,13 +1357,17 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 						}
 					}
 				}
-
+#ifdef X11_AVAILABLE
 				tomboy_window_present_hardcore(window);
-
-				gtk_statusbar_pop(status_bar, status_msg_context_id);
-				status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
-				gtk_statusbar_push(status_bar, status_msg_context_id, STR_STATUS_QUERY_FAILED);
+#else
+				gtk_window_present(window);
+#endif // X11_AVAILABLE
 			}
+
+			/* status bar should be updated be it the mode is notify or not; so it should be outside the if clause */
+			gtk_statusbar_pop(status_bar, status_msg_context_id);
+			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
+			gtk_statusbar_push(status_bar, status_msg_context_id, STR_STATUS_QUERY_FAILED);
 
 			last_search_successful = FALSE;
 		}
@@ -1365,7 +1503,7 @@ static gboolean text_view_button_released(GtkWidget *widget, GdkEventButton *eve
 						trial_text = gtk_text_buffer_get_text(defn_text_buffer, &ins_iter, &sel_iter, FALSE);
 						
 						// search the trial selection in WordNet, on a successful lookup iter_move_success is set
-						iter_move_success = wni_request_nyms(trial_text, NULL, 0, FALSE);
+						iter_move_success = wni_request_nyms(trial_text, NULL, (WNIRequestFlags) 0, FALSE);
 
 						// free the obtained text
 						g_free(trial_text);
@@ -1553,7 +1691,7 @@ static void highlight_senses_from_synonyms(guint16 relative_index, GtkTextView *
 	}
 }
 
-static void highlight_senses_from_antonyms(guint8 category, guint16 relative_index, guint8 sub_level, GtkTextView *text_view)
+static void highlight_senses_from_antonyms( guint8 category, guint16 relative_index, guint16 sub_level, GtkTextView *text_view)
 {
 	GSList *wni_results = results;
 	GSList *antonyms_list = NULL;
@@ -1759,7 +1897,7 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 			switch(gtk_notebook_get_current_page(notebook))
 			{
 				case TREE_SYNONYMS:
-					highlight_senses_from_synonyms(g_ascii_strtoull(str_path, NULL, 10), text_view);
+					highlight_senses_from_synonyms((guint16) g_ascii_strtoull(str_path, NULL, 10), text_view);
 					break;
 				case TREE_ANTONYMS:
 					// to make sure no highlighting is done for categories, check for ':' in the path
@@ -1772,7 +1910,7 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 						if(str_demark)
 						{
 							str_demark++;
-							sub_level = g_ascii_strtoull(str_demark, NULL, 10) + 1;
+							sub_level = (guint16) g_ascii_strtoull(str_demark, NULL, 10) + 1;
 						}
 
 						gtk_tree_model_get_iter_first(tree_store, &iter);
@@ -1786,13 +1924,13 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 						strip_invalid_edges(&str_path[2]);
 						/* if its a word, parent 0 means Direct and 1 Indirect */
 						highlight_senses_from_antonyms((0 == str_path[0] - '0') ? DIRECT_ANT : INDIRECT_ANT, 
-										g_ascii_strtoull(&str_path[2], NULL, 10), 
+										(guint16) g_ascii_strtoull(&str_path[2], NULL, 10), 
 										sub_level, 
 										text_view);
 					}
 					else if(!advanced_mode)
 						// if its simple mode, set category to 0
-						highlight_senses_from_antonyms(0, g_ascii_strtoull(str_path, NULL, 10), sub_level, text_view);
+						highlight_senses_from_antonyms(0, (guint16) g_ascii_strtoull(str_path, NULL, 10), sub_level, text_view);
 					break;
 				case TREE_DOMAIN:
 					if((str_demark = g_strstr_len(str_path, -1, ":")) != NULL)
@@ -1805,7 +1943,7 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 						g_free(str_category);
 
 						str_demark++;
-						highlight_senses_from_domain(sub_level, g_ascii_strtoull(str_demark, NULL, 10), text_view);
+						highlight_senses_from_domain((guint8) sub_level, (guint16) g_ascii_strtoull(str_demark, NULL, 10), text_view);
 					}
 					break;
 				case TREE_PERTAINYMS:
@@ -1816,7 +1954,7 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 					//highlight_senses_from_relative_trees(1 << gtk_notebook_get_current_page(notebook), g_ascii_strtoull(str_path, NULL, 10), text_view);
 					break;
 				default:
-					highlight_senses_from_relative_lists(1 << gtk_notebook_get_current_page(notebook), g_ascii_strtoull(str_path, NULL, 10), text_view);
+					highlight_senses_from_relative_lists(1 << gtk_notebook_get_current_page(notebook), (guint16) g_ascii_strtoull(str_path, NULL, 10), text_view);
 					break;
 			}
 		}
@@ -2021,7 +2159,7 @@ static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dial
 	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_MODE);
 	g_signal_connect(toolbar_item, "toggled", G_CALLBACK(mode_toggled), gui_builder);
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
-	
+
 	toolbar_item = gtk_tool_button_new_from_stock(GTK_STOCK_PREFERENCES);
 	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_HOTKEY);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
@@ -2176,6 +2314,14 @@ static gboolean load_preferences(GtkWindow *parent)
 		app_hotkey.accel_key = g_key_file_get_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_KEY, &err);
 		app_hotkey.accel_mods = g_key_file_get_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_MODS, NULL);
 		app_hotkey.accel_flags = g_key_file_get_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, NULL);
+		
+		if(err)
+		{
+			g_error_free(err);
+			err = NULL;
+		}
+		else if(first_run)		/* if no error was set, then the key is present, in that case */
+			first_run = FALSE;	/* a first run is not right, it's just a version above 1.0.1 where hotkeys are already set */
 
 		g_key_file_free(key_file);
 		g_free(conf_file_path);
@@ -2338,6 +2484,7 @@ static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
 	return ret_val;
 }
 
+#ifdef X11_AVAILABLE
 static void lookup_ignorable_modifiers ()
 {
 	GdkKeymap *keymap = gdk_keymap_get_default();
@@ -2352,8 +2499,9 @@ static void lookup_ignorable_modifiers ()
 
 gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean grab)
 {
-	guint i = 0, actual_mods = 0;;
+	guint i = 0, actual_mods = 0;
 	Window rootwin = XDefaultRootWindow(dpy);
+	Bool x_error = False;
 	guint mod_masks [] =
 	{
 		0, /* modifier only */
@@ -2389,14 +2537,34 @@ gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean gr
 		}
 	}
 
-	if (x_error)
-	{
-		x_error = False;
-		return FALSE;
-	}
-
-	return TRUE;
+	return !x_error;
 }
+
+#elif defined G_OS_WIN32
+
+gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean grab)
+{
+	UINT win_mods = 0, vk_key = 0;
+
+	if(!grab)
+		return UnregisterHotKey(hMainWindow, ARTHA_RESPONSE_REPORT_BUG);
+
+	if(binding->accel_mods & GDK_CONTROL_MASK)
+		win_mods |= MOD_CONTROL;
+	if(binding->accel_mods & GDK_MOD1_MASK)
+		win_mods |= MOD_ALT;
+	if(binding->accel_mods & GDK_SHIFT_MASK)
+		win_mods |= MOD_SHIFT;
+	if(binding->accel_mods & GDK_SUPER_MASK)
+		win_mods |= MOD_WIN;
+
+	/* deduce the virtual key code; GDK has it as lower case ascii value
+	   while Win32 expects it as upper case */
+	vk_key = 'A' + (binding->accel_key - 'a');
+
+	return RegisterHotKey(hMainWindow, ARTHA_RESPONSE_REPORT_BUG, win_mods, vk_key);
+}
+#endif // X11_AVAILABLE
 
 static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey)
 {
@@ -2420,6 +2588,7 @@ static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_ho
 		it's first run, save_pref will be called and whatever value is  present
 		in app_hotkey (last key in hotkey_trials) will be saved; so 0 it */
 		app_hotkey.accel_key = app_hotkey.accel_mods = app_hotkey.accel_flags = 0;
+		
 		return FALSE;
 	}
 
@@ -2428,11 +2597,15 @@ static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_ho
 
 static void setup_hotkey_editor(GtkBuilder *gui_builder, GtkWidget **hotkey_editor_dialog)
 {
-	*hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
-	GtkLabel *hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
-	GtkContainer *hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_HBOX));	
+	GtkLabel *hotkey_label = NULL;
+	GtkContainer *hbox = NULL;
+	GtkWidget *hotkey_accel_cell = NULL;
 
-	GtkWidget *hotkey_accel_cell = create_hotkey_editor();
+	*hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
+	hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
+	hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_HBOX));
+
+	hotkey_accel_cell = create_hotkey_editor();
 	gtk_container_add(hbox, hotkey_accel_cell);
 
 	gtk_label_set_mnemonic_widget(hotkey_label, hotkey_accel_cell);
@@ -2467,6 +2640,10 @@ static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
 
 static void destructor(GtkBuilder *gui_builder)
 {
+#ifdef G_OS_WIN32
+	GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+#endif
+
 	if(wordnet_terms)
 	{
 	        g_string_free(wordnet_terms, TRUE);
@@ -2487,8 +2664,11 @@ static void destructor(GtkBuilder *gui_builder)
 	if(hotkey_set)
 	{
 		// remove the preset event filter
+#ifdef X11_AVAILABLE
 		gdk_window_remove_filter(gdk_get_default_root_window(), hotkey_pressed, gui_builder);
-
+#elif defined G_OS_WIN32
+		gdk_window_remove_filter(window->window, hotkey_pressed, gui_builder);
+#endif
 		register_unregister_hotkey(FALSE, FALSE);
 
 		hotkey_set = FALSE;
@@ -2504,6 +2684,8 @@ static void destructor(GtkBuilder *gui_builder)
 	{
 		mod_notify_uninit();
 	}
+	
+	g_object_unref(status_icon);
 }
 
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code)
@@ -2573,23 +2755,47 @@ static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_co
 	}
 }
 
+static gboolean window_visibility_toggled(GtkWidget *widget, GdkEventVisibility *event, gpointer user_data)
+{
+	/* when the window becomes fully visible, make sure a proper lookup is made to offset the notify 
+	lookup (quickie); when last_search_successful is set & yet last_search is NULL, it confirms a quickie */
+
+	if(GDK_VISIBILITY_UNOBSCURED == event->state && notifier_enabled && last_search_successful && !last_search)
+		gtk_button_clicked(GTK_BUTTON(user_data));
+
+	return FALSE;
+}
+
 int main(int argc, char *argv[])
 {
 	GtkBuilder *gui_builder = NULL;
 	GtkWidget *window = NULL, *button_search = NULL, *combo_query = NULL, *combo_entry = NULL, *hotkey_editor_dialog = NULL;
-	GtkStatusIcon *status_icon = NULL;
 	GtkMenu *popup_menu = NULL;
 	GtkExpander *expander = NULL;
 	GdkPixbuf *app_icon = NULL;
 	GModule *app_mod = NULL;
 	GError *err = NULL;
-	gboolean first_run = FALSE;
+	gboolean first_run = FALSE, hotkey_reg_failed = FALSE;
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
 
+#ifdef G_OS_WIN32
+	/* logic for single instance apps. on Win32 */
+	HANDLE single_instance_mutex = CreateMutex(NULL, FALSE, TEXT(PACKAGE_NAME));
+
+	if(ERROR_ALREADY_EXISTS == GetLastError() || !single_instance_mutex)
+	{
+		hMainWindow = FindWindow(NULL, TEXT(STR_APP_TITLE));
+		if(hMainWindow)
+			PostMessage(hMainWindow, WM_ARTHA_RELAUNCH, 0, 0);
+		return 0;
+	}
+#endif
+	
 	g_set_application_name(PACKAGE_NAME);
 
 	if(gtk_init_check(&argc, &argv))
 	{
+#ifdef DBUS_AVAILABLE
 		/* if we're not the first instance of artha, then quit */
 		if(FALSE == instance_handler_am_i_unique())
 		{
@@ -2601,7 +2807,7 @@ int main(int argc, char *argv[])
 
 			return 0;
 		}
-
+#endif
 		gui_builder = gtk_builder_new();
 		if(gui_builder)
 		{
@@ -2615,15 +2821,18 @@ int main(int argc, char *argv[])
 				window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 				if(window)
 				{
+#ifdef DBUS_AVAILABLE
 					/* if the control's here, then it's sure that we're the unique instance;
 					register for dbus signals from possible duplicate instances */
 					if(!instance_handler_register_signal(GTK_WINDOW(window)))
 					{
 						g_error("Unable to register for duplicate instance signals!\n");
 					}
-
+#endif
 					/* try to load preferences and see if this is the first run */
 					first_run = load_preferences(GTK_WINDOW(window));
+
+#ifdef X11_AVAILABLE
 
 					/* Most Important: do not use the XServer's XGetDisplay, you will have to do XNextEvent (blocking) to 
 					   get the event call, so get GDK's display; its X11 display equivalent */
@@ -2641,6 +2850,24 @@ int main(int argc, char *argv[])
 
 					lookup_ignorable_modifiers();
 
+					/* Add a filter function to handle low level events, like X events.
+						For Param1 use gdk_get_default_root_window() instead of NULL or window, so that
+						only when hotkey combo is pressed will the filter func. be called, unlike
+						others, where it will be called for all events beforehand GTK handles */
+					gdk_window_add_filter(gdk_get_default_root_window(), hotkey_pressed, gui_builder);
+
+#elif defined G_OS_WIN32
+
+					/* if the main window widget is not yet realised, then the underlying 
+					GdkWindow will be a NULL member, so realise it and get the HWND */
+					if(!window->window)
+						gtk_widget_realize(window);
+
+					hMainWindow = (HWND) GDK_WINDOW_HWND(window->window);
+					gdk_window_add_filter(window->window, hotkey_pressed, gui_builder);
+
+#endif // X11_AVAILABLE
+
 					if(app_hotkey.accel_key || first_run)
 					{
 						if(register_unregister_hotkey(first_run, TRUE))
@@ -2651,12 +2878,6 @@ int main(int argc, char *argv[])
 							{
 								show_message_dlg(window, MSG_HOTKEY_SUCCEEDED_FIRST_RUN);
 							}
-
-							/* Add a filter function to handle low level events, like X events.
-							   For Param1 use gdk_get_default_root_window() instead of NULL or window, so that
-							   only when hotkey combo is pressed will the filter func. be called, unlike
-							   others, where it will be called for all events beforehand GTK handles */
-							gdk_window_add_filter(gdk_get_default_root_window(), hotkey_pressed, gui_builder);
 						}
 						else
 						{
@@ -2664,10 +2885,12 @@ int main(int argc, char *argv[])
 								show_message_dlg(window, MSG_HOTKEY_FAILED_FIRST_RUN);
 							else
 							{
+								hotkey_reg_failed = TRUE;
+
 								show_message_dlg(window, MSG_HOTKEY_FAILED);
 								/* since the previously set hotkey is now not registerable, memzero
 								   (i.e. disable) app_hotkey and save prefs */
-								app_hotkey.accel_key = app_hotkey.accel_mods = app_hotkey.accel_flags = 0;
+								app_hotkey.accel_key = app_hotkey.accel_mods = (GdkModifierType) (app_hotkey.accel_flags = 0);
 							}
 						}
 					}
@@ -2729,7 +2952,8 @@ int main(int argc, char *argv[])
 					setup_toolbar(gui_builder, hotkey_editor_dialog);
 
 					/* do main window specific connects */
-					g_signal_connect_swapped(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), window);
+					g_signal_connect(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+					g_signal_connect(window, "visibility-notify-event", G_CALLBACK(window_visibility_toggled), button_search);
 					
 					// connect to Escape Key
 					g_signal_connect(window, "key-press-event", G_CALLBACK(window_main_key_press), combo_query);
@@ -2740,7 +2964,7 @@ int main(int argc, char *argv[])
 
 					gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 
-					G_DEBUG("GUI loaded successfully!\n");
+					G_DEBUG("GUI loaded successfully!\n", NULL);
 					
 					create_stores_renderers(gui_builder);
 
@@ -2749,22 +2973,22 @@ int main(int argc, char *argv[])
 					{
 						if(g_module_symbol(app_mod, "gtk_show_uri", (gpointer*) &fp_show_uri))
 						{
-							gtk_about_dialog_set_email_hook(about_email_hook, (gpointer*) fp_show_uri, NULL);
-							gtk_about_dialog_set_url_hook(about_url_hook, (gpointer*) fp_show_uri, NULL);
+							gtk_about_dialog_set_email_hook(about_email_hook, NULL, NULL);
+							gtk_about_dialog_set_url_hook(about_url_hook, NULL, NULL);
 						}
 						else
-							G_DEBUG("Cannot find gtk_show_uri function symbol!\n");
+							G_DEBUG("Cannot find gtk_show_uri function symbol!\n", NULL);
 
 						g_module_close(app_mod);
 					}
 					else
 						g_warning("Cannot open module!\n");
-					
+
 					mod_suggest = suggestions_init();
 
 					// show the window if it's a first run or a hotkey couldn't be set
 					// if the window is not shown, set notify the startup is complete
-					if(first_run || x_error)
+					if(first_run || hotkey_reg_failed)
 						gtk_widget_show_all(window);
 					else
 						gdk_notify_startup_complete();
@@ -2781,8 +3005,8 @@ int main(int argc, char *argv[])
 					/* GtkBuilder drops references to any held, except toplevel widgets */
 					gtk_widget_destroy(hotkey_editor_dialog);	
 					gtk_widget_destroy(window);
-					
-					
+
+
 					destructor(gui_builder);
 				}
 				else
@@ -2792,9 +3016,13 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				g_error("Error loading GUI from %s!\nError Message: %s\n", ui_file_path, err->message);
+				/* shouldn't call g_error directly, since it's a terminating call;
+				   so print the error, free the resources and then do it */
+				g_print("%s: ", err->message);
 				g_error_free(err);
+				g_error("Error loading GUI from %s!\n", ui_file_path);
 			}
+
 			g_free(ui_file_path);
 		}
 		else
@@ -2807,6 +3035,9 @@ int main(int argc, char *argv[])
 		g_error("Error initializing GUI!\n");
 	}
 
+#ifdef G_OS_WIN32
+	CloseHandle(single_instance_mutex);
+#endif
 
 	return 0;
 }

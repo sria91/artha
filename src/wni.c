@@ -52,8 +52,8 @@ static gchar* parse_definition(gchar *str);
 static gint pos_list_compare(gconstpointer a, gconstpointer b, gpointer actual_search);
 static GSList* check_term_in_list(gchar *term, GSList **list, WNIRequestFlags flag);
 static gboolean is_synm_a_lemma(GSList **list, gchar *synm);
-static gchar *getexample(gchar *offset, gchar *wd);
-static GSList *findexample(SynsetPtr synptr);
+static gchar *get_example(gchar *offset, gchar *wd);
+static GSList *find_example(SynsetPtr synptr);
 static gpointer *get_from_global_list(WNIRequestFlags flag);
 static void prune_results(void);
 static WNIDefinitionItem *create_synonym_def(guint8 pos, IndexPtr index, WNIOverview **overview_ptr);
@@ -111,7 +111,7 @@ static int depth_check(guint8 depth, SynsetPtr synptr)
 	if(depth >= MAXDEPTH)
 	{
 		g_warning("WordNet library error: Error Cycle detected\n%s\n", synptr->words[0]);
-		depth = -1;		/* reset to get one more trace then quit */
+		return -1;		/* reset to get one more trace then quit */
 	}
 
 	return(depth);
@@ -454,9 +454,8 @@ Based on the following defns from WN, the below function was formulated: (when a
 	passion = "(any object of warm affection or devotion; \"the theater was her first love\"; \"he has a passion for cock fighting\";)"
 	passion = "(an irrational but irresistible motive for a belief or action)"
 	alright = "(in a satisfactory or adequate manner; \"she'll do okay on her own\"; \"held up all right under pressure\"; (`alright' is a nonstandard variant of `all right'))"
-	
-	// TODO: notice the ',' instead of ';' as the delimiter between the examples
-	compound = "make more intense, stronger, or more marked; \"The efforts were intensified\", \"Her rudeness intensified his dislike for her\"; "
+	compound = "(make more intense, stronger, or more marked; \"The efforts were intensified\", \"Her rudeness intensified his dislike for her\")"
+	strew = "(spread by scattering (\"straw\" is archaic); \"strew toys all over the carpet\")"
 
 	Takes a synset defn and applies delimiter '|' between definition and meanings.
 	Returns a new string, should be freed.
@@ -466,7 +465,7 @@ static gchar* parse_definition(gchar *str)
 {
 	GString *formatted_str = NULL;
 	guint16 i = 0, len = 0;
-	guint8 brace_met = FALSE;
+	gboolean brace_met = FALSE;
 	guint8 double_quotes_met = 0;
 	gboolean just_ended = FALSE;
 	gchar ch = 0;
@@ -477,37 +476,51 @@ static gchar* parse_definition(gchar *str)
 	for(i = 1; i < len; i++)		// skip the first open brace (i = 1)
 	{
 		ch = str[i];
-		if(str[i] == '"')
+
+		if(ch == '"')
 		{
-			if(!(double_quotes_met & 1))	// If double quotes met is not even i.e. odd, then insert delimiter '|'
+			/* If double quotes met is not even i.e. odd, then insert delimiter '|'.
+			   make sure the previous character is not '('; this check was added for the 1st sense of 'strew' */ 
+			if(!(double_quotes_met & 1) && ((i > 0) && (str[i - 1] != '(')))
 			{
 				temp_ch = &formatted_str->str[formatted_str->len-1];
+
+				// first if clause added for 'compound'
+				if(*(temp_ch - 1) == ',')
+				{
+					--temp_ch;
+					g_string_set_size(formatted_str, formatted_str->len - 1);
+				}
+
 				if(*temp_ch != '|') *temp_ch = '|';
+
 				temp_ch = NULL;
 			}
 			double_quotes_met++;
 			just_ended = FALSE;
 			ch = 0;
 		}
-		else if(str[i] == ' ' && just_ended)
+		else if(ch == ' ' && just_ended)
 			ch = 0;
-		else if(str[i] == '(' && just_ended)	// open brace met immediately after a statement end
+		else if(ch == '(' && just_ended)	// open brace met immediately after a statement end
 		{
 			just_ended = FALSE;
 			brace_met = 1;
 		}
-		else if(str[i] == ')' && brace_met)	// on close brace, end the string by a ") " and skip the char (ch = 0)
+		else if(ch == ')' && brace_met)	// on close brace, end the string by a ") " and skip the char (ch = 0)
 		{
 			formatted_str = g_string_insert(formatted_str, brace_met - 1, ") ");
 			brace_met = FALSE;
 			ch = 0;
 		}
-		else if((str[i] == ';') && ((i + 1 == len) || ((!(double_quotes_met & 1)) && (str[i + 2] == '"')) || (str[i + 2] == '(')))
+		else if((ch == ';') && ((i + 1 == len) || ((!(double_quotes_met & 1)) && (str[i + 2] == '"')) || (str[i + 2] == '(')))
 		//else if((str[i] == ';') && ((i+1 == len) || ((!(double_quotes_met & 1)) && (str[i+2] == '\"'))))
 		{
 			ch = '|';
 			just_ended = TRUE;
 		}
+
+
 		if(ch)
 		{
 			if(0 == brace_met)
@@ -519,7 +532,6 @@ static gchar* parse_definition(gchar *str)
 
 	return g_string_free(formatted_str, FALSE);
 }
-
 
 /*
 	Compares Definition Items, by checking their lemmas, if it matches the actual search string while the other doesn't
@@ -576,7 +588,7 @@ static GSList* check_term_in_list(gchar *term, GSList **list, WNIRequestFlags fl
 {
 	GSList *temp = *list;
 	gchar *temp_str = NULL;
-	guint16 check_len = 0;
+	glong check_len = 0;
 	
 	check_len = g_utf8_strlen(term, -1) + 1;	// check till \0 so that "Kelly" & "Kelly Gene" don't match
 
@@ -636,10 +648,10 @@ static gboolean is_synm_a_lemma(GSList **list, gchar *synm)
 	Fetch the given example sentence from the example file.
 */
 
-static gchar *getexample(gchar *offset, gchar *wd)
+static gchar *get_example(gchar *offset, gchar *wd)
 {
 	gchar *line = NULL, *example = NULL;
-	guint16 last_char_index = 0;
+	glong last_char_index = 0;
 
 	if (vsentfilefp != NULL)
 	{
@@ -663,7 +675,7 @@ static gchar *getexample(gchar *offset, gchar *wd)
 	Find the example sentence references in the example sentence index file.
 */
 
-static GSList *findexample(SynsetPtr synptr)
+static GSList *find_example(SynsetPtr synptr)
 {
 	gchar tbuf[MAX_BUFFER]="", *temp = NULL, *returned_example = NULL, **splits = NULL;
 	guint16 wdnum = 0, i = 0;
@@ -690,7 +702,7 @@ static GSList *findexample(SynsetPtr synptr)
 			while(splits[i])
 			{
 				if(0 != wni_strcmp0(splits[i], ""))
-					if((returned_example = getexample(splits[i], synptr->words[wdnum])))
+					if((returned_example = get_example(splits[i], synptr->words[wdnum])))
 						examples = g_slist_prepend(examples, returned_example);
 				i++;
 			}
@@ -849,7 +861,8 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	WNIPropertyItem *synm = NULL;
 	WNIDefinitionItem *def_item = *def_item_ptr;
 	WNIOverview *overview = *overview_ptr;
-	guint16 i = 0, check_len = 0;
+	guint16 i = 0;
+	glong check_len = 0;
 	gchar *lemma = *lemma_ptr;
 
 	//defn = (WNIDefinition*) g_malloc0 (sizeof(WNIDefinition));
@@ -875,7 +888,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	// if pos is VERB and doesn't have any examples, try to get from WN's examples file
 	if(VERB == pos && NULL == defn->examples)
 	{
-		defn->examples = findexample(cursyn);
+		defn->examples = find_example(cursyn);
 	}
 
 	def_item->definitions = g_slist_prepend(def_item->definitions, defn);	// with this, definitions_list section is over, remaining is synonyms_list appending/mapping
@@ -982,7 +995,8 @@ static void populate_ptr(gchar *lemma, SynsetPtr synptr, WNIProperties **data_pt
 	WNIPropertyMapping *mapping = NULL;
 	WNIClassItem *class_item = NULL;
 	GSList *temp_list = NULL;
-	guint16 i = 0, j = 0, check_len = 0;
+	guint16 i = 0, j = 0;
+	glong check_len = 0;
 	
 	check_len = g_utf8_strlen(lemma, -1) + 1;
 
@@ -1434,14 +1448,15 @@ static void populate(gchar *lemma, guint8 pos, WNIRequestFlags flag, gchar *actu
 gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestFlags additional_request_flags, gboolean advanced_mode)
 {
 	guint definitions_set = 0, i = 0;
-	gchar *morphword = NULL;
-	gboolean morphword_in_file = TRUE;	// this flag denotes if the lemma is in exceptions file, then no need to predict and vice-versa
+	gchar *morph_word = NULL;
+	gboolean morphword_in_file = TRUE;			/* This bit denotes if the lemma is in exceptions file, then no need to do prediction tech. and vice-versa */
 
 	if(NULL == search_str)
 		return FALSE;
 
-	// if WordNet's database files are not opened, open it
-	if(OpenDB != 1) wninit();
+	/* if WordNet's database files are not opened, open it */
+	if(OpenDB != 1)
+		wninit();
 
 	if(1 == OpenDB)
 	{
@@ -1471,29 +1486,29 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 
 				/* (i - 1) because Wordnet in Ubuntu returns NULL for 'automata' for i = 1 to NUMPARTS, while 
 				   "automaton" is rightly returned in Windows; so reducing it by 1, makes it work right in Ubuntu too */
-				if(morphword_in_file && (morphword = morphstr(search_str, i - 1)) != NULL)
+				if(morphword_in_file && (morph_word = morphstr(search_str, i - 1)) != NULL)
 				{
 					do
 					{
-						//G_PRINTF("i - 1: %d, %s\n", i, morphword);
+						//G_PRINTF("i - 1: %d, %s\n", i, morph_word);
 
-						if(((definitions_set = is_defined(morphword, i)) != 0) && response_list)
-							populate(morphword, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
-					} while((morphword = morphstr(NULL, i - 1)) != NULL );
+						if(((definitions_set = is_defined(morph_word, i)) != 0) && response_list)
+							populate(morph_word, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
+					} while((morph_word = morphstr(NULL, i - 1)) != NULL );
 				}
 
 				/* This is the actual search mech. which should work fine; in the first go 
 				   if it's not present in the excp. file, then its not there at all */
-				else if((morphword = morphstr(search_str, i)) != NULL)
+				else if((morph_word = morphstr(search_str, i)) != NULL)
 				{
 					morphword_in_file = FALSE;
 
 					do
 					{
-						//G_PRINTF("i: %d, %s\n", i, morphword);
-						if(((definitions_set = is_defined(morphword, i)) != 0) && response_list)
-							populate(morphword, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
-					} while((morphword = morphstr(NULL, i)) != NULL );
+						//G_PRINTF("i: %d, %s\n", i, morph_word);
+						if(((definitions_set = is_defined(morph_word, i)) != 0) && response_list)
+							populate(morph_word, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
+					} while((morph_word = morphstr(NULL, i)) != NULL );
 				}
 				
 				if(NULL == response_list && definitions_set) break;
@@ -1781,22 +1796,22 @@ static void class_list_free(GSList **list)
 			switch(temp_class_item->type)
 			{
 				case CLASSIF_CATEGORY:
-					G_PRINTF("Topic: ");
+					G_PRINTF("Topic: ", NULL);
 					break;
 				case CLASSIF_USAGE:
-					G_PRINTF("Usage: ");
+					G_PRINTF("Usage: ", NULL);
 					break;
 				case CLASSIF_REGIONAL:
-					G_PRINTF("Region: ");
+					G_PRINTF("Region: ", NULL);
 					break;
 				case CLASS_CATEGORY:
-					G_PRINTF("Topic Term: ");
+					G_PRINTF("Topic Term: ", NULL);
 					break;
 				case CLASS_USAGE:
-					G_PRINTF("Usage Term: ");
+					G_PRINTF("Usage Term: ", NULL);
 					break;
 				case CLASS_REGIONAL:
-					G_PRINTF("Regional Term: ");
+					G_PRINTF("Regional Term: ", NULL);
 					break;
 			}
 			G_PRINTF("(%c) %s#%d -> ID: %d, Sense: %d\n", partchars[temp_class_item->self_pos], 
@@ -2031,3 +2046,11 @@ void wni_free(GSList **response_list)
 	*response_list = global_list = NULL;
 }
 
+#ifdef WNI_INDEPENDENT_DEBUG
+int main(int argc, char *argv[])
+{
+	printf("%d\n", wni_request_nyms("thesaurus", NULL, 0, FALSE));
+
+	return 0;
+}
+#endif

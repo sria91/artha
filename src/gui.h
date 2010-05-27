@@ -27,11 +27,18 @@
 #define __GUI_H__
 
 
-#include <X11/Xlib.h>
 #include <gtk/gtk.h>
-#include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
 #include <wn.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef X11_AVAILABLE
+#include <gdk/gdkx.h>
+#include <X11/Xlib.h>
+#endif
 
 /* custom headers */
 #include "wni.h"
@@ -44,19 +51,13 @@
 /* pluggable module headers */
 #include "addons.h"
 
-/* if built using make, include config.h;
-   depending on the DEBUG_LEVEL, set the G_DEBUG macro
- */
-#ifdef HAVE_CONFIG_H
-	#include <config.h>
-
-	#if DEBUG_LEVEL >= 1
-		#define G_DEBUG(format, args...) g_debug(format, ##args)
-	#else
-		#define G_DEBUG(format, ...) ((void) 0)
-	#endif		/* DEBUG_LEVEL */
-#endif		/* HAVE_CONFIG_H */
-
+#ifdef G_OS_WIN32
+#	include "gdk/gdkwin32.h"
+#	include "windows.h"
+#	include "shellapi.h"
+#	define KEY_COUNT 4
+#	define WM_ARTHA_RELAUNCH	(WM_USER + 100)
+#endif	// G_OS_WIN32
 
 /* general constants */
 #define NEW_LINE		"\r\n"
@@ -173,7 +174,11 @@ Make sure WordNet's database files are present at\n\n%s.\n\nIf present elsewhere
 #define STR_MSG_WELCOME_HOTKEY_HEADER	"Artha can be summoned with a hotkey when required. Selecting text in any window and pressing that (hotkey) combination \
 will pop up Artha with the selected text looked up."
 #define STR_MSG_WELCOME_ARBITRARY_SUCCEEDED	"Since this is the first launch an arbitrary hotkey <b>%s</b> is set."
+#ifdef G_OS_WIN32
+#define STR_MSG_WELCOME_HOTKEY_FOOTER	"This can be changed via the hotkey button in the toolbar."
+#else
 #define STR_MSG_WELCOME_HOTKEY_FOOTER	"This can be changed via the hotkey button in the toolbar.\n\nRefer manual ('man artha' in terminal) for detailed help."
+#endif
 #define STR_MSG_WELCOME_HOTKEY_FAILED	"Unable to set the previously chosen hotkey <b>%s</b> for Artha. This could be because of some other application \
 registered with the same key combination."
 #define STR_MSG_HOTKEY_NOTSET		"You have enabled notifications; but notifications can only be shown upon pressing a hotkey combination which is \
@@ -183,8 +188,6 @@ currently not set. It can be set via the hotkey button in the toolbar."
 
 #define STR_COPYRIGHT		"Copyright © 2009, 2010  Sundaram Ramaswamy\n\nWordNet 3.0 \
 Copyright 2006 - 2010 by Princeton University.  All rights reserved."
-
-#define STR_WEBSITE		"http://artha.sourceforge.net/"
 
 #define STR_BUG_WEBPAGE		"http://launchpad.net/artha/+filebug"
 
@@ -231,13 +234,16 @@ gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common",
 gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
 /* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
 
-Display			*dpy = NULL;
-Bool 			x_error = False;
+#ifdef X11_AVAILABLE
+	Display			*dpy = NULL;
+#endif
 GSList 			*results = NULL;
 gchar 			*last_search = NULL;
 gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE;
 gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE;
+#ifdef X11_AVAILABLE
 guint32			last_hotkey_time = 0;
+#endif
 guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
 GtkAccelKey		app_hotkey = {0};
@@ -246,10 +252,15 @@ guint			status_msg_context_id = 0;
 GString			*wordnet_terms = NULL;
 NotifyNotification	*notifier = NULL;
 GtkCheckMenuItem	*menu_notify = NULL;
+GtkStatusIcon *status_icon = NULL;
+
+#ifdef G_OS_WIN32
+HWND			hMainWindow = NULL;
+#endif
 
 
 /* gtk_show_uri was introduced only in GTK+ 2.14, other than that all other functions referred by 
- * Artha are <= 2.12; hence use gtk_show_uri only if it's available; link it dynamically */
+   Artha are <= 2.12; hence use gtk_show_uri only if it's available; link it dynamically */
 
 /* dynamically loaded gtk_show_uri function's prototype */
 typedef gboolean (*ShowURIFunc) (GdkScreen *screen, const gchar *uri, guint32 timestamp, GError **error);
