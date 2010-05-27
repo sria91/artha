@@ -8,7 +8,10 @@
 	separate project "libnotify for Win32" which can be used by any app. that needs libnotify
 	in Windows environment. Notification turn around is a lot quicker now since the lookup when 
 	in notification mode is made a lot lightweight. A setup installer for Windows is created 
-	using Inno Setup.
+	using Inno Setup. Even though 2.16 of GTK+ Win32 runtime is said to be stabler it crashes
+	when MS-Windows theme is set. 2.18 works perfectly fine and hence this is bundled. Instead 
+	of going for a common GTK+ installation like Tor Lillqvist suggests to most beginners that 
+	an in-folder, per app. private GTK+ runtime installation is much better and works well.
 
 1.0.1 (Jan 20, 2010)
 	Suggestions feature was first implemented with the logic to look for 'en' dict and if not 
