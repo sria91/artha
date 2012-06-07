@@ -258,15 +258,5 @@ GtkStatusIcon *status_icon = NULL;
 HWND			hMainWindow = NULL;
 #endif
 
-
-/* gtk_show_uri was introduced only in GTK+ 2.14, other than that all other functions referred by 
-   Artha are <= 2.12; hence use gtk_show_uri only if it's available; link it dynamically */
-
-/* dynamically loaded gtk_show_uri function's prototype */
-typedef gboolean (*ShowURIFunc) (GdkScreen *screen, const gchar *uri, guint32 timestamp, GError **error);
-
-/* function ptr to gtk_show_uri */
-ShowURIFunc fp_show_uri = NULL;
-
 #endif		/* __GUI_H__ */
 

@@ -113,9 +113,6 @@
 /* Version number of package */
 #undef VERSION
 
-/* Build machine is Windows XP */
-#undef WINVER
-
 /* Xlib dev. headers are present */
 #undef X11_AVAILABLE
 
@@ -123,9 +120,6 @@
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
    #define below would cause a syntax error. */
 #undef _UINT8_T
-
-/* Build machine is Windows XP */
-#undef _WIN32_WINNT
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const

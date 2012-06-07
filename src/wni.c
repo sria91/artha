@@ -79,30 +79,6 @@ static void properties_tree_free(GSList **list, WNIRequestFlags id);
 
 
 /*
-	This function is equivalent to g_strcmp0, which is a 
-	wrapper over the standard C lib. function strcmp. The 
-	reason for having it instead of using wni_strcmp0 is that 
-	it was introduced only in glib 2.16. So as to reduce 
-	the version dependency, this function is employed.
-*/
-
-int wni_strcmp0(const char *s1, const char *s2)
-{
-	if(s1 != NULL && s2 != NULL)
-		return strcmp(s1, s2);
-	else
-	{
-		if(s1 == s2)
-			return 0;
-		else if(s1)
-			return 1;
-		else
-			return -1;
-	}
-}
-
-
-/*
 	Checks if depth hasn't exceeded the MAXDEPTH.
 */
 
@@ -192,7 +168,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 					strsubst(cur_synset->words[j], '_', ' ');
 
 					// check against temp_list too, not only implications, so that we don't miss duplicates in the same list
-					if(wni_strcmp0(antonym->term, cur_synset->words[j]) && 
+					if(g_strcmp0(antonym->term, cur_synset->words[j]) && 
 					(NULL == check_term_in_list(cur_synset->words[j], &antonym->implications, 0)) && 
 					(NULL == check_term_in_list(cur_synset->words[j], &temp_list, 0)))
 					{
@@ -549,12 +525,12 @@ static gint pos_list_compare(gconstpointer a, gconstpointer b, gpointer actual_s
 
 	WNIDefinitionItem *defn_item_a = (WNIDefinitionItem*) a, *defn_item_b = (WNIDefinitionItem*) b;
 
-	not_equal = wni_strcmp0(defn_item_a->lemma, defn_item_b->lemma);
+	not_equal = g_strcmp0(defn_item_a->lemma, defn_item_b->lemma);
 	if(not_equal)
 	{
-		if(0 == wni_strcmp0((gchar*) actual_search, defn_item_a->lemma))		// Actual search str compared against item a and b's lemma
+		if(0 == g_strcmp0((gchar*) actual_search, defn_item_a->lemma))		// Actual search str compared against item a and b's lemma
 			return -1;
-		else if (0 == wni_strcmp0((gchar*) actual_search, defn_item_b->lemma))
+		else if (0 == g_strcmp0((gchar*) actual_search, defn_item_b->lemma))
 			return 1;
 	}
 
@@ -634,7 +610,7 @@ static gboolean is_synm_a_lemma(GSList **list, gchar *synm)
 		{
 			temp_def_item = (WNIDefinitionItem*) temp_list->data;
 
-			if(0 == wni_strcmp0(temp_def_item->lemma, synm))
+			if(0 == g_strcmp0(temp_def_item->lemma, synm))
 				return TRUE;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -701,7 +677,7 @@ static GSList *find_example(SynsetPtr synptr)
 			splits = g_strsplit_set(tbuf, " ,\n", 0);
 			while(splits[i])
 			{
-				if(0 != wni_strcmp0(splits[i], ""))
+				if(0 != g_strcmp0(splits[i], ""))
 					if((returned_example = get_example(splits[i], synptr->words[wdnum])))
 						examples = g_slist_prepend(examples, returned_example);
 				i++;
@@ -877,7 +853,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	defn->definition = g_strdup(splits[0]);
 
 	for(i = 1; splits[i]; i++)
-		if(wni_strcmp0(splits[i], ""))		// make sure examples are not null strings
+		if(g_strcmp0(splits[i], ""))		// make sure examples are not null strings
 			defn->examples = g_slist_prepend(defn->examples, g_strdup(splits[i]));
 
 	defn->examples = g_slist_reverse(defn->examples);
@@ -941,7 +917,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 			// for cases where search is like 'wordsworth', substitute the proper case equivalent, provided if its the prime defn.
 			// I.e. if its the first defn. of the whole group. Since every defn. is prepended this is found by checking the next ptr of the list.
 			// If next is there, it means earlier there were defns before this one, else this is the first defn.
-			if(0 != wni_strcmp0(lemma, temp_str) && NULL == g_slist_next(def_item->definitions))
+			if(0 != g_strcmp0(lemma, temp_str) && NULL == g_slist_next(def_item->definitions))
 			{
 				g_free(lemma);
 				*lemma_ptr = g_strdup(temp_str);
@@ -1474,9 +1450,9 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 		 * are put up since is_defined() returns success for these actually futile searches; alternatively in_wn() 
 		 * can be also be used to check if a search_str is avaiable in WN; it rightly returns 0 for these 'strings' */
 		if(	g_utf8_strlen(search_str, -1) > 0 && 
-			wni_strcmp0(search_str, ".") && 
-			wni_strcmp0(search_str, "-") && 
-			wni_strcmp0(search_str, "_") )
+			g_strcmp0(search_str, ".") && 
+			g_strcmp0(search_str, "-") && 
+			g_strcmp0(search_str, "_") )
 		{
 			for(i = 1; i <= NUMPARTS; i++)
 			{
@@ -1540,9 +1516,11 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 static void simple_list_free(GSList **list, guint8 mode)
 {
 	GSList *temp_list = *list;
+#if DEBUG_LEVEL > 2
 	WNISynonymMapping *synonym_mapping = NULL;
 	WNIAntonymMapping *antonym_mapping = NULL;
 	WNIPropertyMapping *property_mapping = NULL;
+#endif
 
 	while(temp_list)
 	{
@@ -1550,20 +1528,26 @@ static void simple_list_free(GSList **list, guint8 mode)
 		{
 			if(SYNONYM_MAPPING == mode)
 			{
+#if DEBUG_LEVEL > 2
 				synonym_mapping = (WNISynonymMapping*) temp_list->data;
 				G_PRINTF("(%d, %d)\n", synonym_mapping->id, synonym_mapping->sense);
+#endif
 				g_slice_free1(sizeof(WNISynonymMapping), temp_list->data);
 			}
 			else if(ANTONYM_MAPPING == mode)
 			{
+#if DEBUG_LEVEL > 2
 				antonym_mapping = (WNIAntonymMapping*) temp_list->data;
 				G_PRINTF("ID: %d, Sense: %d, Related Word Count: %d\n", antonym_mapping->id, antonym_mapping->sense, antonym_mapping->related_word_count);
+#endif
 				g_slice_free1(sizeof(WNIAntonymMapping), temp_list->data);
 			}
 			else if(PROPERTY_MAPPING == mode)
 			{
+#if DEBUG_LEVEL > 2
 				property_mapping = (WNIPropertyMapping*) temp_list->data;
 				G_PRINTF("ID: %d, Sense: %d, Self Sense: %d\n", property_mapping->id, property_mapping->sense, property_mapping->self_sense);
+#endif
 				g_slice_free1(sizeof(WNIPropertyMapping), temp_list->data);
 			}
 			else
@@ -1796,22 +1780,22 @@ static void class_list_free(GSList **list)
 			switch(temp_class_item->type)
 			{
 				case CLASSIF_CATEGORY:
-					G_PRINTF("Topic: ", NULL);
+					G_PRINTF("Topic: ");
 					break;
 				case CLASSIF_USAGE:
-					G_PRINTF("Usage: ", NULL);
+					G_PRINTF("Usage: ");
 					break;
 				case CLASSIF_REGIONAL:
-					G_PRINTF("Region: ", NULL);
+					G_PRINTF("Region: ");
 					break;
 				case CLASS_CATEGORY:
-					G_PRINTF("Topic Term: ", NULL);
+					G_PRINTF("Topic Term: ");
 					break;
 				case CLASS_USAGE:
-					G_PRINTF("Usage Term: ", NULL);
+					G_PRINTF("Usage Term: ");
 					break;
 				case CLASS_REGIONAL:
-					G_PRINTF("Regional Term: ", NULL);
+					G_PRINTF("Regional Term: ");
 					break;
 			}
 			G_PRINTF("(%c) %s#%d -> ID: %d, Sense: %d\n", partchars[temp_class_item->self_pos], 
@@ -1890,13 +1874,16 @@ static void properties_tree_free(GSList **list, WNIRequestFlags id)
 {
 	GNode *tree_root = NULL;
 	GSList *temp_list = *list;
+#if DEBUG_LEVEL > 2
 	WNISynonymMapping *mapping  = NULL;
+#endif
 	
 	while(temp_list)
 	{
 		if(temp_list->data)
 		{
 			tree_root = (GNode*) temp_list->data;
+#if DEBUG_LEVEL > 2
 			mapping = (WNISynonymMapping*) tree_root->data;
 
 			if(WORDNET_INTERFACE_HYPERNYMS & id)
@@ -1909,10 +1896,12 @@ static void properties_tree_free(GSList **list, WNIRequestFlags id)
 				G_PRINTF("Holonyms: %d, %d\n", mapping->id, mapping->sense);
 			else if (WORDNET_INTERFACE_PERTAINYMS & id)
 				G_PRINTF("Pertains: %d, %d\n", mapping->id, mapping->sense);
-
+            
+            mapping = NULL;
+#endif
 			//g_free(tree_root->data);
 			g_slice_free1(sizeof(WNISynonymMapping), tree_root->data);
-			mapping = tree_root->data = NULL;
+			tree_root->data = NULL;
 			g_node_children_foreach(tree_root, G_TRAVERSE_ALL, tree_free, NULL);
 			g_node_destroy(tree_root);
 		}

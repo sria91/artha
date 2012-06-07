@@ -8,7 +8,7 @@
 # unlimited permission to copy and/or distribute it, with or without
 # modifications, as long as this notice is preserved.
 
-# serial 6 ltoptions.m4
+# serial 7 ltoptions.m4
 
 # This is to help aclocal find these macros, as it can't see m4_define.
 AC_DEFUN([LTOPTIONS_VERSION], [m4_if([1])])
@@ -126,7 +126,7 @@ LT_OPTION_DEFINE([LT_INIT], [win32-dll],
 [enable_win32_dll=yes
 
 case $host in
-*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-cegcc*)
+*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-cegcc*)
   AC_CHECK_TOOL(AS, as, false)
   AC_CHECK_TOOL(DLLTOOL, dlltool, false)
   AC_CHECK_TOOL(OBJDUMP, objdump, false)

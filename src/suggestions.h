@@ -34,69 +34,6 @@ G_BEGIN_DECLS
 typedef struct str_enchant_broker EnchantBroker;
 typedef struct str_enchant_dict   EnchantDict;
 
-struct str_enchant_dict
-{
-	void *user_data;
-	void *enchant_private_data;
-
-	int (*check) (struct str_enchant_dict * me, const char *const word,
-			  size_t len);
-
-	/* returns utf8*/
-	char **(*suggest) (struct str_enchant_dict * me,
-			   const char *const word, size_t len,
-			   size_t * out_n_suggs);
-	
-	void (*add_to_personal) (struct str_enchant_dict * me,
-				 const char *const word, size_t len);
-	
-	void (*add_to_session) (struct str_enchant_dict * me,
-				const char *const word, size_t len);
-	
-	void (*store_replacement) (struct str_enchant_dict * me,
-				   const char *const mis, size_t mis_len,
-				   const char *const cor, size_t cor_len);
-	
-	void (*add_to_exclude) (struct str_enchant_dict * me,
-				 const char *const word, size_t len);
-	
-	void * _reserved[5];
-};
-	
-struct str_enchant_provider
-{
-	void *user_data;
-	void *enchant_private_data;
-	EnchantBroker * owner;
-	
-	void (*dispose) (struct str_enchant_provider * me);
-	
-	EnchantDict *(*request_dict) (struct str_enchant_provider * me,
-					  const char *const tag);
-	
-	void (*dispose_dict) (struct str_enchant_provider * me,
-				  EnchantDict * dict);
-	
-	int (*dictionary_exists) (struct str_enchant_provider * me,
-				  const char *const tag);
-
-	/* returns utf8*/
-	const char * (*identify) (struct str_enchant_provider * me);
-	/* returns utf8*/
-	const  char * (*describe) (struct str_enchant_provider * me);
-
-	/* frees string lists returned by list_dicts and dict->sugges	EnchantBroker *spell_broker = NULL;
-	EnchantDict *dict = NULL;t */
-	void (*free_string_list) (struct str_enchant_provider * me,
-				  char **str_list);
-
-	char ** (*list_dicts) (struct str_enchant_provider * me,
-							   size_t * out_n_dicts);
-
-	void * _reserved[5];
-};
-
-
 //Function Prototypes
 
 typedef void	(*EnchantDictDescribeFn)		(const char * const lang_tag, const char * const provider_name,

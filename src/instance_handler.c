@@ -44,7 +44,7 @@
 
 DBusConnection *bus = NULL;
 
-DBusHandlerResult signal_receiver(DBusConnection *connection, DBusMessage *message, void *user_data)
+static DBusHandlerResult signal_receiver(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
 	if(dbus_message_is_signal(message, STR_DUPLICATE_INTERFACE_NAME, STR_SIGNAL_NAME))
 	{

@@ -1,4 +1,10 @@
-AM_CFLAGS = -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
+if DEBUG
+DBG=-g -pg
+else
+DBG=-O2
+endif
+
+AM_CFLAGS = $(DBG) -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
 -fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@ @libdbus_CFLAGS@
 
 bin_PROGRAMS = artha
@@ -18,17 +24,18 @@ artha_SOURCES += eggaccelerators.c eggaccelerators.h \
 else
 artha_SOURCES += app_icon.rc
 lib_LTLIBRARIES = libnotify.la
-libnotify_la_SOURCES = libnotify.c
+libnotify_la_SOURCES = libnotify.c libnotify.h libnotify_ver.rc
 libnotify_la_CFLAGS = -Wall -Wextra -pedantic -std=c99 \
 	-s -Wno-unused-parameter -fstrict-aliasing \
 	-Wno-missing-field-initializers @GTK_CFLAGS@ \
-	-O2 -DWIN32 -DWINDOWS -DNDEBUG -D_USERDLL -D_WINDLL \
+	$(DBG) -DWIN32 -DWINDOWS -DNDEBUG -D_USERDLL -D_WINDLL \
 	-D_UNICODE -DUNICODE -DLIBNOTIFY_EXPORTS
 libnotify_la_LDFLAGS = -mms-bitfields -mwindows \
 	-version-info @dll_ver@ -no-undefined -Xlinker \
-	libnotify_ver.o
+	libnotify_ver.o -shared
 libnotify_la_DEPENDENCIES = libnotify_ver.o
-include_HEADERS = libnotify.h
+.rc.o:
+	windres -i $< -o $@ -I$(top_builddir)
 endif
 
 # @GTK_LIBS@ & libdbus_CFLAGS are not used to avoid unwanted 
@@ -42,6 +49,3 @@ else
 artha_LDADD += @GTK_LIBS@
 artha_LDFLAGS = -mms-bitfields -mwindows
 endif
-
-.rc.o:
-	windres -i $< -o $@ -I$(top_builddir)

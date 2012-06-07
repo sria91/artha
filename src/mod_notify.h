@@ -36,9 +36,9 @@ typedef struct _NotifyNotification        	NotifyNotification;
 gboolean	(*notify_init)		(const char *app_name);
 void		(*notify_uninit)	(void);
 
-NotifyNotification* (*notify_notification_new_with_status_icon) (
+NotifyNotification* (*notify_notification_new) (
 	const gchar *summary, const gchar *body,
-	const gchar *icon, GtkStatusIcon *status_icon);
+	const gchar *icon);
 
 gboolean (*notify_notification_update)	(NotifyNotification *notification, 
 						const gchar *summary, 

@@ -1,7 +1,11 @@
 Users' Wish List:
+* Fix the tabbing names correctly. Similar and Synonyms seem to be swapped, cross check with WP7 port
+* Spacing issue; not all spaces are filled with '_' in the index files E.g. 24-karet_gold in index.noun
 * Pronunciations
 * Persistent History
+* Option to make the hotkey a switch
 * Ctrl + W should work for closing the window and Ctrl + Q should quit.
+* Single click jump to words in both senses and relatives as an option.
 * Make the status icon's visibility customizable as Always, Never and Auto.
 
 To Do:

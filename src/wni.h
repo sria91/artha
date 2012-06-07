@@ -35,16 +35,16 @@ G_BEGIN_DECLS
 #	include "config.h"
 
 #	if DEBUG_LEVEL >= 1
-#		define G_DEBUG(format, ...) g_debug(format, __VA_ARGS__)
+#		define G_DEBUG(...) g_debug(__VA_ARGS__)
 #	endif		/* DEBUG_LEVEL >= 1 */
 
 #	if DEBUG_LEVEL >= 2
-#		define G_MESSAGE(format, ...) g_message(format, __VA_ARGS__)
+#		define G_MESSAGE(...) g_message(__VA_ARGS__)
 #	endif		/* DEBUG_LEVEL >= 2 */
 
 #	if DEBUG_LEVEL >= 3
 #		include <glib/gprintf.h>
-#		define G_PRINTF(format, ...) g_printf(format, __VA_ARGS__)
+#		define G_PRINTF(...) g_printf(__VA_ARGS__)
 #	endif		/* DEBUG_LEVEL >= 3 */
 
 #endif		/* HAVE_CONFIG_H */

@@ -17,6 +17,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
 # Checks for programs.
 AM_PROG_CC_C_O
 AC_LANG([C])
+AC_LANG_CONFTEST(
+[AC_LANG_SOURCE([[const char hw[] = "Hello, World\n";]])])
 
 # define the usage of pkg-config
 PKG_PROG_PKG_CONFIG
@@ -52,13 +54,13 @@ AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [
 AC_SUBST([WORDNET_LIB])
 
 
-# gtk_builder_add_from_file() since 2.12 only, hence check for GTK+-2.0 >= 2.12
-# g_regex_new() since 2.14 only, hence check for GLib-2.0 >= 2.14
+# gtk_widget_get_visible() since 2.18 only, hence check for GTK+-2.0 >= 2.18
+# GTK+ 2.18 depends on GLib 2.22, hence check for GLib-2.0 >= 2.22
 # check for GTK+ and GLib
-PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.12 glib-2.0 >= 2.14], , [
+PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.18 glib-2.0 >= 2.22], , [
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([
-You must have GTK+ 2.0 (version 2.12 or above) and GLib 2.0 (version 2.14 
+You must have GTK+ 2.0 (version 2.18 or above) and GLib 2.0 (version 2.22 
 or above) development headers installed to build.
 
 If you have these installed already you may need to install pkg-config so 
@@ -72,10 +74,7 @@ LT_INIT
 case $build_os in
 	*cygwin* | *mingw*)
 		build_mach=[windows]
-		AC_DEFINE([WINVER],[0x0501],[Build machine is Windows XP])
-		AC_DEFINE([_WIN32_WINNT],[WINVER],[Build machine is Windows XP])
 		AC_DEFINE([NDEBUG],[],[Build mode])
-		dnl AC_DEFINE([WIN32],[],[Build mode])
 		AC_DEFINE_UNQUOTED([APP_VERSION],[MAJOR_VER, MINOR_VER, BUILD_VER, 0],[app. executable version])
 		m4_define([DLL_MAJOR_VER],1)
 		m4_define([DLL_MINOR_VER],0)
@@ -84,8 +83,7 @@ case $build_os in
 		AC_DEFINE([DLL_VERSION_STR],["DLL_MAJOR_VER.DLL_MINOR_VER.DLL_BUILD_VER.0"],[libnotify dll version string])
 		dll_ver=DLL_MAJOR_VER:DLL_MINOR_VER:DLL_BUILD_VER
 		AC_SUBST([dll_ver])
-		AC_LIBTOOL_WIN32_DLL
-		AC_DISABLE_STATIC
+		_LT_SET_OPTIONS([LT_INIT],[win32-dll],[disable-static])
 		LT_LANG([Windows Resource])
 		;;
 	*)
@@ -94,12 +92,12 @@ case $build_os in
 esac
 AC_SUBST([LIBTOOL_DEPS])
 
-AM_CONDITIONAL([POSIX],[test "$build_mach" = "posix"])
+# begin of POSIX specific config
+if test "$build_mach" = "posix"; then
 
 # check if dbus-1 alone is enough or dbus-glib-1 alone is enough
 PKG_CHECK_MODULES([libdbus], [dbus-1 >= 0.60 dbus-glib-1 >= 0.60], 
 [AC_DEFINE([DBUS_AVAILABLE], [], [Dbus dev. headers are present])], [
-if test "$build_mach" = "posix"; then
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([
 You must have the dbus and dbus-glib-1 (version 0.60 or above) 
@@ -108,12 +106,28 @@ development headers installed!
 If it is installed already, you may need to install pkg-config so 
 that they can be located.
 ])
-fi
 ])
 
 AC_SUBST([libdbus_CFLAGS])
 AC_SUBST([libdbus_LIBS])
 
+
+# Checks for header files.
+AC_PATH_X
+
+if test "$no_x" = "yes"; then
+	AC_MSG_ERROR([X11 libraries are required to build.])
+fi
+
+
+AC_CHECK_HEADERS([X11/Xlib.h X11/Xatom.h], [ AC_DEFINE([X11_AVAILABLE], [], [Xlib dev. headers are present]) ], [
+AC_MSG_ERROR([
+Xlib Development headers not found!
+You need X11 development headers to build.])
+])
+
+fi
+# end of POSIX specific config
 
 AC_DEFUN([AC_DEFINE_DIR], [
   prefix_NONE=
@@ -130,6 +144,7 @@ dnl refers to ${prefix}.  Thus we have to use `eval' twice.
   test "$exec_prefix_NONE" && exec_prefix=NONE
 ])
 
+AM_CONDITIONAL([POSIX],[test "$build_mach" = "posix"])
 
 # get the target directory's path and get it defined in config.h
 AM_COND_IF([POSIX],
@@ -145,23 +160,6 @@ AC_DEFINE([APP_DIR], ["."], [Path where app. files are placed])
 AC_DEFINE([ICON_DIR], ["."], [Path where app. files are placed])
 ])
 
-
-# Checks for header files.
-AC_PATH_X
-
-if test "$no_x" = "yes" -a "$build_mach" = "posix"; then
-	AC_MSG_ERROR([X11 libraries are required to build.])
-fi
-
-
-AC_CHECK_HEADERS([X11/Xlib.h X11/Xatom.h], [ AC_DEFINE([X11_AVAILABLE], [], [Xlib dev. headers are present]) ], [
-if test "$build_mach" = "posix"; then
-AC_MSG_ERROR([
-Xlib Development headers not found!
-You need X11 development headers to build.])
-fi
-])
-
 AC_CHECK_FUNCS([strcmp strlen memset], , [
 AC_MSG_ERROR([
 Failed to find function(s) strcmp or strlen!
@@ -170,16 +168,18 @@ These standard C library functions are required to build.
 ])
 
 
-# Enable debugging argument option. Possible values = yes, message or verbose
-AC_ARG_ENABLE([debug], AC_HELP_STRING([--enable-debug], [enable debugging (default = no)]), [ac_debug="$enableval"])
+# Enable debugging argument option. Possible values = yes, messages or verbose
+AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [enable debugging (default = no)]), [ac_debug="$enableval"])
 if test "$ac_debug" = "yes"; then
 	AC_DEFINE(DEBUG_LEVEL, 1, [Application debugging enabled])
 elif test "$ac_debug" = "messages"; then
 	AC_DEFINE(DEBUG_LEVEL, 2, [Debugging enabled both in application and WNI])
 elif test "$ac_debug" = "verbose"; then
 	AC_DEFINE(DEBUG_LEVEL, 3, [Verbose Debugging enabled both in application and WNI])
+else
+	ac_debug="no"
 fi
-
+AM_CONDITIONAL([DEBUG], [test "$ac_debug" != "no"])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -195,7 +195,7 @@ AC_TYPE_UINT8_T
 
 
 AC_CONFIG_SRCDIR([src/wni.c])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile data/Makefile src/Makefile])
 AC_OUTPUT
 

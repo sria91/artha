@@ -41,7 +41,7 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
 static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpointer user_data);
 static void about_activate(GtkToolButton *menu_item, gpointer user_data);
-static gboolean quit_activate(GObject *obj, gpointer user_data);
+static void quit_activate(GtkWidget *widget, gpointer user_data);
 static guint8 get_frequency(guint sense_count);
 static void relatives_clear_all(GtkBuilder *gui_builder);
 static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder);
@@ -202,7 +202,7 @@ static gchar* win32_capture_selection()
 			input[0].ki.dwFlags = KEYEVENTF_KEYUP;
 			SendInput(1, input, sizeof(INPUT));
 			input[0].ki.dwFlags = 0;
-			G_MESSAGE("Virtually released ALT!\n", NULL);
+			G_MESSAGE("Virtually released ALT!\n");
 		}
 
 		input[0].ki.wVk = input[2].ki.wVk = inputKey[0];
@@ -326,7 +326,7 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 	GtkComboBoxEntry *combo_query = NULL;
 
-	if(GTK_WIDGET_VISIBLE(window))
+	if(gtk_widget_get_visible(GTK_WIDGET(window)))
 		gtk_widget_hide(GTK_WIDGET(window));
 	else
 	{
@@ -360,8 +360,7 @@ static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpo
 			gtk_widget_destroy(GTK_WIDGET(about_dialog));
 			break;
 		case ARTHA_RESPONSE_REPORT_BUG:
-			if(fp_show_uri)
-				fp_show_uri(NULL, STR_BUG_WEBPAGE, GDK_CURRENT_TIME, NULL);
+			gtk_show_uri(NULL, STR_BUG_WEBPAGE, GDK_CURRENT_TIME, NULL);
 			break;
 		default:
 			g_warning("About Dialog: Unhandled response_id: %d!\n", response_id);
@@ -376,31 +375,21 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	g_object_set(G_OBJECT(about_dialog), "license", STR_LICENCE, "copyright", STR_COPYRIGHT, 
 	"comments", STR_ABOUT, "authors", strv_authors, "version", PACKAGE_VERSION, 
 	"wrap-license", TRUE, 
-#ifndef G_OS_WIN32
-"website-label", STR_WEBSITE_LABEL, /* this is disabled for Windows since gtk_show_uri doesn't work there */
-#endif
+	"website-label", STR_WEBSITE_LABEL,
 	"website", PACKAGE_URL, NULL);
 
-	if(fp_show_uri)
-		gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
+	gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
 
 	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), NULL);
 	
 	gtk_dialog_run(GTK_DIALOG(about_dialog));
 }
 
-/* Multiple signals have this as the registered call back function.
-   The most important of them is "delete-event" of the main window 
-   which expects the return value of this function to 'gboolean' 
-   and not 'void' like other signals do. Hence it has gboolean as 
-   it's return type.
-*/
-static gboolean quit_activate(GObject *obj, gpointer user_data)
+static void quit_activate(GtkWidget *widget, gpointer user_data)
 {
-	G_DEBUG("Destroy called!\n", NULL);
+	G_DEBUG("Destroy called!\n");
 
 	gtk_main_quit();
-	return TRUE;
 }
 
 static guint8 get_frequency(guint sense_count)
@@ -431,7 +420,7 @@ static void relatives_clear_all(GtkBuilder *gui_builder)
 		temp_tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
 		relative_tab = gtk_widget_get_parent(GTK_WIDGET(temp_tree_view));
 
-		if(GTK_WIDGET_VISIBLE(relative_tab))
+		if(gtk_widget_get_visible(GTK_WIDGET(relative_tab)))
 		{
 			temp_tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(temp_tree_view));
 			if(temp_tree_store)
@@ -840,7 +829,7 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 		
 		// see if the term has attributes in first place (check visibility for that)
 		// if available, set the label based on the POS
-		if(GTK_WIDGET_VISIBLE(relative_tab) && TREE_ATTRIBUTES == i)
+		if(gtk_widget_get_visible(GTK_WIDGET(relative_tab)) && TREE_ATTRIBUTES == i)
 		{
 			tab_label = GTK_LABEL(gtk_builder_get_object(gui_builder, LABEL_ATTRIBUTES));
 			if(get_attribute_pos() == ADJ)
@@ -1032,7 +1021,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	// Check if the fed string is a wildmat expr.
 	// If true, call the regex mod. to set the results and return
 	regex_text = g_strstrip(gtk_combo_box_get_active_text(combo_query));
-	if(!(notifier && notifier_enabled && !GTK_WIDGET_VISIBLE(window)) && (results_set = is_wildmat_expr(regex_text)))
+	if(!(notifier && notifier_enabled && !gtk_widget_get_visible(GTK_WIDGET(window))) && (results_set = is_wildmat_expr(regex_text)))
 	{
 		// clear previously set relatives
 		// clear search successful flag; without this when the prev. looked up
@@ -1059,7 +1048,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			// if visible, update the statusbar; the window will usually go on a freeze
 			// without updating the statusbar, until GDK is idle
 			// this call forces GDK to first redraw the statusbar and proceed
-			if(GTK_WIDGET_VISIBLE(window))
+			if(gtk_widget_get_visible(GTK_WIDGET(window)))
 				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
 			set_regex_results(regex_text, gui_builder);
@@ -1118,14 +1107,14 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 			
 			// if visible, repaint the statusbar after setting the status message, for it to get reflected
-			if(GTK_WIDGET_VISIBLE(window))
+			if(gtk_widget_get_visible(GTK_WIDGET(window)))
 				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
 			G_MESSAGE("'%s' requested from WNI!\n", search_str);
 
 			/* if it's only for notification, then instead of an unwanted 
 			   heavy look-up, just make the simplest notify lookup (quickie) */
-			if(notifier && notifier_enabled && !GTK_WIDGET_VISIBLE(window))
+			if(notifier && notifier_enabled && !gtk_widget_get_visible(GTK_WIDGET(window)))
 				count = 0;
 			else
 				count = WORDNET_INTERFACE_ALL;
@@ -1140,7 +1129,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			{
 				total_results = 0; total_pos = 0;
 
-				G_MESSAGE("Results successful!\n", NULL);
+				G_MESSAGE("Results successful!\n");
 
 				def_list = ((WNIOverview*)((WNINym*)results->data)->data)->definitions_list;
 				while(def_list)
@@ -1234,7 +1223,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 					while(gtk_list_store_iter_is_valid(query_list_store, &query_list_iter))
 					{
 						gtk_tree_model_get(GTK_TREE_MODEL(query_list_store), &query_list_iter, 0, &str_list_item, -1);
-						if(0 == wni_strcmp0(lemma, str_list_item))
+						if(0 == g_strcmp0(lemma, str_list_item))
 						{
 							// While in here, if you set a particular index item as active, 
 							// it again calls the button_search_click from within as an after effect of combo_query "changed" signal
@@ -1263,7 +1252,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				/* don't populate relatives if in notify mode; clear the last_search 
 				   so that if the user opens the window next lookup works */
-				if(notifier && notifier_enabled && !GTK_WIDGET_VISIBLE(window))
+				if(notifier && notifier_enabled && !gtk_widget_get_visible(GTK_WIDGET(window)))
 				{
 					g_free(search_str);
 					search_str = NULL;
@@ -1283,7 +1272,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		if(results)
 		{
 			/* if mod notify is present & if notifications are enabled and window is invisible then show notification  */
-			if(notifier && notifier_enabled && (!GTK_WIDGET_VISIBLE(window)))
+			if(notifier && notifier_enabled && (!gtk_widget_get_visible(GTK_WIDGET(window))))
 			{
 				if(NULL == lemma)
 					lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
@@ -1304,7 +1293,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			}
 			else
 #ifdef X11_AVAILABLE
-			
 				tomboy_window_present_hardcore(window);
 #else
 				gtk_window_present(window);
@@ -1314,7 +1302,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		}
 		else
 		{
-			if(notifier && notifier_enabled && (!GTK_WIDGET_VISIBLE(window)))
+			if(notifier && notifier_enabled && (!gtk_widget_get_visible(GTK_WIDGET(window))))
 			{
 				notify_notification_update(notifier, search_str, STR_STATUS_QUERY_FAILED, "gtk-dialog-warning");
 				if(FALSE == notify_notification_show(notifier, &err))
@@ -1539,7 +1527,7 @@ static void text_view_selection_made(GtkWidget *widget, GtkSelectionData *sel_da
 		txtQuery = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 		button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 	
-		if(0 != wni_strcmp0(gtk_entry_get_text(txtQuery), selection))
+		if(0 != g_strcmp0(gtk_entry_get_text(txtQuery), selection))
 		{
 			gtk_entry_set_text(txtQuery, selection);
 			//gtk_editable_set_position(GTK_EDITABLE(txtQuery), -1);
@@ -1917,7 +1905,7 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 						gtk_tree_model_get(tree_store, &iter, 0, &str_category, -1);
 						if(str_category)
 						{
-							if(0 != wni_strcmp0(str_category, STR_ANTONYM_HEADER_DIRECT)) str_path[0] = '1';
+							if(0 != g_strcmp0(str_category, STR_ANTONYM_HEADER_DIRECT)) str_path[0] = '1';
 							g_free(str_category);
 						}
 
@@ -1939,7 +1927,7 @@ static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_dat
 						gtk_tree_model_get_iter_from_string(tree_store, &iter, str_root);
 
 						gtk_tree_model_get(tree_store, &iter, 0, &str_category, -1);
-						for(sub_level = 0; (0 != wni_strcmp0(domain_types[sub_level], str_category)); sub_level++);
+						for(sub_level = 0; (0 != g_strcmp0(domain_types[sub_level], str_category)); sub_level++);
 						g_free(str_category);
 
 						str_demark++;
@@ -2250,7 +2238,7 @@ static void create_text_view_tags(GtkBuilder *gui_builder)
 	gtk_text_buffer_create_tag(buffer, TAG_MATCH, "foreground", "DarkGreen", "weight", PANGO_WEIGHT_SEMIBOLD, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_SUGGESTION, "foreground", "blue" , "left_margin", 25, NULL);
 	gtk_text_buffer_create_tag(buffer, TAG_HIGHLIGHT, "background", "black", "foreground", "white", NULL);
-	
+
 	for(i = 0; i < FAMILIARITY_COUNT; i++)
 	{
 		gtk_text_buffer_create_tag(buffer, familiarity[i], "background", freq_colors[i], 
@@ -2285,7 +2273,7 @@ static gboolean load_preferences(GtkWindow *parent)
 
 		if(version)
 		{
-			if(0 != wni_strcmp0(version, PACKAGE_VERSION))
+			if(0 != g_strcmp0(version, PACKAGE_VERSION))
 			{
 				/* version number is split here. Major, Minor, Micro */
 				version_numbers = g_strsplit(version, ".", 3);
@@ -2377,7 +2365,7 @@ static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gp
 
 	final_uri = g_strconcat(MAILTO_PREFIX, link, NULL);
 
-	if(!fp_show_uri(NULL, final_uri, GDK_CURRENT_TIME, &err))
+	if(!gtk_show_uri(NULL, final_uri, GDK_CURRENT_TIME, &err))
 	{
 		g_warning("Email gtk_show_uri error: %s\n", err->message);
 		g_error_free(err);
@@ -2390,7 +2378,7 @@ static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpoi
 {
 	GError *err = NULL;
 
-	if(!fp_show_uri(NULL, link, GDK_CURRENT_TIME, &err))
+	if(!gtk_show_uri(NULL, link, GDK_CURRENT_TIME, &err))
 	{
 		g_warning("URL gtk_show_uri error: %s\n", err->message);
 		g_error_free(err);
@@ -2427,7 +2415,7 @@ static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
 			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
 			// if visible, repaint the statusbar after setting the status message, for it to get reflected
-			if(GTK_WIDGET_VISIBLE(window))
+			if(gtk_widget_get_visible(GTK_WIDGET(window)))
 				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
 			do
@@ -2773,7 +2761,6 @@ int main(int argc, char *argv[])
 	GtkMenu *popup_menu = NULL;
 	GtkExpander *expander = NULL;
 	GdkPixbuf *app_icon = NULL;
-	GModule *app_mod = NULL;
 	GError *err = NULL;
 	gboolean first_run = FALSE, hotkey_reg_failed = FALSE;
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
@@ -2964,25 +2951,12 @@ int main(int argc, char *argv[])
 
 					gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 
-					G_DEBUG("GUI loaded successfully!\n", NULL);
+					G_DEBUG("GUI loaded successfully!\n");
 					
 					create_stores_renderers(gui_builder);
 
-					app_mod = g_module_open(NULL, G_MODULE_BIND_LAZY);
-					if(app_mod)
-					{
-						if(g_module_symbol(app_mod, "gtk_show_uri", (gpointer*) &fp_show_uri))
-						{
-							gtk_about_dialog_set_email_hook(about_email_hook, NULL, NULL);
-							gtk_about_dialog_set_url_hook(about_url_hook, NULL, NULL);
-						}
-						else
-							G_DEBUG("Cannot find gtk_show_uri function symbol!\n", NULL);
-
-						g_module_close(app_mod);
-					}
-					else
-						g_warning("Cannot open module!\n");
+					gtk_about_dialog_set_email_hook(about_email_hook, NULL, NULL);
+					gtk_about_dialog_set_url_hook(about_url_hook, NULL, NULL);
 
 					mod_suggest = suggestions_init();
 

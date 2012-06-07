@@ -143,7 +143,7 @@ reload_modmap (GdkKeymap *keymap,
   XFreeModifiermap (xmodmap);
 }
 
-const EggModmap*
+static const EggModmap*
 egg_keymap_get_modmap (GdkKeymap *keymap)
 {
   EggModmap *modmap;

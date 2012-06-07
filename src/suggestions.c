@@ -89,7 +89,7 @@ gchar** suggestions_get(const gchar *lemma)
    checks if the passed LANG (code) is a form of the language we're interested in; this
    is to know if the lang is the same, omitting the locale e.g. en_IN is suitable for 'en'
  */
-gboolean is_lang_suitable(const gchar *lang_code)
+static gboolean is_lang_suitable(const gchar *lang_code)
 {
 	if(strlen(lang_code) >= strlen(dict_lang_tag))
 	{
@@ -101,7 +101,7 @@ gboolean is_lang_suitable(const gchar *lang_code)
 	return FALSE;
 }
 
-void find_dictionary(const char * const lang_tag, const char * const provider_name,
+static void find_dictionary(const char * const lang_tag, const char * const provider_name,
 						  const char * const provider_desc,
 						  const char * const provider_file,
 						  void * user_data)
@@ -118,7 +118,7 @@ void find_dictionary(const char * const lang_tag, const char * const provider_na
 	}
 }
 
-gboolean try_sys_lang(gchar *copy_dict_tag, guint8 max_length)
+static gboolean try_sys_lang(gchar *copy_dict_tag, guint8 max_length)
 {
 	const gchar *sys_lang = g_getenv("LANG");
 	gchar *temp_str = NULL;
@@ -199,7 +199,7 @@ gboolean suggestions_init()
 				if(dict_tag[0] != '\0')
 				{
 					enchant_dict = enchant_broker_request_dict(enchant_broker, dict_tag);
-					G_MESSAGE("Suggestions module successfully loaded", NULL);
+					G_MESSAGE("Suggestions module successfully loaded");
 					return TRUE;
 				}
 			}
@@ -218,27 +218,32 @@ gboolean suggestions_init()
 		mod_enchant = NULL;
 	}
 	
-	G_MESSAGE("Failed to load suggestions module", NULL);
+	G_MESSAGE("Failed to load suggestions module");
 
 	return FALSE;
 }
 
 gboolean suggestions_uninit()
 {
-	gboolean free_success = TRUE;
+	gboolean free_success = FALSE;
 
 	if(enchant_dict)
+	{
 		enchant_broker_free_dict(enchant_broker, enchant_dict);
+		enchant_dict = NULL;
+	}
+
 	if(enchant_broker)
+	{
 		enchant_broker_free(enchant_broker);
+		enchant_broker = NULL;
+	}
 
-	enchant_dict = NULL;
-	enchant_broker = NULL;
-
-	if(mod_enchant)	
+	if(mod_enchant)
+	{
 		free_success = g_module_close(mod_enchant);
-
-	mod_enchant = NULL;
+		mod_enchant = NULL;
+	}
 	
 	return free_success;
 }

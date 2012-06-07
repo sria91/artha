@@ -35,7 +35,7 @@
 #ifdef G_OS_WIN32
 #	define NOTIFY_FILE		"libnotify-1.dll"
 #else
-#	define NOTIFY_FILE		"libnotify.so.1"
+#	define NOTIFY_FILE		"libnotify.so"
 #endif
 
 GModule *mod_notify = NULL;
@@ -49,27 +49,27 @@ gboolean mod_notify_init(GtkStatusIcon *status_icon)
 	{
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_init), (gpointer *) &notify_init);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_uninit), (gpointer *) &notify_uninit);
-		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_new_with_status_icon), (gpointer *) &notify_notification_new_with_status_icon);
+		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_new), (gpointer *) &notify_notification_new);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_update), (gpointer *) &notify_notification_update);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_show), (gpointer *) &notify_notification_show);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_close), (gpointer *) &notify_notification_close);
 		
-		if(NULL != notify_init && NULL != notify_uninit && NULL != notify_notification_new_with_status_icon &&
+		if(NULL != notify_init && NULL != notify_uninit && NULL != notify_notification_new &&
 		NULL != notify_notification_update && NULL != notify_notification_show && NULL != notify_notification_close)
 		{
 			if(notify_init(PACKAGE_NAME))
 			{
 				/* initialize summary as Artha (Package Name)
 				   this will, however, be modified to the looked up word before display */
-				notifier = notify_notification_new_with_status_icon(PACKAGE_NAME, NULL, "gtk-dialog-info", status_icon);
-				G_MESSAGE("Notification module successfully loaded", NULL);
+				notifier = notify_notification_new(PACKAGE_NAME, NULL, "gtk-dialog-info");
+				G_MESSAGE("Notification module successfully loaded");
 
 				return TRUE;
 			}
 		}
 	}
 
-	G_MESSAGE("Failed to load notifications module", NULL);
+	G_MESSAGE("Failed to load notifications module");
 	return FALSE;
 }
 
