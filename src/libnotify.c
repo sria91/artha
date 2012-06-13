@@ -43,16 +43,14 @@ ________________________________________________
 */
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* Exclude rarely-used stuff from Windows headers */
 #define WIN32_LEAN_AND_MEAN
 
-/* set the minimum Windows version: Windows XP */
-#define _WIN32_WINNT 0x0501
-#define WINVER _WIN32_WINNT
-#define _WIN32_WINDOWS WINVER
-
 /* Windows Header Files: */
-#include <tchar.h>
 #include <windows.h>
 
 /* include libnotify functions to be implemented */
@@ -83,7 +81,8 @@ enum TIMER_IDS
 
 /* constants */
 #define max_summary_length	100
-#define max_body_length		MAX_PATH
+#define max_body_length		300
+/* lookup 'MAK' for setting 300 */
 
 const uint8_t	rounded_rect_edge = 15;
 const uint8_t	mouse_over_alpha = (0xFF / 4);
@@ -97,8 +96,8 @@ const uint16_t	milliseconds_per_word = 750;
 
 struct _NotifyNotification
 {
-	TCHAR summary[max_summary_length];
-	TCHAR body[max_body_length];
+	wchar_t summary[max_summary_length];
+	wchar_t body[max_body_length];
 	HICON icon;
 };
 
@@ -126,28 +125,8 @@ uint16_t			summary_body_divider = 0;
 DWORD notification_daemon_main(LPVOID lpdwThreadParam);
 LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK mouse_over_hook_proc(int nCode, WPARAM wParam, LPARAM lParam);
-uint16_t word_count(const TCHAR *str);
+uint16_t word_count(const wchar_t *str);
 
-
-/* DLL Entry function */
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
-{
-	UNREFERENCED_PARAMETER(hModule);
-	UNREFERENCED_PARAMETER(lpReserved);
-
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
-	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
-	return TRUE;
-}
 
 /* dll exported functions */
 LIBNOTIFY_API gboolean notify_init(const char *app_name)
@@ -211,12 +190,10 @@ LIBNOTIFY_API void notify_uninit(void)
 	}
 }
 
-LIBNOTIFY_API NotifyNotification* notify_notification_new_with_status_icon(
+LIBNOTIFY_API NotifyNotification* notify_notification_new(
 	const gchar *summary, const gchar *body,
-	const gchar *icon, GtkStatusIcon *status_icon)
+	const gchar *icon)
 {
-	UNREFERENCED_PARAMETER(status_icon);
-
 	if(notification_data)
 		notify_notification_update(notification_data, summary, body, icon);
 
@@ -265,8 +242,8 @@ DWORD notification_daemon_main(LPVOID lpdwThreadParam)
 	HINSTANCE hDLLInstance = (HINSTANCE) GetModuleHandle(NULL);
 	WNDCLASSEX wcex = {sizeof(WNDCLASSEX)};
 
-	TCHAR szTitle[] = TEXT("libnotify_notification");
-	TCHAR szWindowClass[] = TEXT("libnotify");
+	wchar_t szTitle[] = TEXT("libnotify_notification");
+	wchar_t szWindowClass[] = TEXT("libnotify");
 	HDC hdc = NULL;
 	HFONT hOldFont = NULL;
 	RECT rc = {0};
@@ -610,7 +587,7 @@ LRESULT CALLBACK mouse_over_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-uint16_t word_count(const TCHAR *str)
+uint16_t word_count(const wchar_t *str)
 {
 	uint16_t count = 0;
 

@@ -27,7 +27,7 @@
 #ifndef __ADDONS_H__
 #define __ADDONS_H__
 
-#include <gtk/gtk.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -39,8 +39,8 @@ gboolean 	suggestions_uninit();
 
 
 /* Exposed functions of 'Notify' module */
-gboolean	mod_notify_init(GtkStatusIcon *status_icon);
-gboolean	mod_notify_uninit(void);
+gboolean	mod_notify_init();
+gboolean	mod_notify_uninit();
 
 G_END_DECLS
 

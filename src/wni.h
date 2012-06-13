@@ -32,7 +32,6 @@
 G_BEGIN_DECLS
 
 #ifdef HAVE_CONFIG_H
-#	include "config.h"
 
 #	if DEBUG_LEVEL >= 1
 #		define G_DEBUG(...) g_debug(__VA_ARGS__)

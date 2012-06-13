@@ -74,7 +74,9 @@ LT_INIT
 case $build_os in
 	*cygwin* | *mingw*)
 		build_mach=[windows]
-		AC_DEFINE([NDEBUG],[],[Build mode])
+		AC_DEFINE([WINVER],[0x0501],[Build machine is Windows XP])
+		AC_DEFINE([_WIN32_WINDOWS],[WINVER],[Build machine is Windows XP])
+        AC_DEFINE([_WIN32_WINNT],[_WIN32_WINDOWS],[Build machine is Windows XP])
 		AC_DEFINE_UNQUOTED([APP_VERSION],[MAJOR_VER, MINOR_VER, BUILD_VER, 0],[app. executable version])
 		m4_define([DLL_MAJOR_VER],1)
 		m4_define([DLL_MINOR_VER],0)

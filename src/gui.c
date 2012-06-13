@@ -23,6 +23,10 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gui.h"
 
 
@@ -2672,8 +2676,6 @@ static void destructor(GtkBuilder *gui_builder)
 	{
 		mod_notify_uninit();
 	}
-	
-	g_object_unref(status_icon);
 }
 
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code)
@@ -2761,6 +2763,7 @@ int main(int argc, char *argv[])
 	GtkMenu *popup_menu = NULL;
 	GtkExpander *expander = NULL;
 	GdkPixbuf *app_icon = NULL;
+	GtkStatusIcon *status_icon = NULL;
 	GError *err = NULL;
 	gboolean first_run = FALSE, hotkey_reg_failed = FALSE;
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
@@ -2901,8 +2904,7 @@ int main(int argc, char *argv[])
 					g_free(icon_file_path);
 					icon_file_path = NULL;
 
-					if(status_icon)
-						mod_notify_init(status_icon);
+					mod_notify_init();
 
 					/* pop-up menu creation should be after assessing the availability of notifications
 					   since if it is not available, the Notify menu option can be stripped
@@ -2972,16 +2974,11 @@ int main(int argc, char *argv[])
 
 					gtk_main();
 
-					// since every setting change will call save prefs.
-					// saving the pref. on exit isn't required
-					//save_preferences(selected_key + 1);
+					destructor(gui_builder);
 
 					/* GtkBuilder drops references to any held, except toplevel widgets */
 					gtk_widget_destroy(hotkey_editor_dialog);	
 					gtk_widget_destroy(window);
-
-
-					destructor(gui_builder);
 				}
 				else
 				{

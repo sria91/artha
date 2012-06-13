@@ -4762,7 +4762,7 @@ fi
 
 
 # gtk_widget_get_visible() since 2.18 only, hence check for GTK+-2.0 >= 2.18
-# g_regex_new() since 2.14 only, hence check for GLib-2.0 >= 2.14
+# GTK+ 2.18 depends on GLib 2.22, hence check for GLib-2.0 >= 2.22
 # check for GTK+ and GLib
 
 pkg_failed=no
@@ -4773,12 +4773,12 @@ if test -n "$GTK_CFLAGS"; then
     pkg_cv_GTK_CFLAGS="$GTK_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk+-2.0 >= 2.18 glib-2.0 >= 2.14\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "gtk+-2.0 >= 2.18 glib-2.0 >= 2.14") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk+-2.0 >= 2.18 glib-2.0 >= 2.22\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gtk+-2.0 >= 2.18 glib-2.0 >= 2.22") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_GTK_CFLAGS=`$PKG_CONFIG --cflags "gtk+-2.0 >= 2.18 glib-2.0 >= 2.14" 2>/dev/null`
+  pkg_cv_GTK_CFLAGS=`$PKG_CONFIG --cflags "gtk+-2.0 >= 2.18 glib-2.0 >= 2.22" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -4790,12 +4790,12 @@ if test -n "$GTK_LIBS"; then
     pkg_cv_GTK_LIBS="$GTK_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk+-2.0 >= 2.18 glib-2.0 >= 2.14\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "gtk+-2.0 >= 2.18 glib-2.0 >= 2.14") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gtk+-2.0 >= 2.18 glib-2.0 >= 2.22\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "gtk+-2.0 >= 2.18 glib-2.0 >= 2.22") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_GTK_LIBS=`$PKG_CONFIG --libs "gtk+-2.0 >= 2.18 glib-2.0 >= 2.14" 2>/dev/null`
+  pkg_cv_GTK_LIBS=`$PKG_CONFIG --libs "gtk+-2.0 >= 2.18 glib-2.0 >= 2.22" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -4816,9 +4816,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        GTK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "gtk+-2.0 >= 2.18 glib-2.0 >= 2.14" 2>&1`
+	        GTK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "gtk+-2.0 >= 2.18 glib-2.0 >= 2.22" 2>&1`
         else
-	        GTK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "gtk+-2.0 >= 2.18 glib-2.0 >= 2.14" 2>&1`
+	        GTK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "gtk+-2.0 >= 2.18 glib-2.0 >= 2.22" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$GTK_PKG_ERRORS" >&5
@@ -4827,7 +4827,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 as_fn_error $? "
-You must have GTK+ 2.0 (version 2.18 or above) and GLib 2.0 (version 2.14
+You must have GTK+ 2.0 (version 2.18 or above) and GLib 2.0 (version 2.22
 or above) development headers installed to build.
 
 If you have these installed already you may need to install pkg-config so
@@ -4840,7 +4840,7 @@ $as_echo "no" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 as_fn_error $? "
-You must have GTK+ 2.0 (version 2.18 or above) and GLib 2.0 (version 2.14
+You must have GTK+ 2.0 (version 2.18 or above) and GLib 2.0 (version 2.22
 or above) development headers installed to build.
 
 If you have these installed already you may need to install pkg-config so
@@ -11970,7 +11970,13 @@ case $build_os in
 	*cygwin* | *mingw*)
 		build_mach=windows
 
-$as_echo "#define NDEBUG /**/" >>confdefs.h
+$as_echo "#define WINVER 0x0501" >>confdefs.h
+
+
+$as_echo "#define _WIN32_WINDOWS WINVER" >>confdefs.h
+
+
+$as_echo "#define _WIN32_WINNT _WIN32_WINDOWS" >>confdefs.h
 
 
 cat >>confdefs.h <<_ACEOF

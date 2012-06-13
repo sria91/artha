@@ -41,10 +41,11 @@ bin_PROGRAMS = artha$(EXEEXT)
 @POSIX_TRUE@		tomboyutil.c tomboyutil.h instance_handler.c instance_handler.h
 
 @POSIX_FALSE@am__append_2 = app_icon.rc
-@POSIX_TRUE@am__append_3 = -lX11 -ldbus-1 -ldbus-glib-1 -lgtk-x11-2.0 \
+@POSIX_TRUE@am__append_3 = @libdbus_CFLAGS@
+@POSIX_TRUE@am__append_4 = -lX11 -ldbus-1 -ldbus-glib-1 -lgtk-x11-2.0 \
 @POSIX_TRUE@		-lgdk-x11-2.0 -lgmodule-2.0 -lgobject-2.0 -lglib-2.0
 
-@POSIX_FALSE@am__append_4 = @GTK_LIBS@
+@POSIX_FALSE@am__append_5 = @GTK_LIBS@
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -267,10 +268,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @DEBUG_FALSE@DBG = -O2
-@DEBUG_TRUE@DBG = -g -pg
-AM_CFLAGS = $(DBG) -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
--fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@ @libdbus_CFLAGS@
-
+@DEBUG_TRUE@DBG = -g
+AM_CFLAGS = $(DBG) -Wall -Wextra -std=c99 -pedantic \
+	-Wno-unused-parameter -fstrict-aliasing \
+	-Wno-missing-field-initializers @GTK_CFLAGS@ $(am__append_3)
 noinst_LIBRARIES = libwni.a
 libwni_a_SOURCES = wni.c wni.h
 artha_DEPENDENCIES = libwni.a
@@ -280,21 +281,19 @@ artha_SOURCES = mod_notify.c mod_notify.h suggestions.c suggestions.h \
 @POSIX_FALSE@lib_LTLIBRARIES = libnotify.la
 @POSIX_FALSE@libnotify_la_SOURCES = libnotify.c libnotify.h libnotify_ver.rc
 @POSIX_FALSE@libnotify_la_CFLAGS = -Wall -Wextra -pedantic -std=c99 \
-@POSIX_FALSE@	-s -Wno-unused-parameter -fstrict-aliasing \
-@POSIX_FALSE@	-Wno-missing-field-initializers @GTK_CFLAGS@ \
-@POSIX_FALSE@	$(DBG) -DWIN32 -DWINDOWS -DNDEBUG -D_USERDLL -D_WINDLL \
-@POSIX_FALSE@	-D_UNICODE -DUNICODE -DLIBNOTIFY_EXPORTS
+@POSIX_FALSE@	-s -Wno-unused-parameter -fstrict-aliasing $(DBG) \
+@POSIX_FALSE@	-Wno-missing-field-initializers -mwin32 -DUNICODE -D_UNICODE \
+@POSIX_FALSE@	-DNDEBUG @GTK_CFLAGS@
 
-@POSIX_FALSE@libnotify_la_LDFLAGS = -mms-bitfields -mwindows \
-@POSIX_FALSE@	-version-info @dll_ver@ -no-undefined -Xlinker \
-@POSIX_FALSE@	libnotify_ver.o -shared
+@POSIX_FALSE@libnotify_la_LDFLAGS = -mwindows -version-info @dll_ver@ \
+@POSIX_FALSE@	-no-undefined -Xlinker libnotify_ver.o
 
 @POSIX_FALSE@libnotify_la_DEPENDENCIES = libnotify_ver.o
 
 # @GTK_LIBS@ & libdbus_CFLAGS are not used to avoid unwanted 
 # libraries (like -latk, -lrt, etc.) passed to the linker
-artha_LDADD = libwni.a $(WORDNET_LIB) $(am__append_3) $(am__append_4)
-@POSIX_FALSE@artha_LDFLAGS = -mms-bitfields -mwindows
+artha_LDADD = libwni.a $(WORDNET_LIB) $(am__append_4) $(am__append_5)
+@POSIX_FALSE@artha_LDFLAGS = -mwindows
 all: all-am
 
 .SUFFIXES:

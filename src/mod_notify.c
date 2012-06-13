@@ -24,13 +24,13 @@
  */
 
 
-#include "mod_notify.h"
-#include "wni.h"
-#include <gmodule.h>
-
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+
+#include "mod_notify.h"
+#include "wni.h"
+#include <gmodule.h>
 
 #ifdef G_OS_WIN32
 #	define NOTIFY_FILE		"libnotify-1.dll"
@@ -39,11 +39,12 @@
 #endif
 
 GModule *mod_notify = NULL;
+gboolean notify_inited = FALSE;
 extern NotifyNotification *notifier;
 
-gboolean mod_notify_init(GtkStatusIcon *status_icon)
+gboolean mod_notify_init()
 {
-	g_assert(status_icon);
+    gboolean retval = FALSE;
 
 	if(g_module_supported() && (mod_notify = g_module_open(NOTIFY_FILE, G_MODULE_BIND_LAZY)))
 	{
@@ -53,45 +54,74 @@ gboolean mod_notify_init(GtkStatusIcon *status_icon)
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_update), (gpointer *) &notify_notification_update);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_show), (gpointer *) &notify_notification_show);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_notification_close), (gpointer *) &notify_notification_close);
-		
+
 		if(NULL != notify_init && NULL != notify_uninit && NULL != notify_notification_new &&
 		NULL != notify_notification_update && NULL != notify_notification_show && NULL != notify_notification_close)
 		{
 			if(notify_init(PACKAGE_NAME))
 			{
+                notify_inited = TRUE;
+
 				/* initialize summary as Artha (Package Name)
 				   this will, however, be modified to the looked up word before display */
 				notifier = notify_notification_new(PACKAGE_NAME, NULL, "gtk-dialog-info");
-				G_MESSAGE("Notification module successfully loaded");
-
-				return TRUE;
+                if(notifier)
+                {
+                    G_MESSAGE("Notification module successfully loaded");
+                    retval = TRUE;
+                }
 			}
+		}
+
+		if(!notifier)
+		{
+            if(notify_inited)
+            {
+                notify_uninit();
+                notify_inited = FALSE;
+            }
+		    g_module_close(mod_notify);
+		    mod_notify = NULL;
 		}
 	}
 
 	G_MESSAGE("Failed to load notifications module");
-	return FALSE;
+	return retval;
 }
 
-gboolean mod_notify_uninit(void)
+gboolean mod_notify_uninit()
 {
-	if(mod_notify && notifier)
+	if(notifier)
 	{
 		/* close notifications, if open */
 		notify_notification_close(notifier, NULL);
 
+        /*
+           reason it's not required in Win32 is this
+           module is custom written and doesn't use 
+           the GObject framework, while in *nix 
+           notify_notification_new internally does a
+           g_object_new and returns GObject* as
+           NotifyNotification*
+        */
 #ifndef G_OS_WIN32
 		g_object_unref(G_OBJECT(notifier));
 #endif
 		notifier = NULL;
-
-		notify_uninit();
-		
-		g_module_close(mod_notify);
-
-		return TRUE;
 	}
-	
-	return FALSE;
-}
+    
+    if(notify_inited)
+    {
+        notify_uninit();
+        notify_inited = FALSE;
+    }
 
+    gboolean mod_uninit = TRUE;
+    if(mod_notify)
+    {
+		mod_uninit = g_module_close(mod_notify);
+        mod_notify = NULL;
+	}
+
+	return mod_uninit;
+}

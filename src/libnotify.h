@@ -34,32 +34,35 @@
 #ifndef __LIBNOTIFY_H__
 #define __LIBNOTIFY_H__
 
-#ifdef LIBNOTIFY_EXPORTS
+#ifdef DLL_EXPORT
 #define LIBNOTIFY_API __declspec(dllexport)
 #else
-#define LIBNOTIFY_API __declspec(dllimport)
+#define LIBNOTIFY_API extern __declspec(dllimport)
 #endif
 
-#include <gtk/gtk.h>
+#include <glib.h>
 
 typedef struct _NotifyNotification        	NotifyNotification;
 
 LIBNOTIFY_API gboolean notify_init(const char* app_name);
 LIBNOTIFY_API void notify_uninit(void);
 
-LIBNOTIFY_API NotifyNotification* notify_notification_new_with_status_icon (
+LIBNOTIFY_API NotifyNotification* notify_notification_new(
 	const gchar *summary, const gchar *body,
-	const gchar *icon, GtkStatusIcon *status_icon);
+	const gchar *icon);
 
-LIBNOTIFY_API gboolean notify_notification_update	(NotifyNotification *notification, 
-						const gchar *summary, 
-						const gchar *body, 
-						const gchar *icon);
+LIBNOTIFY_API gboolean notify_notification_update
+(NotifyNotification *notification,
+        const gchar *summary,
+        const gchar *body,
+        const gchar *icon);
 
-LIBNOTIFY_API gboolean notify_notification_show	(NotifyNotification *notification, 
-						GError **error);
+LIBNOTIFY_API gboolean notify_notification_show(
+NotifyNotification *notification,
+			GError **error);
 
-LIBNOTIFY_API gboolean notify_notification_close	(NotifyNotification *notification, 
-						GError **error);
+LIBNOTIFY_API gboolean notify_notification_close(
+NotifyNotification *notification,
+			GError **error);
 
 #endif		/* __LIBNOTIFY_H__ */

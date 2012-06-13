@@ -31,10 +31,6 @@
 #include <gdk/gdkkeysyms.h>
 #include <wn.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef X11_AVAILABLE
 #include <gdk/gdkx.h>
 #include <X11/Xlib.h>
@@ -252,7 +248,6 @@ guint			status_msg_context_id = 0;
 GString			*wordnet_terms = NULL;
 NotifyNotification	*notifier = NULL;
 GtkCheckMenuItem	*menu_notify = NULL;
-GtkStatusIcon *status_icon = NULL;
 
 #ifdef G_OS_WIN32
 HWND			hMainWindow = NULL;

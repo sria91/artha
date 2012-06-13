@@ -1,11 +1,11 @@
 if DEBUG
-DBG=-g -pg
+DBG=-g
 else
 DBG=-O2
 endif
 
 AM_CFLAGS = $(DBG) -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
--fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@ @libdbus_CFLAGS@
+-fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@
 
 bin_PROGRAMS = artha
 
@@ -26,13 +26,11 @@ artha_SOURCES += app_icon.rc
 lib_LTLIBRARIES = libnotify.la
 libnotify_la_SOURCES = libnotify.c libnotify.h libnotify_ver.rc
 libnotify_la_CFLAGS = -Wall -Wextra -pedantic -std=c99 \
-	-s -Wno-unused-parameter -fstrict-aliasing \
-	-Wno-missing-field-initializers @GTK_CFLAGS@ \
-	$(DBG) -DWIN32 -DWINDOWS -DNDEBUG -D_USERDLL -D_WINDLL \
-	-D_UNICODE -DUNICODE -DLIBNOTIFY_EXPORTS
-libnotify_la_LDFLAGS = -mms-bitfields -mwindows \
-	-version-info @dll_ver@ -no-undefined -Xlinker \
-	libnotify_ver.o -shared
+	-s -Wno-unused-parameter -fstrict-aliasing $(DBG) \
+	-Wno-missing-field-initializers -mwin32 -DUNICODE -D_UNICODE \
+	-DNDEBUG @GTK_CFLAGS@
+libnotify_la_LDFLAGS = -mwindows -version-info @dll_ver@ \
+	-no-undefined -Xlinker libnotify_ver.o
 libnotify_la_DEPENDENCIES = libnotify_ver.o
 .rc.o:
 	windres -i $< -o $@ -I$(top_builddir)
@@ -43,9 +41,10 @@ endif
 artha_LDADD = libwni.a $(WORDNET_LIB)
 
 if POSIX
+AM_CFLAGS += @libdbus_CFLAGS@
 artha_LDADD += -lX11 -ldbus-1 -ldbus-glib-1 -lgtk-x11-2.0 \
 		-lgdk-x11-2.0 -lgmodule-2.0 -lgobject-2.0 -lglib-2.0
 else
 artha_LDADD += @GTK_LIBS@
-artha_LDFLAGS = -mms-bitfields -mwindows
+artha_LDFLAGS = -mwindows
 endif
