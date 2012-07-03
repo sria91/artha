@@ -1,10 +1,4 @@
-if DEBUG
-DBG=-g
-else
-DBG=-O2
-endif
-
-AM_CFLAGS = $(DBG) -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
+AM_CFLAGS = -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
 -fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@
 
 bin_PROGRAMS = artha
@@ -26,8 +20,8 @@ artha_SOURCES += app_icon.rc
 lib_LTLIBRARIES = libnotify.la
 libnotify_la_SOURCES = libnotify.c libnotify.h libnotify_ver.rc
 libnotify_la_CFLAGS = -Wall -Wextra -pedantic -std=c99 \
-	-s -Wno-unused-parameter -fstrict-aliasing $(DBG) \
-	-Wno-missing-field-initializers -mwin32 -DUNICODE -D_UNICODE \
+	-s -Wno-unused-parameter -fstrict-aliasing -mwin32 \
+	-Wno-missing-field-initializers -DUNICODE -D_UNICODE \
 	-DNDEBUG @GTK_CFLAGS@
 libnotify_la_LDFLAGS = -mwindows -version-info @dll_ver@ \
 	-no-undefined -Xlinker libnotify_ver.o

@@ -215,19 +215,22 @@ typedef enum
 
 /* Global variables */
 
-gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
+const gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
 
 /* Names of relative tree tab widgets from UI file
    Note that the 'tree" prefix will be stripped and will be used within code */
-gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
+const gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
 "treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
 
 #define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
-gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
+const gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
+
+#define HOLO_MERO_COUNT		3
+const gchar *holo_mero_types[][3] = {{"Member Of", "Substance Of", "Part Of"}, {"Has Members", "Has Substances", "Has Parts"}};
 
 #define FAMILIARITY_COUNT	8
-gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
-gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
+const gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
+const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
 /* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
 
 #ifdef X11_AVAILABLE

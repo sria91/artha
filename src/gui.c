@@ -51,20 +51,23 @@ static void relatives_clear_all(GtkBuilder *gui_builder);
 static void antonyms_load(GSList *antonyms, GtkBuilder *gui_builder);
 static guint16 append_term(gchar *target, gchar *term, gboolean is_heading);
 static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *parent_iter);
+static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_parent, GSList **dupe_finder_list);
 static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
+static void holo_mero_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
 static void list_relatives_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id);
 static void domains_load(GSList *properties, GtkBuilder *gui_builder);
 static guint8 get_attribute_pos();
 static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs);
 static gchar* wildmat_to_regex(gchar *wildmat);
-static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder);
+static gboolean set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder);
 static gboolean is_wildmat_expr();
 static void button_search_click(GtkButton *button, gpointer user_data);
 static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data);
 static gboolean text_view_button_pressed(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean text_view_button_released(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static void text_view_selection_made(GtkWidget *widget, GtkSelectionData *sel_data, guint time, gpointer user_data);
-static gboolean window_main_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+static gboolean close_window(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
+							 GdkModifierType modifier, GObject *user_data);
 static void expander_clicked(GtkExpander *expander, gpointer user_data);
 static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data);
 static GtkTextMark *highlight_definition(guint8 id, guint16 sense, GtkTextView *text_view);
@@ -286,7 +289,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 			text_entry_query = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 			button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
-			if(0 != g_ascii_strncasecmp(gtk_entry_get_text(text_entry_query), selection, g_utf8_strlen(selection, -1) + 1))
+			if(0 != g_ascii_strncasecmp(gtk_entry_get_text(text_entry_query), selection, strlen(selection) + 1))
 			{
 				gtk_entry_set_text(text_entry_query, selection);
 				//gtk_editable_set_position(GTK_EDITABLE(text_entry_query), -1);
@@ -562,71 +565,135 @@ static void build_tree(GNode *node, GtkTreeStore *tree_store, GtkTreeIter *paren
 	} while((child = g_node_next_sibling(child)));
 }
 
+static void add_nodes(GNode *tree, GtkTreeStore *tree_store, GtkTreeIter *node_parent, GSList **dupe_finder_list)
+{
+	WNIImplication *imp = NULL;
+	gchar terms[MAX_CONCAT_STR] = "";
+	GtkTreeIter iter = {0};
+	gboolean is_dupe = FALSE;
+	guint16 i = 0;
+	GSList *term_list = ((WNITreeList*)tree->data)->word_list;
+
+	if(advanced_mode)
+	{
+		while(term_list)
+		{
+			imp = (WNIImplication*) term_list->data;
+			i += append_term(&terms[i], imp->term, FALSE);
+
+			term_list = g_slist_next(term_list);
+		}
+		terms[i - 2] = '\0';
+
+		gtk_tree_store_append(tree_store, &iter, node_parent);
+		gtk_tree_store_set(tree_store, &iter, 0, terms, 1, PANGO_WEIGHT_NORMAL, -1);
+
+		build_tree(tree, tree_store, &iter);
+	}
+	else
+	{
+		while(term_list)
+		{
+			imp = (WNIImplication*) term_list->data;
+
+			is_dupe = FALSE;
+			/* if dupe check was asked by the caller, then check else continue with append */
+			if(NULL != dupe_finder_list)
+			{
+				if(NULL == g_slist_find_custom(*dupe_finder_list, imp->term, (GCompareFunc) &g_strcmp0))
+					*dupe_finder_list = g_slist_append(*dupe_finder_list, imp->term);
+				else
+					is_dupe = TRUE;
+			}
+
+			if (!is_dupe)
+			{
+				gtk_tree_store_append(tree_store, &iter, node_parent);
+				gtk_tree_store_set(tree_store, &iter, 0, imp->term, 1, PANGO_WEIGHT_NORMAL, -1);
+			}
+
+			term_list = g_slist_next(term_list);
+		}
+	}
+}
+
 static void trees_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id)
 {
 	GNode *tree = NULL;
 	GtkTreeView *tree_view = NULL;
 	GtkTreeStore *tree_store = NULL;
-	GtkTreeIter iter = {0};
-	WNIImplication *imp = NULL;
-	GSList *temp_list = NULL;
-	gchar terms[MAX_CONCAT_STR] = "";
-	guint16 i = 0;
-	
-	if(!advanced_mode && WORDNET_INTERFACE_HYPERNYMS == id) return;
-
-	for(i = 0; 1 != id; (id = id >> 1), i++);
+	GSList *dupe_finder_list = NULL;
+	guint8 i = (WORDNET_INTERFACE_HYPERNYMS == id) ? TREE_HYPERNYMS : ((WORDNET_INTERFACE_HYPONYMS == id) ? TREE_HYPONYMS : TREE_PERTAINYMS);
 
 	tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
 	tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
+
 	g_assert(tree_store);
 
 	while(properties)
 	{
-		tree = (GNode*) properties->data;
-		if(tree)
+		if(properties->data)
+			tree = g_node_first_child((GNode*)properties->data);
+
+		while(tree)
 		{
-			tree = g_node_first_child(tree);
-			while(tree)
-			{
-				i = 0;
-				terms[0] = '\0';
-
-				temp_list = ((WNITreeList*)tree->data)->word_list;
-				if(advanced_mode)
-				{
-					while(temp_list)
-					{
-						imp = (WNIImplication*) temp_list->data;
-						i += append_term(&terms[i], imp->term, FALSE);
-
-						temp_list = g_slist_next(temp_list);
-					}
-					terms[i - 2] = '\0';
-
-					gtk_tree_store_append(tree_store, &iter, NULL);
-					gtk_tree_store_set(tree_store, &iter, 0, terms, 1, PANGO_WEIGHT_NORMAL, -1);
-				
-					build_tree(tree, tree_store, &iter);
-				}
-				else
-				{
-					while(temp_list)
-					{
-						imp = (WNIImplication*) temp_list->data;
-						
-						gtk_tree_store_append(tree_store, &iter, NULL);
-						gtk_tree_store_set(tree_store, &iter, 0, imp->term, 1, PANGO_WEIGHT_NORMAL, -1);
-						
-						temp_list = g_slist_next(temp_list);
-					}
-				}
-				
-				tree = g_node_next_sibling(tree);
-			}
+			add_nodes(tree, tree_store, NULL, &dupe_finder_list);
+			tree = g_node_next_sibling(tree);
 		}
 
 		properties = g_slist_next(properties);
+	}
+
+	g_slist_free(dupe_finder_list);
+}
+
+static void holo_mero_load(GSList *properties, GtkBuilder *gui_builder, WNIRequestFlags id)
+{
+	GNode *tree = NULL;
+	GtkTreeIter type_iter[HOLO_MERO_COUNT] = {{0}}, *relative_parent = NULL;
+	GSList *dupe_finder_list[HOLO_MERO_COUNT] = {NULL};
+	guint8 i = (WORDNET_INTERFACE_MERONYMS == id) ? TREE_MERONYMS : TREE_HOLONYMS;
+	GtkTreePath *head_level = NULL;
+	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
+	GtkTreeStore *tree_store = GTK_TREE_STORE(gtk_tree_view_get_model(tree_view));
+
+	g_assert(tree_store);
+
+	for(guint8 j = 0; j < HOLO_MERO_COUNT; ++j)
+	{
+		gtk_tree_store_append(tree_store, &type_iter[j], NULL);
+		gtk_tree_store_set(tree_store, &type_iter[j], 0, holo_mero_types[i - TREE_HOLONYMS][j], 1, PANGO_WEIGHT_SEMIBOLD, -1);
+	}
+
+	while(properties)
+	{
+		if(properties->data) tree = g_node_first_child((GNode*)properties->data);
+
+		while(tree)
+		{
+			i = (((WNITreeList*)tree->data)->type) - ((WORDNET_INTERFACE_HOLONYMS == id) ? ISMEMBERPTR : HASMEMBERPTR);
+			relative_parent = (i < HOLO_MERO_COUNT) ? &type_iter[i] : NULL;
+			add_nodes(tree, tree_store, relative_parent, &dupe_finder_list[i]);
+			tree = g_node_next_sibling(tree);
+		}
+
+		properties = g_slist_next(properties);
+	}
+
+	for(i = 0; i < HOLO_MERO_COUNT; i++)
+	{
+		// if a node has child then expand it, else remove it
+		if(gtk_tree_model_iter_has_child(GTK_TREE_MODEL(tree_store), &type_iter[i]))
+		{
+			head_level = gtk_tree_model_get_path(GTK_TREE_MODEL(tree_store), &type_iter[i]);
+			gtk_tree_view_expand_row(tree_view, head_level, FALSE);
+			gtk_tree_path_free(head_level);
+		}
+		else
+		{
+			gtk_tree_store_remove(tree_store, &type_iter[i]);
+		}
+		g_slist_free(dupe_finder_list[i]);
 	}
 }
 
@@ -794,10 +861,14 @@ static void relatives_load(GtkBuilder *gui_builder, gboolean reset_tabs)
 			case WORDNET_INTERFACE_PERTAINYMS:
 			case WORDNET_INTERFACE_HYPERNYMS:
 			case WORDNET_INTERFACE_HYPONYMS:
+			{
+				trees_load(((WNIProperties*) temp_nym->data)->properties_list, gui_builder, temp_nym->id);
+				break;
+			}
 			case WORDNET_INTERFACE_HOLONYMS:
 			case WORDNET_INTERFACE_MERONYMS:
 			{
-				trees_load(((WNIProperties*) temp_nym->data)->properties_list, gui_builder, temp_nym->id);
+				holo_mero_load(((WNIProperties*) temp_nym->data)->properties_list, gui_builder, temp_nym->id);
 				break;
 			}
 			case WORDNET_INTERFACE_CLASS:
@@ -881,7 +952,7 @@ static gchar* wildmat_to_regex(gchar *wildmat)
 	return g_string_free(regex, FALSE);
 }
 
-static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
+static gboolean set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 {
 	gchar *regex_pattern = NULL, *lemma = NULL;
 	GRegex *regex = NULL;
@@ -892,6 +963,7 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 	GtkTextIter cur = {0};
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 	gchar status_msg[MAX_STATUS_MSG] = "";
+	gboolean results_set = FALSE;
 
 
 	// convert the wilmat expr. to PERL regex
@@ -958,9 +1030,12 @@ static void set_regex_results(gchar *wildmat_exp, GtkBuilder *gui_builder)
 		{
 			gtk_text_buffer_insert_with_tags_by_name(text_buffer, &cur, STR_REGEX_FAILED, -1, TAG_SUGGESTION, NULL);
 		}
+		else
+			results_set = TRUE;
 
 		g_free(regex_pattern);
 	}
+	return results_set;
 }
 
 static gboolean is_wildmat_expr(gchar *expr)
@@ -1005,7 +1080,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	gchar *str_list_item = NULL;
 	gchar str_count[MAX_SENSE_DIGITS] = "";
 
-	GError *err = NULL;
 	gchar *definition = NULL;
 
 	gboolean results_set = FALSE;
@@ -1017,9 +1091,10 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	guint8 total_pos = 0;
 
 
-
 	text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 	buffer = gtk_text_view_get_buffer(text_view);
+	query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));
+	if(!query_list_store) g_error("Unable to get query combo box's model!");
 
 
 	// Check if the fed string is a wildmat expr.
@@ -1055,7 +1130,13 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			if(gtk_widget_get_visible(GTK_WIDGET(window)))
 				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 
-			set_regex_results(regex_text, gui_builder);
+			/* if the results were set rightly, then add it to the search history */
+			if(set_regex_results(regex_text, gui_builder))
+			{
+				gtk_list_store_prepend(query_list_store, &query_list_iter);
+				gtk_list_store_set(query_list_store, &query_list_iter, 0, regex_text, -1);
+				history_count++;
+			}
 		}
 		else
 		{
@@ -1088,7 +1169,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 	search_str = g_strstrip(strip_invalid_edges(gtk_combo_box_get_active_text(combo_query)));
 
 	if(search_str)
-		count = g_utf8_strlen(search_str, -1);
+		count = strlen(search_str);
 	
 	if(count > 0)
 	{
@@ -1218,40 +1299,36 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
 
-				query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));
-				if(query_list_store)
+				count = 0;
+				gtk_tree_model_get_iter_first(GTK_TREE_MODEL(query_list_store), &query_list_iter);
+
+				while(gtk_list_store_iter_is_valid(query_list_store, &query_list_iter))
 				{
-					count = 0;
-					gtk_tree_model_get_iter_first(GTK_TREE_MODEL(query_list_store), &query_list_iter);
-
-					while(gtk_list_store_iter_is_valid(query_list_store, &query_list_iter))
+					gtk_tree_model_get(GTK_TREE_MODEL(query_list_store), &query_list_iter, 0, &str_list_item, -1);
+					if(0 == g_strcmp0(lemma, str_list_item))
 					{
-						gtk_tree_model_get(GTK_TREE_MODEL(query_list_store), &query_list_iter, 0, &str_list_item, -1);
-						if(0 == g_strcmp0(lemma, str_list_item))
-						{
-							// While in here, if you set a particular index item as active, 
-							// it again calls the button_search_click from within as an after effect of combo_query "changed" signal
-							//gtk_combo_box_set_active(combo_query, count);
+						// While in here, if you set a particular index item as active, 
+						// it again calls the button_search_click from within as an after effect of combo_query "changed" signal
+						//gtk_combo_box_set_active(combo_query, count);
 
-							// move it to top, is it reqd. for history impl.? No, as it only makes 
-							// Prev. key confusing by cycling thru' the same 2 items again & again.
-							//gtk_list_store_move_after(query_list_store, &query_list_iter, NULL);
-							
-							// flag cleared to not append it again
-							count = -1;
-							break;
-						}
-						g_free(str_list_item);
-						gtk_tree_model_iter_next(GTK_TREE_MODEL(query_list_store), &query_list_iter);
-						count++;
+						// move it to top, is it reqd. for history impl.? No, as it only makes 
+						// Prev. key confusing by cycling thru' the same 2 items again & again.
+						//gtk_list_store_move_after(query_list_store, &query_list_iter, NULL);
+						
+						// flag cleared to not append it again
+						count = -1;
+						break;
 					}
+					g_free(str_list_item);
+					gtk_tree_model_iter_next(GTK_TREE_MODEL(query_list_store), &query_list_iter);
+					count++;
+				}
 
-					if(count != -1)
-					{
-						gtk_list_store_prepend(query_list_store, &query_list_iter);
-						gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
-						history_count++;
-					}
+				if(count != -1)
+				{
+					gtk_list_store_prepend(query_list_store, &query_list_iter);
+					gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
+					history_count++;
 				}
 
 				/* don't populate relatives if in notify mode; clear the last_search 
@@ -1286,11 +1363,10 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				if(definition)
 				{
-					notify_notification_update(notifier, lemma, definition, "gtk-dialog-info");
-					if(FALSE == notify_notification_show(notifier, &err))
+					gboolean update_successful = notify_notification_update(notifier, lemma, definition, "gtk-dialog-info");
+					if(!update_successful || (FALSE == notify_notification_show(notifier, NULL)))
 					{
-						g_warning("%s\n", err->message);
-						g_error_free(err);
+						g_warning("Failed to display notification\n");
 					}
 					g_free(definition);
 				}
@@ -1308,11 +1384,13 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		{
 			if(notifier && notifier_enabled && (!gtk_widget_get_visible(GTK_WIDGET(window))))
 			{
-				notify_notification_update(notifier, search_str, STR_STATUS_QUERY_FAILED, "gtk-dialog-warning");
-				if(FALSE == notify_notification_show(notifier, &err))
+				gboolean update_successful = notify_notification_update(notifier,
+																		search_str,
+																		STR_STATUS_QUERY_FAILED,
+																		"gtk-dialog-warning");
+				if(!update_successful || (FALSE == notify_notification_show(notifier, NULL)))
 				{
-					g_warning("%s\n", err->message);
-					g_error_free(err);
+					g_warning("Failed to display notification!\n");
 				}
 			}
 			else
@@ -1540,24 +1618,6 @@ static void text_view_selection_made(GtkWidget *widget, GtkSelectionData *sel_da
 
 		gtk_button_clicked(button_search);
 	}
-}
-
-static gboolean window_main_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
-{
-	GtkComboBox *combo_query = GTK_COMBO_BOX(user_data);
-	gboolean popped_down = FALSE;
-	gboolean deleted = FALSE;
-
-	if(GDK_Escape == event->keyval)
-	{
-		g_object_get(combo_query, "popup-shown", &popped_down, NULL);
-		if(!popped_down)
-		{
-			g_signal_emit_by_name(widget, "delete-event", G_TYPE_BOOLEAN, &deleted);
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
 
 static void expander_clicked(GtkExpander *expander, gpointer user_data)
@@ -1995,7 +2055,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	GtkTreeView *tree_view = NULL;
 	GtkTreeStore *tree_store = NULL;
 	GtkCellRenderer *tree_renderer = NULL;
-	gchar *col_name = NULL;
+	const gchar *col_name = NULL;
 	
 	// combo box data store
 	combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
@@ -2116,10 +2176,27 @@ static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpo
 	return FALSE;
 }
 
+static gboolean close_window(GtkAccelGroup *accel_group,
+							 GObject *acceleratable,
+							 guint keyval,
+							 GdkModifierType modifier,
+							 GObject *user_data)
+{
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkWidget *main_window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+
+	gboolean deleted = FALSE;
+	g_signal_emit_by_name(main_window, "delete-event", G_TYPE_BOOLEAN, &deleted);
+	return TRUE;
+}
+
 static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dialog)
 {
 	GtkToolbar *toolbar = NULL;
 	GtkToolItem *toolbar_item = NULL;
+	GtkAccelGroup *accel_group = NULL;
+	GClosure *close_window_closure = NULL;
+	GClosure *close_window_closure_dummy = NULL;
 
 
 	// toolbar code starts here
@@ -2189,6 +2266,24 @@ static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dial
 	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_QUIT);
 	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(quit_activate), NULL);
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
+	
+	// add accelerators
+	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+	accel_group = gtk_accel_group_new();
+	gtk_window_add_accel_group(window, accel_group);
+	gtk_widget_add_accelerator(GTK_WIDGET(toolbar_item),
+							   "clicked",
+							   accel_group,
+							   GDK_q,
+							   GDK_CONTROL_MASK,
+							   0);
+	close_window_closure = g_cclosure_new_object(G_CALLBACK(close_window), G_OBJECT(gui_builder));
+	/* due to GLib implementation's limitation, a dummy closure needs to be created
+	   refer: gtk_accel_group_connect documentation */
+	close_window_closure_dummy = g_cclosure_new_object(G_CALLBACK(close_window), G_OBJECT(gui_builder));
+
+	gtk_accel_group_connect(accel_group, GDK_w, GDK_CONTROL_MASK, 0, close_window_closure);
+	gtk_accel_group_connect(accel_group, GDK_Escape, 0, 0, close_window_closure_dummy);
 
 	gtk_widget_show_all(GTK_WIDGET(toolbar));
 }
@@ -2944,8 +3039,6 @@ int main(int argc, char *argv[])
 					g_signal_connect(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
 					g_signal_connect(window, "visibility-notify-event", G_CALLBACK(window_visibility_toggled), button_search);
 					
-					// connect to Escape Key
-					g_signal_connect(window, "key-press-event", G_CALLBACK(window_main_key_press), combo_query);
 					g_signal_connect(combo_query, "scroll-event", G_CALLBACK(combo_query_scroll), button_search);
 					
 					expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));

@@ -181,7 +181,6 @@ elif test "$ac_debug" = "verbose"; then
 else
 	ac_debug="no"
 fi
-AM_CONDITIONAL([DEBUG], [test "$ac_debug" != "no"])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

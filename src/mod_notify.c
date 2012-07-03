@@ -31,6 +31,7 @@
 #include "mod_notify.h"
 #include "wni.h"
 #include <gmodule.h>
+#include <stdlib.h>
 
 #ifdef G_OS_WIN32
 #	define NOTIFY_FILE		"libnotify-1.dll"
@@ -104,7 +105,10 @@ gboolean mod_notify_uninit()
            g_object_new and returns GObject* as
            NotifyNotification*
         */
-#ifndef G_OS_WIN32
+#ifdef G_OS_WIN32
+		free(notifier);
+		notifier = NULL;
+#else
 		g_object_unref(G_OBJECT(notifier));
 #endif
 		notifier = NULL;

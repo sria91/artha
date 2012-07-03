@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Artha; if not, write to the Free Software Foundation, Inc., 
+ * along with Artha; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -29,14 +29,14 @@ Notification window geometry
 ________________________________________________
 ________________________________________________
 | |@@@@@@@@@@| |Summary                      | |
-| |@@      @@| |-----------------------------| |
-| |@  ICON  @| |-----------------------------| |
 | |@@      @@| |Body                         | |
-| |@@@@@@@@@@| |                             | |
+| |@  ICON  @| |-----------------------------| |
+| |@@      @@| |-----------------------------| |
+| |@@@@@@@@@@| |-----------------------------| |
 ________________________________________________
 ________________________________________________
 
-| |, 
+| |,
 --- and __
 ---     __ all 3 are equal => icon_padding white space
 
@@ -65,11 +65,17 @@ typedef UINT16 uint16_t;
 #include <stdint.h>
 #endif
 
+/* from MSDN LoadImage page's comments section */
+#define OIC_BANG 32515
+#define OIC_NOTE 32516
 
 /* user defined messages */
 #define WM_LIBNOTIFYSHOW	(WM_USER + 98)
 #define WM_LIBNOTIFYCLOSE	(WM_USER + 99)
 #define WM_LIBNOTIFYEXIT	(WM_USER + 100)
+
+#define MAX_SUMMARY_LENGTH	100
+#define MAX_BODY_LENGTH		MAX_PATH
 
 /* timers used & their IDs */
 enum TIMER_IDS
@@ -78,115 +84,242 @@ enum TIMER_IDS
 	TIMER_NOTIFICATION
 };
 
-
-/* constants */
-#define max_summary_length	100
-#define max_body_length		300
-/* lookup 'MAK' for setting 300 */
-
-const uint8_t	rounded_rect_edge = 15;
-const uint8_t	mouse_over_alpha = (0xFF / 4);
-const uint8_t	fade_duration = 15;
-const uint16_t	min_notification_timeout = 3000;
-const uint16_t	window_offset_factor = 10;
-const DWORD		thread_wait_timeout = 2000;
-/* notification timout is calculated based on the word count */
-const uint16_t	milliseconds_per_word = 750;
-
+enum ICON_IDS
+{
+	ICON_INFO,
+	ICON_WARNING,
+	ICON_COUNT
+};
 
 struct _NotifyNotification
 {
-	wchar_t summary[max_summary_length];
-	wchar_t body[max_body_length];
-	HICON icon;
+	wchar_t summary[MAX_SUMMARY_LENGTH];
+	wchar_t body[MAX_BODY_LENGTH];
+	enum ICON_IDS icon_req;
 };
 
+struct _NotificationWindow
+{
+	HWND notification_window;
+	uint8_t notification_window_alpha;
+	RECT notification_window_rect;
+	LONG notification_window_width;
+	LONG notification_window_height;
+	uint16_t summary_body_divider;
+};
+typedef struct _NotificationWindow NotificationWindow;
+
+/* constants */
+static const wchar_t*	wstrLibInitEvent = L"LibNotifyInitializedEvent";
+static const uint8_t	rounded_rect_edge = 15;
+static const uint8_t	mouse_over_alpha = (0xFF / 4);
+static const uint8_t	fade_duration = 15;
+static const uint16_t	min_notification_timeout = 3000;
+static const uint16_t	window_offset_factor = 10;
+static const DWORD		thread_wait_timeout = 2000;
+static const uint16_t	milliseconds_per_word = 750;
 
 /* globals */
-HANDLE				notification_thread = NULL;
-DWORD				notification_thread_id = 0;
-HWND				notification_window = NULL;
-uint8_t				notification_window_alpha = 0;
-RECT				notification_window_rect = {0};
-LONG				notification_window_width_max = 0;
-LONG				notification_window_width = 0;
-LONG				notification_window_height = 0;
-NotifyNotification* notification_data = NULL;
-BOOL				is_fading_out = FALSE;
-HHOOK				hook_mouse_over = NULL;
-HFONT				font_summary = NULL;
-HFONT				font_body = NULL;
-uint16_t			icon_size = 0;
-uint16_t			icon_padding = 0;
-uint16_t			summary_body_divider = 0;
+// set only once by init and not modified else where
+// hence thread safe as far as no edits are made other than in init
+static HICON			notification_icons[ICON_COUNT] = {NULL};
+static HFONT			font_summary = NULL;
+static HFONT			font_body = NULL;
+static LONG				notification_window_width_max = 0;
+static uint16_t			icon_size = 0;
+static uint16_t			icon_padding = 0;
 
+// used only by the interface functions
+// hence thread safe w.r.t to the window thread
+static HANDLE notification_thread = NULL;
+static DWORD  notification_thread_id = 0;
+
+// event to prevent multiple initializations
+static HANDLE event_lib_inited = NULL;
+
+// CS to guard notification_data from the readers-writers issue
+static CRITICAL_SECTION thread_guard = {0};
+
+static NotificationWindow notify_wnd = {0};
 
 /* function declarations */
-DWORD notification_daemon_main(LPVOID lpdwThreadParam);
-LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK mouse_over_hook_proc(int nCode, WPARAM wParam, LPARAM lParam);
-uint16_t word_count(const wchar_t *str);
+static DWORD notification_daemon_main(LPVOID lpdwThreadParam);
+static LRESULT CALLBACK notificationWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK mouse_over_hook_proc(int nCode, WPARAM wParam, LPARAM lParam);
+static uint16_t word_count(const wchar_t *str);
+static gboolean byte_to_wide_string(const gchar *byte_string, wchar_t *wide_string, gint max_buffer);
 
 
 /* dll exported functions */
 LIBNOTIFY_API gboolean notify_init(const char *app_name)
 {
-	BOOL ret_val = FALSE;
-	HANDLE event_wnd_created = CreateEvent(NULL, TRUE, FALSE, TEXT("NotifyWindowCreatedEvent"));
 	DWORD thread_ret_code = 0;
 	HANDLE wait_handles[2] = {NULL};
 
 	UNREFERENCED_PARAMETER(app_name);
-	
-	if(event_wnd_created)
+
+	// forbid multiple calls, by checking if the event is already created
+	HANDLE evtHandle = OpenEvent(EVENT_MODIFY_STATE, FALSE, wstrLibInitEvent);
+	if(evtHandle)
 	{
-		notification_thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) &notification_daemon_main, event_wnd_created, 0, &notification_thread_id);
-
-		if(notification_thread)
-		{
-			wait_handles[0] = event_wnd_created; wait_handles[1] = notification_thread;
-
-			if((WAIT_OBJECT_0 + 2) > WaitForMultipleObjects(2, wait_handles, FALSE, thread_wait_timeout))
-			{
-				if(GetExitCodeThread(notification_thread, &thread_ret_code))
-				{
-					if(STILL_ACTIVE == thread_ret_code)
-					{
-						notification_data = (NotifyNotification*) malloc(sizeof(NotifyNotification));
-						if(notification_data)
-							ret_val = TRUE;
-					}
-				}
-			}
-
-			if(!notification_data)
-			{
-				/* terminate and free the thread */
-				TerminateThread(notification_thread, (DWORD) -1);
-				CloseHandle(notification_thread);
-			}
-		}
-
-		CloseHandle(event_wnd_created);
+		CloseHandle(evtHandle);
+		evtHandle = NULL;
+		return FALSE;	// currently only one app. can use the library
+	}
+	else		// library already initialized
+	{
+		event_lib_inited = CreateEvent(NULL, TRUE, FALSE, wstrLibInitEvent);
+		if(!event_lib_inited) goto cleanup_and_exit;
+		InitializeCriticalSection(&thread_guard);
 	}
 
-	return ret_val;
+	font_summary = CreateFont(0,
+							  0,
+							  0,
+							  0,
+							  FW_BOLD,
+							  FALSE,
+							  FALSE,
+							  FALSE,
+							  ANSI_CHARSET,
+							  OUT_DEFAULT_PRECIS,
+							  CLIP_DEFAULT_PRECIS,
+							  ANTIALIASED_QUALITY,
+							  DEFAULT_PITCH | FF_ROMAN,
+							  NULL);
+	if(!font_summary) goto cleanup_and_exit;
+
+	font_body = CreateFont(0,
+						   0,
+						   0,
+						   0,
+						   FW_NORMAL,
+						   FALSE,
+						   FALSE,
+						   FALSE,
+						   ANSI_CHARSET,
+						   OUT_DEFAULT_PRECIS,
+						   CLIP_DEFAULT_PRECIS,
+						   ANTIALIASED_QUALITY,
+						   DEFAULT_PITCH | FF_ROMAN,
+						   NULL);
+	if(!font_body) goto cleanup_and_exit;
+
+	// these needn't be released, since they're OS level shared resources
+	notification_icons[0] = LoadImage(NULL,
+									  MAKEINTRESOURCE(OIC_NOTE),
+									  IMAGE_ICON,
+									  0,
+									  0,
+									  LR_DEFAULTSIZE | LR_SHARED);
+	notification_icons[1] = LoadImage(NULL,
+									  MAKEINTRESOURCE(OIC_BANG),
+									  IMAGE_ICON,
+									  0,
+									  0,
+									  LR_DEFAULTSIZE | LR_SHARED);
+	if(!notification_icons[0] || !notification_icons[1])
+		goto cleanup_and_exit;
+
+	// set globals which are set only once and read then on multiple times
+	/* screen width / 3.5 is the maximum allowed notification width */
+	notification_window_width_max = (GetSystemMetrics(SM_CXSCREEN) * 2) / 7;
+	icon_size = (uint16_t) GetSystemMetrics(SM_CXICON);
+	icon_padding = icon_size / 3;		/* icon spacing is a third of the icon width */
+
+	notification_thread = CreateThread(NULL,
+									   0,
+									   (LPTHREAD_START_ROUTINE) &notification_daemon_main,
+									   event_lib_inited,
+									   0,
+									   &notification_thread_id);
+	if(!notification_thread) goto cleanup_and_exit;
+
+	// block and confirm all things are right and then return success
+	wait_handles[0] = event_lib_inited, wait_handles[1] = notification_thread;
+	if((WAIT_OBJECT_0 + ARRAYSIZE(wait_handles)) > WaitForMultipleObjects(ARRAYSIZE(wait_handles),
+																		  wait_handles,
+																		  FALSE,
+																		  thread_wait_timeout))
+	{
+		if(GetExitCodeThread(notification_thread, &thread_ret_code))
+		{
+			if(STILL_ACTIVE == thread_ret_code)
+			{
+				return TRUE;
+			}
+		}
+	}
+
+/* order is similar to stack unwind in C++ */
+cleanup_and_exit:
+	if(notification_thread)
+	{
+		/* terminate and free the thread */
+		TerminateThread(notification_thread, (DWORD) -1);
+		CloseHandle(notification_thread);
+		notification_thread = NULL;
+	}
+
+	if(font_body)
+	{
+		DeleteObject(font_body);
+		font_body = NULL;
+	}
+
+	if(font_summary)
+	{
+		DeleteObject(font_summary);
+		font_summary = NULL;
+	}
+
+	if(event_lib_inited)
+	{
+		DeleteCriticalSection(&thread_guard);
+		CloseHandle(event_lib_inited);
+		event_lib_inited = NULL;
+	}
+
+	return FALSE;
 }
 
 LIBNOTIFY_API void notify_uninit(void)
 {
-	if(notification_data)
+	if(event_lib_inited)
 	{
-		PostThreadMessage(notification_thread_id, WM_LIBNOTIFYEXIT, 0, 0);
+		// it should be next to delete CS but it's up here to guard multiple
+		// uninit calls
+		CloseHandle(event_lib_inited);
+		event_lib_inited = NULL;
 
-		free(notification_data);
-		notification_data = NULL;
+		if(notification_thread)
+		{
+			PostThreadMessage(notification_thread_id,
+							  WM_LIBNOTIFYEXIT,
+							  0,
+							  0);
 
-		/* if the wait fails, preempt the thread */
-		if(WAIT_OBJECT_0 != WaitForSingleObject(notification_thread, thread_wait_timeout))
-			TerminateThread(notification_thread, (DWORD) -1);
+			/* if the wait fails, preempt the thread */
+			if(WAIT_OBJECT_0 != WaitForSingleObject(notification_thread, thread_wait_timeout))
+				TerminateThread(notification_thread, (DWORD) -1);
+			CloseHandle(notification_thread);
+			notification_thread = NULL;
+			notification_thread_id = 0;
+		}
 
-		CloseHandle(notification_thread);
+		if(font_summary)
+		{
+			DeleteObject(font_summary);
+			font_summary = NULL;
+		}
+
+		if(font_body)
+		{
+			DeleteObject(font_body);
+			font_body = NULL;
+		}
+
+		DeleteCriticalSection(&thread_guard);
 	}
 }
 
@@ -194,8 +327,14 @@ LIBNOTIFY_API NotifyNotification* notify_notification_new(
 	const gchar *summary, const gchar *body,
 	const gchar *icon)
 {
+	if(!notification_thread) return NULL;
+
+	NotifyNotification *notification_data = (NotifyNotification*) malloc(sizeof(NotifyNotification));
 	if(notification_data)
+	{
+		memset(notification_data, 0, sizeof(NotifyNotification));
 		notify_notification_update(notification_data, summary, body, icon);
+	}
 
 	return notification_data;
 }
@@ -204,13 +343,24 @@ LIBNOTIFY_API gboolean notify_notification_update(
 	NotifyNotification *notification, const gchar *summary,
 	const gchar *body, const gchar *icon)
 {
-	if(notification)
-		if(summary && (0 != MultiByteToWideChar(CP_ACP, 0, summary, -1, notification_data->summary, max_summary_length)))
-			if(body && (0 != MultiByteToWideChar(CP_ACP, 0, body, -1, notification_data->body, max_body_length)))
-				if (NULL != (notification_data->icon = LoadIcon(NULL, (0 == strcmp(icon, "gtk-dialog-warning")) ? IDI_WARNING : IDI_INFORMATION)))
-					return TRUE;
+	gboolean ret = FALSE;
 
-	return FALSE;
+	EnterCriticalSection(&thread_guard);
+	if(notification_thread && notification && summary && body && icon)
+	{
+		if(byte_to_wide_string(summary, notification->summary, MAX_SUMMARY_LENGTH))
+		{
+			if(byte_to_wide_string(body, notification->body, MAX_BODY_LENGTH))
+			{
+				notification->icon_req = 
+					(0 == strcmp(icon, "gtk-dialog-warning")) ? ICON_WARNING : ICON_INFO;
+				ret = TRUE;
+			}
+		}
+	}
+	LeaveCriticalSection(&thread_guard);
+
+	return ret;
 }
 
 LIBNOTIFY_API gboolean notify_notification_show(
@@ -218,8 +368,11 @@ LIBNOTIFY_API gboolean notify_notification_show(
 {
 	UNREFERENCED_PARAMETER(error);
 
-	if(notification && notification_window)
-		return PostMessage(notification_window, WM_LIBNOTIFYSHOW, 0, 0);
+	if(notification_thread && notification)
+		return PostThreadMessage(notification_thread_id,
+								 WM_LIBNOTIFYSHOW,
+								 0,
+								 (LPARAM) notification);
 
 	return FALSE;
 }
@@ -229,8 +382,11 @@ LIBNOTIFY_API gboolean notify_notification_close(
 {
 	UNREFERENCED_PARAMETER(error);
 
-	if(notification && notification_window)
-		return PostMessage(notification_window, WM_LIBNOTIFYCLOSE, 0, 0);
+	if(notification_thread && notification)
+		return PostThreadMessage(notification_thread_id,
+								 WM_LIBNOTIFYCLOSE,
+								 0,
+								 (LPARAM) notification);
 
 	return FALSE;
 }
@@ -242,16 +398,16 @@ DWORD notification_daemon_main(LPVOID lpdwThreadParam)
 	HINSTANCE hDLLInstance = (HINSTANCE) GetModuleHandle(NULL);
 	WNDCLASSEX wcex = {sizeof(WNDCLASSEX)};
 
-	wchar_t szTitle[] = TEXT("libnotify_notification");
-	wchar_t szWindowClass[] = TEXT("libnotify");
+	wchar_t szTitle[] = L"libnotify_notification";
+	wchar_t szWindowClass[] = L"libnotify";
 	HDC hdc = NULL;
-	HFONT hOldFont = NULL;
+	HGDIOBJ hOldFont = NULL;
 	RECT rc = {0};
 	MSG msg = {0};
 
 	/* register window class */
 	wcex.style			= CS_HREDRAW | CS_VREDRAW | CS_DROPSHADOW;
-	wcex.lpfnWndProc	= thread_proc;
+	wcex.lpfnWndProc	= notificationWndProc;
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hDLLInstance;
@@ -262,184 +418,237 @@ DWORD notification_daemon_main(LPVOID lpdwThreadParam)
 	wcex.lpszClassName	= szWindowClass;
 	wcex.hIconSm		= NULL;
 
-	if(0 == RegisterClassEx(&wcex)) goto cleanup_and_exit;
+	if(0 == RegisterClassEx(&wcex)) return ((DWORD) -1);
 
 	/* create the notification window */
-	notification_window = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TRANSPARENT,
-		szWindowClass, szTitle, WS_OVERLAPPED | WS_POPUP,
-		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hDLLInstance, NULL);
+	notify_wnd.notification_window = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TRANSPARENT,
+													szWindowClass,
+													szTitle,
+													WS_OVERLAPPED | WS_POPUP,
+													CW_USEDEFAULT,
+													0,
+													CW_USEDEFAULT,
+													0,
+													NULL,
+													NULL,
+													hDLLInstance,
+													NULL);
 
-	if(!notification_window) goto cleanup_and_exit;
-
-	/* screen width / 3.5 is the maximum allowed notification width */
-	notification_window_width_max = (GetSystemMetrics(SM_CXSCREEN) * 2) / 7;
-	icon_size = (uint16_t) GetSystemMetrics(SM_CXICON);
-	icon_padding = icon_size / 3;		/* icon spacing is a third of the icon width */
+	if(!notify_wnd.notification_window) return ((DWORD) -1);
 
 	/* height and width set here are dummy, they will later be reset based on DrawText */
-	notification_window_width = notification_window_width_max;
-	notification_window_height = notification_window_width / 4;
+	notify_wnd.notification_window_width = notification_window_width_max;
+	notify_wnd.notification_window_height = notify_wnd.notification_window_width / 4;
 
-	SetWindowPos(notification_window, HWND_TOPMOST, 0, 0, notification_window_width, notification_window_height, SWP_HIDEWINDOW | SWP_NOACTIVATE | SWP_NOREPOSITION);
-	SetLayeredWindowAttributes(notification_window, 0, notification_window_alpha, LWA_ALPHA);
-	
-	font_summary = CreateFont(0, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_ROMAN, NULL);
-	if(!font_summary) goto cleanup_and_exit;
+	/*
+	   setting wnd's alpha should be done before hiding the window (SetWindowPos); calling
+	   it after hiding leads to high CPU usage due to continous WM_PAINT messages there by
+	   wasting CPU cycles with transparent draw (BlendFunction) calls; this stops only after
+	   the first time the window is hidden i.e. after a notify_notification_close is called
+	   (which would be after a show request; refer Bug 1010930 & Question 184541
+	*/
+	if(!SetLayeredWindowAttributes(notify_wnd.notification_window, 0, 0, LWA_ALPHA))
+		return ((DWORD) -1);
+	if(!SetWindowPos(notify_wnd.notification_window,
+					 HWND_TOPMOST,
+					 0,
+					 0,
+					 notification_window_width_max,
+					 notification_window_width_max / 4,
+					 SWP_HIDEWINDOW | SWP_NOACTIVATE | SWP_NOREPOSITION))
+		return ((DWORD) -1);
 
-	font_body = CreateFont(0, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_ROMAN, NULL);
-	if(!font_body) goto cleanup_and_exit;
-
-	hdc = GetDC(notification_window);
+	hdc = GetDC(notify_wnd.notification_window);
 	if(hdc)
 	{
-		hOldFont = (HFONT) SelectObject(hdc, (HFONT) font_summary);
+		hOldFont = SelectObject(hdc, (HGDIOBJ) font_summary);
 		if(hOldFont)
 		{
 			/* set the width and get the height for a single line (summary) from DrawText;
 			   for rational on width calc., see the above geometry */
-			rc.right = notification_window_width - (icon_size + (icon_padding * 3));
+			rc.right = notify_wnd.notification_window_width - (icon_size + (icon_padding * 3));
 
-			DrawText(hdc, TEXT("placeholder"), -1, &rc, DT_CALCRECT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
-			summary_body_divider = (uint16_t) rc.bottom;
+			DrawText(hdc,
+					 L"placeholder",
+					 -1,
+					 &rc,
+					 DT_CALCRECT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+			notify_wnd.summary_body_divider = (uint16_t) rc.bottom;
 
-			SelectObject(hdc, (HFONT) hOldFont);
+			SelectObject(hdc, hOldFont);
 		}
 
-		ReleaseDC(notification_window, hdc);
-		if(!hOldFont) goto cleanup_and_exit;
+		ReleaseDC(notify_wnd.notification_window, hdc);
+		if(!hOldFont) return ((DWORD) -1);
 	}
 	else
-		goto cleanup_and_exit;
+		return ((DWORD) -1);
 
+	// signal that the library initialization was successful before entering in to the message loop
 	SetEvent((HANDLE) lpdwThreadParam);
 
-	while(GetMessage(&msg, NULL, 0, 0))
+	BOOL bRet = FALSE;
+	while((bRet = GetMessage(&msg, NULL, 0, 0)))
 	{
-		if((msg.message == WM_LIBNOTIFYEXIT) || (msg.message == WM_QUIT))
+		if(-1 != bRet)
 		{
-			if(hook_mouse_over)
+			// these are sent as thread messages and not window messages, hence route it to the 
+			// window proc., passing the right HWND, since msg's HWND will be NULL
+			if((msg.message >= WM_LIBNOTIFYSHOW) && (msg.message <= WM_LIBNOTIFYEXIT))
 			{
-				UnhookWindowsHookEx(hook_mouse_over);
-				hook_mouse_over = NULL;
+				notificationWndProc(notify_wnd.notification_window, msg.message, msg.wParam, msg.lParam);
 			}
-
-			KillTimer(notification_window, TIMER_ANIMATION);
-			KillTimer(notification_window, TIMER_NOTIFICATION);
-
-			if(font_summary)
-				DeleteObject(font_summary);
-			if(font_body)
-				DeleteObject(font_body);
-
-			break;
+			else
+			{
+				DispatchMessage(&msg);
+			}
 		}
 		else
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			return GetLastError();
 		}
 	}
 
 	return msg.wParam;
-
-/* cleanup and return */
-cleanup_and_exit:
-
-	if(font_summary)
-		DeleteObject(font_summary);
-	if(font_body)
-		DeleteObject(font_body);
-
-	return ((DWORD) -1);
 }
 
-LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK notificationWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	PAINTSTRUCT ps;
 	HDC hdc;
 	RECT rc = {0};
 	UINT notify_duration = 0;
-	HFONT hOldFont = NULL;
+	static BOOL is_fading_out = FALSE;
+	static HHOOK hook_mouse_over = NULL;
+	static NotifyNotification notification_data_copy = {L"", L"", ICON_INFO};
 
 	switch (message)
 	{
 	case WM_LIBNOTIFYSHOW:
-		if(notification_data)
+		/* close if already running */
+		if(IsWindowVisible(hWnd))
 		{
-			/* deduce the allowed text width from the max width; see geometry for rationale */
-			rc.right = notification_window_width_max - (icon_size + (icon_padding * 3));
-			
-			hdc = GetDC(hWnd);
-			if(hdc)
+			SendMessage(hWnd, WM_LIBNOTIFYCLOSE, 0, 0);
+		}
+		/* guarded by CS to make sure notification_data doesn't get corrupted
+		   when this code and notify_notification_update is running in parallel */
+		{
+			EnterCriticalSection(&thread_guard);
+			NotifyNotification *notification_data = (NotifyNotification*) lParam;
+			if(notification_data &&
+			   notification_data->body &&
+			   notification_data->summary)
 			{
-				HFONT hOldFont = NULL;
-				HRGN hRgn = NULL;
+				notification_data_copy = *notification_data;
+			}
+			else
+			{
+				LeaveCriticalSection(&thread_guard);
+				break;
+			}
+			LeaveCriticalSection(&thread_guard);
+		}
 
-				hOldFont = (HFONT) SelectObject(hdc, font_body);
-				if(hOldFont)
+		/* deduce the allowed text width from the max width; see geometry for rationale */
+		rc.right = notification_window_width_max - (icon_size + (icon_padding * 3));
+
+		hdc = GetDC(hWnd);
+		if(hdc)
+		{
+			HRGN hRgn = NULL;
+			HGDIOBJ hOldFont = SelectObject(hdc, (HGDIOBJ) font_body);
+			if(hOldFont)
+			{
+				DrawText(hdc,
+						 notification_data_copy.body,
+						 -1,
+						 &rc,
+						 DT_CALCRECT | DT_WORDBREAK |
+						 DT_EDITCONTROL | DT_NOCLIP |
+						 DT_NOPREFIX | DT_EXTERNALLEADING);
+
+				SelectObject(hdc, hOldFont);
+			}
+
+			ReleaseDC(hWnd, hdc);
+			if(!hOldFont) return 0;	/* exit if font selection failed */
+
+			/* calculate the actual bounding rectangle from the DrawText output */
+			notify_wnd.notification_window_height = notify_wnd.summary_body_divider +
+													rc.bottom +
+													(icon_padding * 3);
+			notify_wnd.notification_window_width = rc.right + icon_size + (icon_padding * 3);
+
+			/* word count * milliseconds per word */
+			notify_duration = word_count(notification_data_copy.body) * milliseconds_per_word;
+
+			/* in case the calculation renders too low a value, replace it with a de facto minimum */
+			notify_duration = MAX(notify_duration, min_notification_timeout);
+
+			/* get the screen area uncluttered by the taskbar */
+			if(SystemParametersInfo(SPI_GETWORKAREA, 0, &rc, 0))
+			{
+				LONG window_x = 0, window_y = 0;
+
+				/* system tray @ right bottom */
+				if((rc.bottom != GetSystemMetrics(SM_CYSCREEN)) ||
+					(rc.right != GetSystemMetrics(SM_CXSCREEN)))
 				{
-					DrawText(hdc, notification_data->body, -1, &rc, DT_CALCRECT | DT_WORDBREAK | DT_EDITCONTROL | DT_NOCLIP | DT_NOPREFIX | DT_EXTERNALLEADING);
-					SelectObject(hdc, hOldFont);
+					window_x = rc.right -
+							   (GetSystemMetrics(SM_CXSCREEN) / window_offset_factor) -
+							   notify_wnd.notification_window_width;
+					window_y = rc.bottom -
+							   (GetSystemMetrics(SM_CYSCREEN) / window_offset_factor) -
+							   notify_wnd.notification_window_height;
+				}
+				else if(rc.left != 0)	/* left bottom */
+				{
+					window_x = rc.left +
+							   (GetSystemMetrics(SM_CXSCREEN) / window_offset_factor);
+					window_y = rc.bottom -
+							   (GetSystemMetrics(SM_CYSCREEN) / window_offset_factor) -
+							   notify_wnd.notification_window_height;
+				}
+				else					/* right top */
+				{
+					window_x = rc.right -
+							   (GetSystemMetrics(SM_CXSCREEN) / window_offset_factor) -
+							   notify_wnd.notification_window_width;
+					window_y = rc.top +
+							   (GetSystemMetrics(SM_CYSCREEN) / window_offset_factor);
 				}
 
-				ReleaseDC(hWnd, hdc);
-				if(!hOldFont) return 0;	/* exit if font selection failed */
+				/* resize and reposition the window */
+				MoveWindow(hWnd,
+						   window_x,
+						   window_y,
+						   notify_wnd.notification_window_width,
+						   notify_wnd.notification_window_height,
+						   TRUE);
 
-				/* calculate the actual bounding rectangle from the DrawText output */
-				notification_window_height = summary_body_divider + rc.bottom + (icon_padding * 3);
-				notification_window_width = rc.right + icon_size + (icon_padding * 3);
+				/* set the new positions to be used by the mouse over hook */
+				notify_wnd.notification_window_rect.left = window_x;
+				notify_wnd.notification_window_rect.top = window_y;
+				notify_wnd.notification_window_rect.right = window_x + notify_wnd.notification_window_width;
+				notify_wnd.notification_window_rect.bottom = window_y + notify_wnd.notification_window_height;
 
-				/* word count * milliseconds per word */
-				notify_duration = word_count(notification_data->body) * milliseconds_per_word;
+				/* make it as a rounded rect. */
+				hRgn = CreateRoundRectRgn(0,
+										  0,
+										  notify_wnd.notification_window_width,
+										  notify_wnd.notification_window_height,
+										  rounded_rect_edge,
+										  rounded_rect_edge);
+				SetWindowRgn(hWnd, hRgn, TRUE);
 
-				/* in case the calculation renders too low a value, replace it with a de facto minimum */
-				notify_duration = MAX(notify_duration, min_notification_timeout);
+				/* since bRedraw is set to TRUE in SetWindowRgn invalidation isn't required */
+				/*InvalidateRect(hWnd, NULL, TRUE);*/
 
-				/* get the screen area uncluttered by the taskbar */
-				if(SystemParametersInfo(SPI_GETWORKAREA, 0, &rc, 0))
-				{
-					LONG window_x = 0, window_y = 0;
+				/* show the window and set the timers for animation and overall visibility */
+				ShowWindow(hWnd, SW_SHOWNOACTIVATE);
 
-					/* system tray @ right bottom */
-					if((rc.bottom != GetSystemMetrics(SM_CYSCREEN)) || 
-						(rc.right != GetSystemMetrics(SM_CXSCREEN)))
-					{
-						window_x = rc.right - (GetSystemMetrics(SM_CXSCREEN) / window_offset_factor) - notification_window_width;
-						window_y = rc.bottom - (GetSystemMetrics(SM_CYSCREEN) / window_offset_factor) - notification_window_height;
-					}
-					else if(rc.left != 0)	/* left bottom */
-					{
-						window_x = rc.left + (GetSystemMetrics(SM_CXSCREEN) / window_offset_factor);
-						window_y = rc.bottom - (GetSystemMetrics(SM_CYSCREEN) / window_offset_factor) - notification_window_height;
-					}
-					else					/* right top */
-					{
-						window_x = rc.right - (GetSystemMetrics(SM_CXSCREEN) / window_offset_factor) - notification_window_width;
-						window_y = rc.top + (GetSystemMetrics(SM_CYSCREEN) / window_offset_factor);
-					}
-
-					/* resize and reposition the window */
-					MoveWindow(hWnd, window_x, window_y, notification_window_width, notification_window_height, TRUE);
-
-					/* set the new positions to be used by the mouse over hook */
-					notification_window_rect.left = window_x;
-					notification_window_rect.top = window_y;
-					notification_window_rect.right = window_x + notification_window_width;
-					notification_window_rect.bottom = window_y + notification_window_height;
-					
-					/* make it as a rounded rect. */
-					hRgn = CreateRoundRectRgn(0, 0, notification_window_width, notification_window_height, rounded_rect_edge, rounded_rect_edge);
-					SetWindowRgn(notification_window, hRgn, TRUE);
-
-					/* since bRedraw is set to TRUE in SetWindowRgn invalidation isn't required */
-					/*InvalidateRect(hWnd, NULL, TRUE);*/
-
-					/* show the window and set the timers for animation and overall visibility */
-					ShowWindow(hWnd, SW_SHOWNOACTIVATE);
-
-					SetTimer(notification_window, TIMER_ANIMATION, fade_duration, NULL);
-					SetTimer(notification_window, TIMER_NOTIFICATION, notify_duration, NULL);
-				}
+				SetTimer(hWnd, TIMER_ANIMATION, fade_duration, NULL);
+				SetTimer(hWnd, TIMER_NOTIFICATION, notify_duration, NULL);
 			}
 		}
 		break;
@@ -460,35 +669,49 @@ LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		break;
 	case WM_PAINT:
-		if(notification_data && notification_data->summary && 
-			notification_data->body && notification_data->icon)
+		if((L'\0' != notification_data_copy.body[0]) &&
+		   (L'\0' != notification_data_copy.summary[0]))
 		{
 			hdc = BeginPaint(hWnd, &ps);
 
 			SetTextColor(hdc, RGB(255, 255, 255));
 			SetBkMode(hdc, TRANSPARENT);
 
-			hOldFont = (HFONT) SelectObject(hdc, font_summary);
+			HGDIOBJ hOldFont = SelectObject(hdc, (HGDIOBJ) font_summary);
 
 			if(hOldFont)
 			{
 				/* set the padding as left offset and center the icon horizontally */
-				DrawIcon(hdc, icon_padding, (notification_window_height / 2) - (icon_size / 2), notification_data->icon);
+				DrawIcon(hdc,
+						 icon_padding,
+						 (notify_wnd.notification_window_height / 2) - (icon_size / 2),
+						 notification_icons[notification_data_copy.icon_req]);
 
-				/* calculate and DrawText for both summary and body based on the geometry given above */
+				/* calculate and DrawText for both summary and body
+				   based on the geometry given above */
 				rc.left = icon_size + (icon_padding * 2);
-				rc.right = notification_window_width - icon_padding;
+				rc.right = notify_wnd.notification_window_width - icon_padding;
 				rc.top = icon_padding;
-				rc.bottom = summary_body_divider + (icon_padding * 2);
+				rc.bottom = notify_wnd.summary_body_divider + (icon_padding * 2);
 
-				DrawText(hdc, notification_data->summary, -1, &rc, DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+				DrawText(hdc,
+						 notification_data_copy.summary,
+						 -1,
+						 &rc,
+						 DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-				if(SelectObject(hdc, font_body))
+				if(SelectObject(hdc, (HGDIOBJ) font_body))
 				{
 					rc.top = rc.bottom;
-					rc.bottom = notification_window_height - icon_padding;
+					rc.bottom = notify_wnd.notification_window_height - icon_padding;
 
-					DrawText(hdc, notification_data->body, -1, &rc, DT_WORDBREAK | DT_EDITCONTROL | DT_NOCLIP | DT_NOPREFIX | DT_EXTERNALLEADING);
+					DrawText(hdc,
+							 notification_data_copy.body,
+							 -1,
+							 &rc,
+							 DT_WORDBREAK | DT_EDITCONTROL |
+							 DT_NOCLIP | DT_NOPREFIX |
+							 DT_EXTERNALLEADING);
 				}
 
 				SelectObject(hdc, hOldFont);
@@ -497,7 +720,15 @@ LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			EndPaint(hWnd, &ps);
 		}
 		break;
-	case WM_DESTROY:
+	case WM_LIBNOTIFYEXIT:
+		if(hook_mouse_over)
+		{
+			UnhookWindowsHookEx(hook_mouse_over);
+			hook_mouse_over = NULL;
+		}
+
+		KillTimer(notify_wnd.notification_window, TIMER_ANIMATION);
+		KillTimer(notify_wnd.notification_window, TIMER_NOTIFICATION);
 		PostQuitMessage(0);
 		break;
 	case WM_TIMER:
@@ -507,37 +738,43 @@ LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			{
 				if(is_fading_out)
 				{
-					if(notification_window_alpha > 5)
+					if(notify_wnd.notification_window_alpha > 5)
 					{
-						notification_window_alpha -= 25;
-						SetLayeredWindowAttributes(notification_window, 0, notification_window_alpha, LWA_ALPHA);
+						notify_wnd.notification_window_alpha -= 25;
 					}
 					else
 					{
 						/* once fully faded out, self destroy and reset the flags */
 						KillTimer(hWnd, TIMER_ANIMATION);
 						is_fading_out = FALSE;
-						notification_window_alpha = 0;
-						PostMessage(hWnd, WM_LIBNOTIFYCLOSE, 0, 0);
+						notify_wnd.notification_window_alpha = 0;
+						SendMessage(hWnd, WM_LIBNOTIFYCLOSE, 0, 0);
 					}
 				}
 				else
 				{
-					if(notification_window_alpha < 250)
+					if(notify_wnd.notification_window_alpha < 250)
 					{
-						notification_window_alpha += 25;
-						SetLayeredWindowAttributes(notification_window, 0, notification_window_alpha, LWA_ALPHA);
+						notify_wnd.notification_window_alpha += 25;
 					}
 					else
 					{
 						/* self destory as alpha reaches the maximum */
 						KillTimer(hWnd, TIMER_ANIMATION);
-						notification_window_alpha = 255;
+						notify_wnd.notification_window_alpha = 255;
 
 						/* set the mouse over hook once the window is fully visible */
-						hook_mouse_over = SetWindowsHookEx(WH_MOUSE_LL, mouse_over_hook_proc, (HINSTANCE) GetModuleHandle(NULL), 0);
+						hook_mouse_over = SetWindowsHookEx(WH_MOUSE_LL,
+														   mouse_over_hook_proc,
+														   (HINSTANCE) GetModuleHandle(NULL),
+														   0);
 					}
 				}
+				/* for all the above cases set the newly calculated alpha */
+				SetLayeredWindowAttributes(notify_wnd.notification_window,
+										   0,
+										   notify_wnd.notification_window_alpha,
+										   LWA_ALPHA);
 			}
 			else	/* notification duration timer */
 			{
@@ -553,7 +790,7 @@ LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 				/* start fading out sequence */
 				is_fading_out = TRUE;
-				SetTimer(hWnd, 1, fade_duration, NULL);
+				SetTimer(hWnd, TIMER_ANIMATION, fade_duration, NULL);
 			}
 		}
 		break;
@@ -566,23 +803,23 @@ LRESULT CALLBACK thread_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 LRESULT CALLBACK mouse_over_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	/* 
+	/*
 	   don't use the direct mouse position in MSLLHOOKSTRUCT, it'll be in absolute coords;
-	   while cursor pos will be relative (based on any DPI change) coords. E.g. on a 
-	   1680 x 1050 monitor, where the DPI is set to 150% larger, the mouse pointer pos. 
-	   will still be in 1680 x 1050 coordinates, while all the window coordinates will based 
+	   while cursor pos will be relative (based on any DPI change) coords. E.g. on a
+	   1680 x 1050 monitor, where the DPI is set to 150% larger, the mouse pointer pos.
+	   will still be in 1680 x 1050 coordinates, while all the window coordinates will based
 	   on virtual screen coords I.e. SM_CXSCREEN x SM_CYSCREEN will be 1120 x 700
      */
 	POINT pt = {0};
 	GetCursorPos(&pt);
 
-	if(pt.x >= notification_window_rect.left && pt.x <= notification_window_rect.right && 
-		pt.y >= notification_window_rect.top && pt.y <= notification_window_rect.bottom)
+	if(pt.x >= notify_wnd.notification_window_rect.left && pt.x <= notify_wnd.notification_window_rect.right &&
+		pt.y >= notify_wnd.notification_window_rect.top && pt.y <= notify_wnd.notification_window_rect.bottom)
 	{
-		SetLayeredWindowAttributes(notification_window, 0, mouse_over_alpha, LWA_ALPHA);
+		SetLayeredWindowAttributes(notify_wnd.notification_window, 0, mouse_over_alpha, LWA_ALPHA);
 	}
 	else
-		SetLayeredWindowAttributes(notification_window, 0, notification_window_alpha, LWA_ALPHA);
+		SetLayeredWindowAttributes(notify_wnd.notification_window, 0, notify_wnd.notification_window_alpha, LWA_ALPHA);
 
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
@@ -604,4 +841,22 @@ uint16_t word_count(const wchar_t *str)
 	}
 
 	return count;
+}
+
+static gboolean byte_to_wide_string(const gchar *byte_string, wchar_t *wide_string, gint max_buffer)
+{
+	static const wchar_t ellipses[] = L"...";
+	const guint16 conversion_limit = max_buffer - ARRAYSIZE(ellipses);
+	gint conv_len = ((gint)strlen(byte_string) >= max_buffer) ? conversion_limit : -1;
+	if(0 != MultiByteToWideChar(CP_ACP, 0, byte_string, conv_len, wide_string, max_buffer))
+	{
+	    if(-1 != conv_len)
+		{
+			guint16 i = conversion_limit - 1;
+			for(; wide_string[i] != L' '; --i);
+			wcscpy_s(&wide_string[++i], max_buffer - conversion_limit, ellipses);
+		}
+		return TRUE;
+	}
+	return FALSE;
 }

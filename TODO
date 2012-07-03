@@ -1,14 +1,11 @@
 Users' Wish List:
-* Fix the tabbing names correctly. Similar and (Synonyms or Kind Of) seem to be swapped, cross check with WP7 port
-* Search "unfortunate" in WP7 port and see that terms under Kind Of there is listed under Similar in Desktop port
-* Make Member Of, Substance of, Substances, etc. separate
-* Spacing issue; not all spaces are filled with '_' in the index files E.g. 24-karet_gold in index.noun
 * Pronunciations
 * Persistent History
 * Option to make the hotkey a switch
-* Ctrl + W should work for closing the window and Ctrl + Q should quit.
 * Single click jump to words in both senses and relatives as an option.
 * Make the status icon's visibility customizable as Always, Never and Auto.
+* Spacing issue; not all spaces are filled with '_' in the index files E.g. 24-karet_gold in index.noun
+* WNI can used g_slist_free_full to make free code cleaner (but raises GLib to 2.28 version dependency)
 
 To Do:
 
@@ -16,29 +13,13 @@ To Do:
 
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
 
-* When in minimized mode, with notifications, just look up the synonyms, which 
-  should reduce a lot of overhead. When the try icon is clicked, then do the actual 
-  WORDNET_INTERFACE_ALL request call, till then this flag can be deferred.
-
-* When in simple mode, see the 'Parts' tab for 'rupee', it has lot of duplicates.
-
-* Change Kind of (Hyperyms) to Kind of/Way to and Kinds (Hyponyms) to Kinds/Ways
-
-* Should Similar be made as 'Similar/Related/See also'? Checkout Hinduism's similar.
-
-* Keep 2 buttons expand all/contract all for relative trees
-
-* Try, when the window is visible, searching 'man' and do the same when in tray 
-  (with notifications). Performance is differing? (Once the performance got hit 
-  when it was visible, but not very sure)
-
 * Clearing search history
 
 * Auto complete of the query combo using history or the whole dict. index?
 
 * Wrapped text should get aligned with the definition start and not the sense count start
 
-* Check if this is possible => farcry should be separated into "far cry" and searched
+* Check if this is possible => farcry should be separated into "far cry" and searched; use spell engine
 
 Settings
 ~~~~~~~~

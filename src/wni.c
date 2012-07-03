@@ -26,14 +26,6 @@
  */
 
 
-/*
-   TODO: When in simple mode, see pertainyms of 'verbally' and hypernyms of
-   'conquest'; Should duplicate check for them in these simple mode cas be 
-   done? Likewise, see 'rupee' Meronyms in Simple mode, it lists cent and 
-   paise around 5 times!
-*/
-
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -153,7 +145,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 			else								// else create a new antonym item and store the details
 			{
 				//antonym = (WNIAntonymItem*) g_malloc0(sizeof(WNIAntonymItem));
-				antonym = (WNIAntonymItem*) g_slice_alloc0(sizeof(WNIAntonymItem));
+				antonym = g_slice_new0(WNIAntonymItem);
 				antonym->term = g_strdup(cur_synset->words[synptr->pto[i] - 1]);
 				antonym->sense = cur_synset->wnsns[synptr->pto[i] - 1] - 1;				// Second - 1 is to make it count from 0 and not 1
 				antonym->relation = DIRECT_ANT;
@@ -177,7 +169,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 					(NULL == check_term_in_list(cur_synset->words[j], &temp_list, 0)))
 					{
 						//implication = (WNIImplication*) g_malloc0(sizeof(WNIImplication));
-						implication = (WNIImplication*) g_slice_alloc0(sizeof(WNIImplication));
+						implication = g_slice_new0(WNIImplication);
 						implication->term = g_strdup(cur_synset->words[j]);
 						implication->sense = cur_synset->wnsns[j] - 1;		// Second - 1 is to make it count from 0 and not 1
 
@@ -192,7 +184,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 			}
 
 			//antonym_mapping = (WNIAntonymMapping*) g_malloc0(sizeof(WNIAntonymMapping));
-			antonym_mapping = (WNIAntonymMapping*) g_slice_alloc0(sizeof(WNIAntonymMapping));
+			antonym_mapping = g_slice_new0(WNIAntonymMapping);
 			antonym_mapping->id = id;
 			antonym_mapping->sense = sense;
 			antonym_mapping->related_word_count = count;
@@ -292,7 +284,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 					else
 					{
 						//antonym = (WNIAntonymItem*) g_malloc0(sizeof(WNIAntonymItem));
-						antonym = (WNIAntonymItem*) g_slice_alloc0(sizeof(WNIAntonymItem));
+						antonym = g_slice_new0(WNIAntonymItem);
 						antonym->term = g_strdup(ant_synset->words[0]);
 						antonym->sense = ant_synset->wnsns[synptr->pto[i] - 1] - 1;				// - 1 is to make it count from 0 and not 1
 						antonym->relation = DIRECT_ANT;
@@ -310,7 +302,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 						if(NULL == check_term_in_list(ant_synset->words[j], &antonym->implications, 0))
 						{
 							//implication = (WNIImplication*) g_malloc0(sizeof(WNIImplication));
-							implication = (WNIImplication*) g_slice_alloc0(sizeof(WNIImplication));
+							implication = g_slice_new0(WNIImplication);
 							implication->term = g_strdup(ant_synset->words[j]);
 							implication->sense = ant_synset->wnsns[j] - 1;
 						
@@ -334,7 +326,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 								(NULL == check_term_in_list(sim_synset->words[k], &temp_list, 0)))
 								{
 									//implication = (WNIImplication*) g_malloc0(sizeof(WNIImplication));
-									implication = (WNIImplication*) g_slice_alloc0(sizeof(WNIImplication));
+									implication = g_slice_new0(WNIImplication);
 									implication->term = g_strdup(sim_synset->words[k]);
 									implication->sense = sim_synset->wnsns[k] - 1;
 						
@@ -350,7 +342,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 				    	antonym->implications = g_slist_concat(antonym->implications, temp_list);
 
 					//antonym_mapping = (WNIAntonymMapping*) g_malloc0(sizeof(WNIAntonymMapping));
-					antonym_mapping = (WNIAntonymMapping*) g_slice_alloc0(sizeof(WNIAntonymMapping));
+					antonym_mapping = g_slice_new0(WNIAntonymMapping);
 					antonym_mapping->id = id;
 					antonym_mapping->sense = sense;
 					antonym_mapping->related_word_count = count;	// - 1 is to make it count from 0 and not 1
@@ -376,7 +368,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 						else
 						{
 							//antonym = (WNIAntonymItem*) g_malloc0(sizeof(WNIAntonymItem));
-							antonym = (WNIAntonymItem*) g_slice_alloc0(sizeof(WNIAntonymItem));
+							antonym = g_slice_new0(WNIAntonymItem);
 							antonym->term = temp_str;
 							antonym->sense = count;
 							antonym->relation = INDIRECT_ANT;
@@ -394,7 +386,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 							(NULL == check_term_in_list(ant_synset->words[j], &temp_list, 0)))
 							{
 								//implication = (WNIImplication*) g_malloc0(sizeof(WNIImplication));
-								implication = (WNIImplication*) g_slice_alloc0(sizeof(WNIImplication));
+								implication = g_slice_new0(WNIImplication);
 								implication->term = g_strdup(ant_synset->words[j]);
 								implication->sense = ant_synset->wnsns[j] - 1;
 				
@@ -408,7 +400,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 					    	antonym->implications = g_slist_concat(antonym->implications, temp_list);
 
 						//antonym_mapping = (WNIAntonymMapping*) g_malloc0(sizeof(WNIAntonymMapping));
-						antonym_mapping = (WNIAntonymMapping*) g_slice_alloc0(sizeof(WNIAntonymMapping));
+						antonym_mapping = g_slice_new0(WNIAntonymMapping);
 						antonym_mapping->id = id;
 						antonym_mapping->sense = sense;
 						antonym_mapping->related_word_count = count;	// - 1 is to make it count from 0 and not 1
@@ -451,7 +443,7 @@ static gchar* parse_definition(gchar *str)
 	gchar ch = 0;
 	gchar *temp_ch = NULL;
 
-	len = g_utf8_strlen(str, -1) - 1;	// skip the last close brace (len - 1)
+	len = strlen(str) - 1;	// skip the last close brace (len - 1)
 	formatted_str = g_string_new("");
 	for(i = 1; i < len; i++)		// skip the first open brace (i = 1)
 	{
@@ -570,7 +562,7 @@ static GSList* check_term_in_list(gchar *term, GSList **list, WNIRequestFlags fl
 	gchar *temp_str = NULL;
 	glong check_len = 0;
 	
-	check_len = g_utf8_strlen(term, -1) + 1;	// check till \0 so that "Kelly" & "Kelly Gene" don't match
+	check_len = strlen(term) + 1;	// check till \0 so that "Kelly" & "Kelly Gene" don't match
 
 	while(temp)
 	{
@@ -640,7 +632,7 @@ static gchar *get_example(gchar *offset, gchar *wd)
 			while(*line != ' ')
 				line++;
 
-			last_char_index = g_utf8_strlen(line, -1) - 1;
+			last_char_index = strlen(line) - 1;
 			// The last char is mostly a new line char. from file hence truncate it. If not we are dealing with the last line in the examples file :)
 			line[last_char_index] = (line[last_char_index]=='\n')? '\0' : line[last_char_index];
 			example = g_strdup_printf(g_strstrip(line), wd);
@@ -675,7 +667,7 @@ static GSList *find_example(SynsetPtr synptr)
 		{
 			// skip over sense key and get sentence numbers
 
-			temp += g_utf8_strlen(synptr->words[wdnum], -1) + 11;
+			temp += strlen(synptr->words[wdnum]) + 11;
 			g_stpcpy(tbuf, temp);
 			
 			splits = g_strsplit_set(tbuf, " ,\n", 0);
@@ -717,16 +709,16 @@ static gpointer *get_from_global_list(WNIRequestFlags flag)
 
 	// Either the whole global list is null or there is no item with such ID.
 	//temp_nym = (WNINym*) g_malloc0(sizeof(WNINym));
-	temp_nym = (WNINym*) g_slice_alloc(sizeof(WNINym));
+	temp_nym = g_slice_new(WNINym);
 	temp_nym->id = flag;
 
 	if(WORDNET_INTERFACE_OVERVIEW & flag)
-		temp_nym->data = g_slice_alloc0(sizeof(WNIOverview));
+		temp_nym->data = g_slice_new0(WNIOverview);
 		//temp_nym->data = g_malloc0(sizeof(WNIOverview));
 	else/* if((WORDNET_INTERFACE_ANTONYMS & flag) || (WORDNET_INTERFACE_ATTRIBUTES & flag) || (WORDNET_INTERFACE_CAUSES & flag) || (WORDNET_INTERFACE_ENTAILS & flag) || 
 	(WORDNET_INTERFACE_SIMILAR & flag) || (WORDNET_INTERFACE_DERIVATIONS & flag) || (WORDNET_INTERFACE_PERTAINYMS & flag) || (WORDNET_INTERFACE_CLASS & flag) || 
 	(WORDNET_INTERFACE_HYPERNYMS & flag) || (WORDNET_INTERFACE_HYPONYMS & flag) || (WORDNET_INTERFACE_MERONYMS & flag) || (WORDNET_INTERFACE_HOLONYMS & flag))*/
-		temp_nym->data = g_slice_alloc0(sizeof(WNIProperties));
+		temp_nym->data = g_slice_new0(WNIProperties);
 		//temp_nym->data = g_malloc0(sizeof(WNIProperties));
 
 	// append it to the global_list and not temp_global_list, since it will be pointing to NULL by now
@@ -768,8 +760,8 @@ static void prune_results(void)
 				G_MESSAGE("Pruned: %d\n", temp_nym->id);
 				//g_free(temp_nym->data);
 				//g_free(temp_nym);
-				g_slice_free1(sizeof(WNIProperties), temp_nym->data);
-				g_slice_free1(sizeof(WNINym), temp_nym);
+				g_slice_free(WNIProperties, temp_nym->data);
+				g_slice_free(WNINym, temp_nym);
 				temp_nym = NULL;
 				global_list = g_slist_delete_link(global_list, temp_list);
 				temp_list = temp_prev;		// Reach the prev. node and continue normally
@@ -801,7 +793,7 @@ static WNIDefinitionItem *create_synonym_def(guint8 pos, IndexPtr index, WNIOver
 
 	// Create a definition item to store the definition, its POS. Note ID is the unique ID which the synonym's list maps to for cross ref.
 	//def_item = (WNIDefinitionItem*) g_malloc0 (sizeof(WNIDefinitionItem));
-	def_item = (WNIDefinitionItem*) g_slice_alloc0 (sizeof(WNIDefinitionItem));
+	def_item = g_slice_new0(WNIDefinitionItem);
 	def_item->pos = pos;
 	def_item->lemma = g_strdup(mutable_lemma);
 	def_item->definitions = NULL;					// List to store the definitions & examples associated to it
@@ -846,7 +838,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	gchar *lemma = *lemma_ptr;
 
 	//defn = (WNIDefinition*) g_malloc0 (sizeof(WNIDefinition));
-	defn = (WNIDefinition*) g_slice_alloc0 (sizeof(WNIDefinition));
+	defn = g_slice_new0(WNIDefinition);
 
 	if (index->tagged_cnt != -1 && ((sense + 1) <= index->tagged_cnt))	// a tag_count is present, overwrite the default 0
 		defn->tag_count = GetTagcnt(index, sense + 1);
@@ -874,7 +866,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	def_item->definitions = g_slist_prepend(def_item->definitions, defn);	// with this, definitions_list section is over, remaining is synonyms_list appending/mapping
 	def_item->count++;
 	
-	check_len = g_utf8_strlen(lemma, -1) + 1;
+	check_len = strlen(lemma) + 1;
 
 	for(i = 0; i < cursyn->wcount; i++)
 	{
@@ -891,7 +883,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 		if(g_ascii_strncasecmp(lemma, temp_str, check_len))	// Additional check to see if the current lemma and synm aren't the same
 		{
 			//mapping = (WNISynonymMapping*) g_malloc0 (sizeof(WNISynonymMapping));
-			mapping = (WNISynonymMapping*) g_slice_alloc0 (sizeof(WNISynonymMapping));
+			mapping = g_slice_new0(WNISynonymMapping);
 
 			mapping->id = def_item->id;
 			mapping->sense = sense;
@@ -909,8 +901,8 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 			else
 			{
 				//synm = (WNISynonym*) g_malloc0 (sizeof(WNISynonym));
-				//synm = (WNISynonym*) g_slice_alloc0 (sizeof(WNISynonym));
-				synm = (WNIPropertyItem*) g_slice_alloc0 (sizeof(WNIPropertyItem));
+				//synm = (WNISynonym*) g_slice_new0 (WNISynonym);
+				synm = g_slice_new0(WNIPropertyItem);
 				synm->term = g_strdup(temp_str);
 				synm->mapping = g_slist_append(synm->mapping, mapping);
 				overview->synonyms_list = g_slist_append(overview->synonyms_list, synm);
@@ -954,7 +946,7 @@ static gboolean add_synonym_def(WNIDefinitionItem **def_item_ptr, WNIOverview **
 	{
 		g_free(def_item->lemma); def_item->lemma = NULL;
 		//g_free(def_item); def_item = NULL;
-		g_slice_free1(sizeof(WNIDefinitionItem), def_item); *def_item_ptr = NULL;
+		g_slice_free(WNIDefinitionItem, def_item); *def_item_ptr = NULL;
 	}
 
 	return FALSE;
@@ -978,7 +970,7 @@ static void populate_ptr(gchar *lemma, SynsetPtr synptr, WNIProperties **data_pt
 	guint16 i = 0, j = 0;
 	glong check_len = 0;
 	
-	check_len = g_utf8_strlen(lemma, -1) + 1;
+	check_len = strlen(lemma) + 1;
 
 	for(i = 0; i < synptr->ptrcount; i++)
 	{
@@ -1009,13 +1001,13 @@ static void populate_ptr(gchar *lemma, SynsetPtr synptr, WNIProperties **data_pt
 						else
 						{
 							//item = (WNIPropertyItem*) g_malloc0(sizeof(WNIPropertyItem));
-							item = (WNIPropertyItem*) g_slice_alloc0(sizeof(WNIPropertyItem));
+							item = g_slice_new0(WNIPropertyItem);
 							item->term = g_strdup(cursyn->words[j]);
 							properties->properties_list = g_slist_append(properties->properties_list, item);
 						}
 						temp_list = NULL;
 						//mapping = (WNIPropertyMapping*) g_malloc0(sizeof(WNIPropertyMapping));
-						mapping = (WNIPropertyMapping*) g_slice_alloc0(sizeof(WNIPropertyMapping));
+						mapping = g_slice_new0(WNIPropertyMapping);
 						mapping->self_sense = cursyn->wnsns[j] - 1;
 						mapping->id = id;
 						mapping->sense = sense;
@@ -1027,7 +1019,7 @@ static void populate_ptr(gchar *lemma, SynsetPtr synptr, WNIProperties **data_pt
 						if(NULL == temp_list)
 						{
 							//class_item = (WNIClassItem*) g_malloc0(sizeof(WNIClassItem));
-							class_item = (WNIClassItem*) g_slice_alloc0(sizeof(WNIClassItem));
+							class_item = g_slice_new0(WNIClassItem);
 							class_item->term = g_strdup(cursyn->words[j]);
 							class_item->self_sense = cursyn->wnsns[j] - 1;
 							class_item->self_pos = synptr->ppos[i];
@@ -1075,21 +1067,20 @@ static void grow_tree(gchar *lemma, SynsetPtr synptr, guint8 ptr, GNode **root, 
 				if(cursyn->sstype != 0)
 					strip_adj_marker(cursyn->words[j]);
 				strsubst(cursyn->words[j], '_', ' ');
-				// what if no words are present except the actual lemma searched? so duplicate check is commented here e.g. hypernyms for 'register'
-				//if(0 != g_ascii_strncasecmp(lemma, cursyn->words[j], g_utf8_strlen(cursyn->words[j], -1) + 1))
-				//{
+				if(0 != g_ascii_strncasecmp(lemma, cursyn->words[j], strlen(cursyn->words[j]) + 1))
+				{
 					//implication = (WNIImplication*) g_malloc0(sizeof(WNIImplication));
-					implication = (WNIImplication*) g_slice_alloc0(sizeof(WNIImplication));
+					implication = g_slice_new0(WNIImplication);
 					implication->term = g_strdup(cursyn->words[j]);
 					implication->sense = cursyn->wnsns[j] - 1;
 					node_list = g_slist_prepend(node_list, implication);
-				//}
+				}
 			}
 
 			if(node_list)
 			{
 				//tree_list = (WNITreeList*) g_malloc0(sizeof(WNITreeList));
-				tree_list = (WNITreeList*) g_slice_alloc0(sizeof(WNITreeList));
+				tree_list = g_slice_new0(WNITreeList);
 				tree_list->word_list = g_slist_reverse(node_list);
 				tree_list->type = synptr->ptrtyp[i];			// store the actual ptr's type here. E.g. INSTANCE, HASPARTPTR, etc.
 
@@ -1143,22 +1134,21 @@ static void trace_inherit(gchar *lemma, SynsetPtr synptr, GNode **root, guint8 d
 				if(cursyn->sstype != 0)
 					strip_adj_marker(cursyn->words[j]);
 				strsubst(cursyn->words[j], '_', ' ');
-				// what if no words are present except the actual lemma searched? so duplicate check is commented here
-				//if(0 != g_ascii_strncasecmp(lemma, cursyn->words[j], g_utf8_strlen(cursyn->words[j], -1) + 1))
-				//{
+				if(0 != g_ascii_strncasecmp(lemma, cursyn->words[j], strlen(cursyn->words[j]) + 1))
+				{
 					//implication = (WNIImplication*) g_malloc0(sizeof(WNIImplication));
-					implication = (WNIImplication*) g_slice_alloc0(sizeof(WNIImplication));
+					implication = g_slice_new0(WNIImplication);
 					implication->term = g_strdup(cursyn->words[j]);
 					implication->sense = cursyn->wnsns[j] - 1;
 
 					node_list = g_slist_prepend(node_list, implication);
-				//}
+				}
 			}
 
 			if(node_list)
 			{
 				//tree_list = (WNITreeList*) g_malloc0(sizeof(WNITreeList));
-				tree_list = (WNITreeList*) g_slice_alloc0(sizeof(WNITreeList));
+				tree_list = g_slice_new0(WNITreeList);
 				tree_list->word_list = g_slist_reverse(node_list);
 				tree_list->type = 0;
 
@@ -1188,7 +1178,7 @@ static void trace_inherit(gchar *lemma, SynsetPtr synptr, GNode **root, guint8 d
 						g_slist_free(tree_list->word_list);
 						tree_list->word_list = NULL;
 						//g_free(tree_list);
-						g_slice_free1(sizeof(WNITreeList), tree_list);
+						g_slice_free(WNITreeList, tree_list);
 						tree_list = NULL;
 						g_node_destroy(cur_tree);
 						cur_tree = NULL;
@@ -1219,7 +1209,7 @@ static void populate_ptr_tree(gchar *lemma, SynsetPtr synptr, WNIProperties **da
 	if(HYPERPTR == ptr || HYPOPTR == ptr || HMERONYM == ptr || HHOLONYM == ptr || PERTPTR == ptr)
 	{
 		//tree_mapping = (WNISynonymMapping*) g_malloc0(sizeof(WNISynonymMapping));
-		tree_mapping = (WNISynonymMapping*) g_slice_alloc0(sizeof(WNISynonymMapping));
+		tree_mapping = g_slice_new0(WNISynonymMapping);
 		tree_mapping->id = id;
 		tree_mapping->sense = sense;
 
@@ -1270,7 +1260,7 @@ static void populate_ptr_tree(gchar *lemma, SynsetPtr synptr, WNIProperties **da
 		if(G_NODE_IS_LEAF(tree))
 		{
 			//g_free(tree_mapping);
-			g_slice_free1(sizeof(WNISynonymMapping), tree_mapping);
+			g_slice_free(WNISynonymMapping, tree_mapping);
 			g_node_destroy(tree);
 		}
 		else
@@ -1378,10 +1368,8 @@ static void populate(gchar *lemma, guint8 pos, WNIRequestFlags flag, gchar *actu
 
 				if((WORDNET_INTERFACE_SIMILAR & flag) && similar) //(ADJ == pos))
 				{
-					// nouns & verbs don't have a SIMPTR defined explicitly, HYPERPTR is used instead, with 0 depth
-					if(NOUN == pos || VERB == pos)
-						populate_ptr(def_item->lemma, cursyn, &similar, HYPERPTR, def_item->id, sense, WORDNET_INTERFACE_SIMILAR);
-					else
+					// nouns & verbs don't have a SIMPTR defined
+					if((NOUN != pos) && (VERB != pos))
 						populate_ptr(def_item->lemma, cursyn, &similar, SIMPTR, def_item->id, sense, WORDNET_INTERFACE_SIMILAR);
 				}
 
@@ -1453,7 +1441,7 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 		/* apart from checking for the length to be non-zero, checks for the search_str to be not ".", "-" and "_" 
 		 * are put up since is_defined() returns success for these actually futile searches; alternatively in_wn() 
 		 * can be also be used to check if a search_str is avaiable in WN; it rightly returns 0 for these 'strings' */
-		if(	g_utf8_strlen(search_str, -1) > 0 && 
+		if(	strlen(search_str) > 0 && 
 			g_strcmp0(search_str, ".") && 
 			g_strcmp0(search_str, "-") && 
 			g_strcmp0(search_str, "_") )
@@ -1536,7 +1524,7 @@ static void simple_list_free(GSList **list, guint8 mode)
 				synonym_mapping = (WNISynonymMapping*) temp_list->data;
 				G_PRINTF("(%d, %d)\n", synonym_mapping->id, synonym_mapping->sense);
 #endif
-				g_slice_free1(sizeof(WNISynonymMapping), temp_list->data);
+				g_slice_free(WNISynonymMapping, temp_list->data);
 			}
 			else if(ANTONYM_MAPPING == mode)
 			{
@@ -1544,7 +1532,7 @@ static void simple_list_free(GSList **list, guint8 mode)
 				antonym_mapping = (WNIAntonymMapping*) temp_list->data;
 				G_PRINTF("ID: %d, Sense: %d, Related Word Count: %d\n", antonym_mapping->id, antonym_mapping->sense, antonym_mapping->related_word_count);
 #endif
-				g_slice_free1(sizeof(WNIAntonymMapping), temp_list->data);
+				g_slice_free(WNIAntonymMapping, temp_list->data);
 			}
 			else if(PROPERTY_MAPPING == mode)
 			{
@@ -1552,7 +1540,7 @@ static void simple_list_free(GSList **list, guint8 mode)
 				property_mapping = (WNIPropertyMapping*) temp_list->data;
 				G_PRINTF("ID: %d, Sense: %d, Self Sense: %d\n", property_mapping->id, property_mapping->sense, property_mapping->self_sense);
 #endif
-				g_slice_free1(sizeof(WNIPropertyMapping), temp_list->data);
+				g_slice_free(WNIPropertyMapping, temp_list->data);
 			}
 			else
 			{
@@ -1597,8 +1585,8 @@ static void synonym_list_free(GSList **list, gboolean single_element)
 
 			g_free(temp_synonym->term);
 			//g_free(temp_synonym);
-			//g_slice_free1(sizeof(WNISynonym), temp_synonym);
-			g_slice_free1(sizeof(WNIPropertyItem), temp_synonym);
+			//g_slice_free(WNISynonym, temp_synonym);
+			g_slice_free(WNIPropertyItem, temp_synonym);
 			temp_synonym = temp_list->data = NULL;
 		}
 		temp_list = single_element?NULL:g_slist_next(temp_list);	// if single_element set, stop traversal.
@@ -1629,7 +1617,7 @@ static void definitions_free(GSList **list)
 			}
 			g_free(temp_def->definition);
 			//g_free(temp_def);
-			g_slice_free1(sizeof(WNIDefinition), temp_def);
+			g_slice_free(WNIDefinition, temp_def);
 			temp_def = temp_list->data = NULL;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -1661,7 +1649,7 @@ static void definitions_list_free(GSList **list)
 
 			g_free(tmp_def_item->lemma);
 			//g_free(tmp_def_item);
-			g_slice_free1(sizeof(WNIDefinitionItem), tmp_def_item);
+			g_slice_free(WNIDefinitionItem, tmp_def_item);
 			tmp_def_item = temp_list->data = NULL;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -1689,7 +1677,7 @@ static void implications_free(GSList **list, guint8 mode)
 
 			g_free(temp_implication->term);
 			//g_free(temp_implication);
-			g_slice_free1(sizeof(WNIImplication), temp_implication);
+			g_slice_free(WNIImplication, temp_implication);
 			temp_implication = temp_list->data = NULL;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -1720,7 +1708,7 @@ static void antonyms_list_free(GSList **list)
 			g_slist_free(temp_antonym->implications);
 			g_free(temp_antonym->term);
 			//g_free(temp_antonym);
-			g_slice_free1(sizeof(WNIAntonymItem), temp_antonym);
+			g_slice_free(WNIAntonymItem, temp_antonym);
 			temp_antonym = temp_list->data = NULL;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -1758,7 +1746,7 @@ static void properties_list_free(GSList **list, WNIRequestFlags id)
 			g_slist_free(temp_property->mapping);
 			g_free(temp_property->term);
 			//g_free(temp_property);
-			g_slice_free1(sizeof(WNIPropertyItem), temp_property);
+			g_slice_free(WNIPropertyItem, temp_property);
 			temp_property = temp_list->data = NULL;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -1807,7 +1795,7 @@ static void class_list_free(GSList **list)
 
 			g_free(temp_class_item->term);
 			//g_free(temp_class_item);
-			g_slice_free1(sizeof(WNIClassItem), temp_class_item);
+			g_slice_free(WNIClassItem, temp_class_item);
 			temp_class_item = temp_list->data = NULL;
 		}
 		temp_list = g_slist_next(temp_list);
@@ -1843,14 +1831,14 @@ static gboolean node_free(GNode *node, gpointer data)
 
 				g_free(implication->term);
 				//g_free(temp_list->data);
-				g_slice_free1(sizeof(WNIImplication), temp_list->data);
+				g_slice_free(WNIImplication, temp_list->data);
 				implication = temp_list->data = NULL;
 			}
 			temp_list = g_slist_next(temp_list);
 		}
 		g_slist_free(temp_tree_list->word_list);
 		//g_free(node->data);
-		g_slice_free1(sizeof(WNITreeList), node->data);
+		g_slice_free(WNITreeList, node->data);
 		temp_tree_list = node->data = NULL;
 	}
 	
@@ -1904,7 +1892,7 @@ static void properties_tree_free(GSList **list, WNIRequestFlags id)
             mapping = NULL;
 #endif
 			//g_free(tree_root->data);
-			g_slice_free1(sizeof(WNISynonymMapping), tree_root->data);
+			g_slice_free(WNISynonymMapping, tree_root->data);
 			tree_root->data = NULL;
 			g_node_children_foreach(tree_root, G_TRAVERSE_ALL, tree_free, NULL);
 			g_node_destroy(tree_root);
@@ -1953,7 +1941,7 @@ void wni_free(GSList **response_list)
 						temp_overview->synonyms_list = NULL;
 
 						//g_free(temp_nym->data); temp_nym->data = NULL;
-						g_slice_free1(sizeof(WNIOverview), temp_nym->data);
+						g_slice_free(WNIOverview, temp_nym->data);
 						temp_overview = temp_nym->data = NULL;
 					}
 					break;
@@ -1971,7 +1959,7 @@ void wni_free(GSList **response_list)
 						temp_antonyms->properties_list = NULL;
 						
 						//g_free(temp_nym->data); temp_nym->data = NULL;
-						g_slice_free1(sizeof(WNIProperties), temp_nym->data);
+						g_slice_free(WNIProperties, temp_nym->data);
 						temp_antonyms = temp_nym->data = NULL;
 					}
 					break;
@@ -1997,7 +1985,7 @@ void wni_free(GSList **response_list)
 						temp_properties->properties_list = NULL;
 
 						//g_free(temp_nym->data); temp_nym->data = NULL;
-						g_slice_free1(sizeof(WNIProperties), temp_nym->data);
+						g_slice_free(WNIProperties, temp_nym->data);
 						temp_properties = temp_nym->data = NULL;
 					}
 					break;
@@ -2019,18 +2007,18 @@ void wni_free(GSList **response_list)
 						temp_properties->properties_list = NULL;
 						
 						//g_free(temp_nym->data); temp_nym->data = NULL;
-						g_slice_free1(sizeof(WNIProperties), temp_nym->data);
+						g_slice_free(WNIProperties, temp_nym->data);
 						temp_properties = temp_nym->data = NULL;
 					}
 					break;
 				}
 				default:
 					//g_free(temp_nym->data); temp_nym->data = NULL;	// should never reach here, since all the cases are handled above specifically
-					g_slice_free1(sizeof(WNIProperties), temp_nym->data); temp_nym->data = NULL;
+					g_slice_free(WNIProperties, temp_nym->data); temp_nym->data = NULL;
 					break;
 			}
 			//g_free(global_list->data); global_list->data = NULL;
-			g_slice_free1(sizeof(WNINym), global_list->data);
+			g_slice_free(WNINym, global_list->data);
 			temp_nym = global_list->data = NULL;
 		}
 		global_list = g_slist_next(global_list);

@@ -25,9 +25,10 @@ of configure. Usually this prefix param is passed with /usr argument, since
 most applications have /usr as their base directory.
 
 e.g.
-$ ./configure --prefix=/usr
+$ ./configure --prefix=/usr CFLAGS="-O0 -g"
 
-which will configure Artha to get installed in /usr.
+which will configure Artha to get installed in /usr. When debugging is required
+pass "-O0 -g" as CFLAGS when invoking configure.
 
 
 System Requirements
@@ -89,9 +90,8 @@ give you "gcc: no input files" error.
 if they work correctly.
 
 4. Download GTK+ Win32 development bundle from ftp.gnome.org or just google 
-for gtk+-bundle_2.18.7-20100213_win32.zip. It's better to stick to 2.18, for 
-Artha's case it worked best. Extract it to C:/GTK+. Add the bin directory 
-(C:/GTK+/bin) to PATH. Now start cmd (not MSYS) and give 
+for gtk+-bundle_2.24.10-20120208_win32.zip. Extract it to C:/GTK+. Add the bin
+directory (C:/GTK+/bin) to PATH. Now start cmd (not MSYS) and give 
 
 	pkg-config --cflags --libs gtk+-2.0
 
@@ -148,5 +148,6 @@ E.g.
 
 ./configure CFLAGS="-I/e/artha/wn_3.0/inc/" LDFLAGS="-L/e/artha/wn_3.0/lib/"
 
-This should satisfy configure when it looks for WordNet; pkg-config will 
-do the same for GTK+, but for WordNet one has to give it manually.
+It is to be noted that the paths are in MSYS's format and not the OS's native
+format. This should satisfy configure when it looks for WordNet; pkg-config 
+will do the same for GTK+, but for WordNet one has to give it manually.
