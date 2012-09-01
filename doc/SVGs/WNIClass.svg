@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1052.3622"
+   height="744.09448"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="WNIClass.svg">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4612"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none;marker-end:none"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Lend"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4553"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
+         transform="matrix(-0.8,0,0,-0.8,-10,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.81906204"
+     inkscape:cx="555.52615"
+     inkscape:cy="369.68532"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1680"
+     inkscape:window-height="1026"
+     inkscape:window-x="0"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-308.2677)">
+    <text
+       xml:space="preserve"
+       style="font-size:48px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="272.4415"
+       y="373.11298"
+       id="text3161"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3163"
+         x="272.4415"
+         y="373.11298">Domain / Domain Terms</tspan></text>
+    <g
+       id="g3946"
+       transform="translate(-5.424159,47.847378)">
+      <rect
+         y="378.50702"
+         x="73.773659"
+         height="122.85714"
+         width="254.28572"
+         id="rect2985"
+         style="fill:#cd9c50;fill-opacity:1" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text2987"
+         y="419.57846"
+         x="121.98097"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           id="tspan2991"
+           y="419.57846"
+           x="121.98097"
+           sodipodi:role="line">WNINym</tspan></text>
+      <path
+         inkscape:connector-curvature="0"
+         id="path3087"
+         d="m 201.34509,501.36416 0,-69.1457"
+         style="fill:none;stroke:#000000;stroke-width:1.09660101px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3089"
+         d="m 73.891984,431.44332 254.256746,0"
+         style="fill:none;stroke:#000000;stroke-width:1.39718235px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text3109"
+         y="445.61526"
+         x="78.987968"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:14px"
+           y="445.61526"
+           x="78.987968"
+           id="tspan3111"
+           sodipodi:role="line">id</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3109-4"
+         y="445.99832"
+         x="206.95807"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           id="tspan3134"
+           style="font-size:14px"
+           y="445.99832"
+           x="206.95807"
+           sodipodi:role="line">data</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3142"
+         y="462.44522"
+         x="101.57172"
+         style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="462.44522"
+           x="101.57172"
+           id="tspan3144"
+           sodipodi:role="line"
+           style="font-style:italic">WORDNET_</tspan><tspan
+           id="tspan3146"
+           y="477.44522"
+           x="101.57172"
+           sodipodi:role="line"
+           style="font-style:italic">INTERFACE_</tspan><tspan
+           id="tspan3148"
+           y="492.44522"
+           x="101.57172"
+           sodipodi:role="line"
+           style="font-style:italic">CLASS</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.16498005px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#DotL);marker-end:url(#Arrow1Lend)"
+       d="M 259.20803,517.96416 392.23509,449.09881"
+       id="path5440"
+       inkscape:connector-curvature="0" />
+    <g
+       id="g4561"
+       transform="translate(18,20)">
+      <rect
+         y="403.44003"
+         x="375.91074"
+         height="154.79111"
+         width="584.87836"
+         id="rect3245-5"
+         style="fill:#ff7f2a;fill-opacity:1;stroke:none" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text3247-2"
+         y="440.89688"
+         x="538.76007"
+         style="font-size:48px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-size:40px"
+           y="440.89688"
+           x="538.76007"
+           id="tspan3249-7"
+           sodipodi:role="line">WNIProperties</tspan></text>
+      <path
+         inkscape:connector-curvature="0"
+         id="path3985-7"
+         d="m 375.91393,454.47511 584.88859,0"
+         style="fill:none;stroke:#000000;stroke-width:0.99910456px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         xml:space="preserve"
+         style="font-size:48px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         x="382.55139"
+         y="475.91025"
+         id="text3457-5-7-1"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan3459-2-6-1"
+           x="382.55139"
+           y="475.91025"
+           style="font-size:22px">properties_list</tspan></text>
+      <g
+         transform="translate(0,4)"
+         id="g4538">
+        <g
+           id="g3737"
+           transform="translate(-23.987828,-10.262072)">
+          <g
+             transform="translate(14,55.360128)"
+             id="g3302-6" />
+          <g
+             id="g3302-9-2"
+             transform="translate(178.23101,55.360128)" />
+          <g
+             id="g3302-4-5"
+             transform="translate(433.7996,55.360128)" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text3353-9"
+             y="530.55493"
+             x="728.31995"
+             style="font-size:48px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+             xml:space="preserve"><tspan
+               y="530.55493"
+               x="728.31995"
+               id="tspan3355-2"
+               sodipodi:role="line">......</tspan></text>
+        </g>
+        <g
+           id="g4022"
+           transform="translate(1.917244,-135.92158)">
+          <rect
+             y="617.97229"
+             x="385.70761"
+             height="60.609154"
+             width="142.4315"
+             id="rect3251"
+             style="fill:#00ffff;fill-opacity:1;stroke:none" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text3253"
+             y="642.19891"
+             x="455.96451"
+             style="font-size:48px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+             xml:space="preserve"><tspan
+               id="tspan3300"
+               style="font-size:22px;text-align:center;text-anchor:middle"
+               y="642.19891"
+               x="455.96451"
+               sodipodi:role="line">WNIClass</tspan><tspan
+               style="font-size:22px;text-align:center;text-anchor:middle"
+               y="669.69891"
+               x="455.96451"
+               sodipodi:role="line"
+               id="tspan3538">Item</tspan></text>
+        </g>
+        <g
+           id="g4022-3"
+           transform="translate(164.47038,-135.92158)">
+          <rect
+             y="617.97229"
+             x="385.70761"
+             height="60.609154"
+             width="142.4315"
+             id="rect3251-3"
+             style="fill:#00ffff;fill-opacity:1;stroke:none" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text3253-4"
+             y="642.19891"
+             x="455.96451"
+             style="font-size:48px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+             xml:space="preserve"><tspan
+               id="tspan3300-1"
+               style="font-size:22px;text-align:center;text-anchor:middle"
+               y="642.19891"
+               x="455.96451"
+               sodipodi:role="line">WNIClass</tspan><tspan
+               style="font-size:22px;text-align:center;text-anchor:middle"
+               y="669.69891"
+               x="455.96451"
+               sodipodi:role="line"
+               id="tspan3538-1">Item</tspan></text>
+        </g>
+        <g
+           id="g4022-38"
+           transform="translate(420.10192,-135.92158)">
+          <rect
+             y="617.97229"
+             x="385.70761"
+             height="60.609154"
+             width="142.4315"
+             id="rect3251-7"
+             style="fill:#00ffff;fill-opacity:1;stroke:none" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text3253-42"
+             y="642.19891"
+             x="455.96451"
+             style="font-size:48px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+             xml:space="preserve"><tspan
+               id="tspan3300-7"
+               style="font-size:22px;text-align:center;text-anchor:middle"
+               y="642.19891"
+               x="455.96451"
+               sodipodi:role="line">WNIClass</tspan><tspan
+               style="font-size:22px;text-align:center;text-anchor:middle"
+               y="669.69891"
+               x="455.96451"
+               sodipodi:role="line"
+               id="tspan3538-7">Item</tspan></text>
+        </g>
+      </g>
+    </g>
+    <g
+       id="g4653"
+       transform="translate(290,14)">
+      <g
+         transform="translate(4.6164845,-115.1751)"
+         id="g3371" />
+      <g
+         transform="translate(102.07783,-114.97662)"
+         id="g3371-4" />
+      <g
+         transform="translate(250.45057,-114.97662)"
+         id="g3371-1" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:48px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="967.9671"
+       y="410.59323"
+       id="text4936"
+       sodipodi:linespacing="125%"
+       transform="translate(0,308.2677)"><tspan
+         sodipodi:role="line"
+         id="tspan4938" /></text>
+    <g
+       id="g3177"
+       transform="translate(130,-18)">
+      <rect
+         y="638.32214"
+         x="68.894302"
+         height="115.69531"
+         width="632.04718"
+         id="rect3089"
+         style="fill:#00ffff;fill-opacity:1;stroke:none" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text2987-0-0-4"
+         y="683.06549"
+         x="259.8028"
+         style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           id="tspan2991-6-9-0"
+           y="683.06549"
+           x="259.8028"
+           sodipodi:role="line">WNIClassItem</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3319"
+         y="734.08795"
+         x="77.621307"
+         style="font-size:28px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="734.08795"
+           x="77.621307"
+           id="tspan3321"
+           sodipodi:role="line">term</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3319-9"
+         y="731.79108"
+         x="167.53131"
+         style="font-size:28px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="731.79108"
+           x="167.53131"
+           id="tspan3321-3"
+           sodipodi:role="line">self_pos</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3319-1"
+         y="731.79108"
+         x="304.82803"
+         style="font-size:28px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="731.79108"
+           x="304.82803"
+           id="tspan3321-9"
+           sodipodi:role="line">self_sense</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3319-1-8"
+         y="734.89459"
+         x="472.83179"
+         style="font-size:28px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="734.89459"
+           x="472.83179"
+           id="tspan3321-9-6"
+           sodipodi:role="line">id</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3319-1-5"
+         y="732.09869"
+         x="521.57581"
+         style="font-size:28px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="732.09869"
+           x="521.57581"
+           id="tspan3321-9-0"
+           sodipodi:role="line">sense</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text3319-1-2"
+         y="731.37408"
+         x="628.02881"
+         style="font-size:28px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+         xml:space="preserve"><tspan
+           y="731.37408"
+           x="628.02881"
+           id="tspan3321-9-8"
+           sodipodi:role="line">type</tspan></text>
+      <path
+         inkscape:connector-curvature="0"
+         id="path3168"
+         d="m 68.850313,699.15897 632.047627,0"
+         style="fill:none;stroke:#000000;stroke-width:1.51927972px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3125"
+         d="m 156.25962,698.40392 0,55.63016"
+         style="fill:none;stroke:#000000;stroke-width:1.00341618px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3125-6"
+         d="m 293.86274,699.82202 0,54.21208"
+         style="fill:none;stroke:#000000;stroke-width:0.9905445px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3125-6-6"
+         d="m 461.60947,699.54518 0,54.48621"
+         style="fill:none;stroke:#000000;stroke-width:0.99304575px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3125-6-2"
+         d="m 510.9503,699.00033 0,55.04392"
+         style="fill:none;stroke:#000000;stroke-width:0.99811512px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3125-6-5"
+         d="m 614.72755,698.83169 0,55.18796"
+         style="fill:none;stroke:#000000;stroke-width:0.99942023px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+  </g>
+</svg>

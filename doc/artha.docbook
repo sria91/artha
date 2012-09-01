@@ -1,0 +1,432 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<article xmlns="http://docbook.org/ns/docbook"
+         version="5.0" xml:lang="en"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	     xsi:noNamespaceSchemaLocation="http://http://www.docbook.org/xml/5.0b3/xsd/docbook.xsd">
+
+<articleinfo>
+        <title>Artha</title>
+        <subtitle>an open (cross-platform) thesaurus</subtitle>
+        <author>
+                <firstname>Sundaram</firstname>
+                <surname>Ramaswamy</surname>
+                <email>legends2k@yahoo.com</email>
+        </author>
+</articleinfo>
+
+    <section>
+        <title>Introduction</title>
+        <para>
+            The purpose of this document is to aid anyone who wants to understand the underpinnings of <application>Artha</application> and for those who are porting it to various platforms like BSD, Android, Mac OSX, iOS, etc. Help in doing any part of this work is welcome and would be greatly appreciated.
+        </para>
+
+        <para>
+            This document mostly describes, in detail, about the various modules of Artha and the data structure used by WordNet Interface (WNI) - Artha's underlying middle layer (a statically built library, <filename class='headerfile'>src/wni.h</filename> has the interface it exposes) to fetch data from <ulink url="http://wordnet.princeton.edu/">WordNet</ulink>, the English thesaurus by Princeton University.
+        </para>
+
+        <para>
+            Before getting on to the data structure in detail, this section will brief on the portability of Artha and the general flow of code; this will be followed by each module having a section of it's own and finally the data structure elaboration.
+        </para>
+
+        <sect2>
+            <title>Libraries and Portability</title>
+            <para>
+                Artha strives to be build-able on low powered machines; it uses portable standard C with no fancy compiler extensions (hence it can be compiled by any standard C compiler); the (statically linked) library dependencies are:
+            </para>
+            <itemizedlist mark='box'>
+                <listitem>
+                    <para>Standard C library (ANSI)</para>
+                </listitem>
+                <listitem>
+                    <para><ulink url="http://developer.gnome.org/glib/">GLib</ulink> (&#x2265;2.14)</para>
+                </listitem>
+                <listitem>
+                    <para><ulink url="http://www.gtk.org/">GTK+</ulink> (&#x2265;2.18)</para>
+                </listitem>
+                <listitem>
+                    <para>WordNet library (libwordnet)</para>
+                </listitem>
+            </itemizedlist>
+            <para>
+                These are enough for the core application to be built and run i.e. the port-friendly parts of the app. that needn't be modified for different platforms. The core app. just has a main window in which the user can search (simple/regex) for an English term to see its definitions (senses / meanings) and relatives (synonyms, antonyms, etc.), if found in the WordNet database. When the aforementioned libraries are available and the code is compiled on a target platform, then this part of Artha should work. Apart from this, two additional features - passive desktop notifications and suggestions based on spell check engines - are exposed by the app. if the target platform has the required runtimes (libnotify and libenchant dynamic libraries are queried for at runtime).
+            </para>
+
+            <para>
+                Artha heavily uses GLib (it's variable types, data structures, callbacks, basic system utilities like dynamic library lookup/load, regular expressions, string operations, etc. wherever possible) and GTK+ (UI code). This was done with portability in mind, hence any platform that supports GTK+ should be able to run Artha; porting to such platforms should be relatively easy since code which employs GLib and GTK+ (calls which begins with <code>g_</code> and <code>gtk_</code> needn't be touched, they should just compile and work without any issues) needn't be modified based on the target platform's quirks.
+            </para>
+        </sect2>
+
+        <sect2>
+            <title>Port-unfriendly Modules</title>
+            <para>These non-portable, platform-dependant functionalities might need to a rewrite.</para>
+            <itemizedlist mark='opencircle'>
+                <listitem>
+                    <para>
+                        <emphasis role="bold">Global Keyhook</emphasis><sbr />This is for the hotkey summoning feature of Artha i.e. when some text is selected on ANY window of the desktop and a particular hotkey combination is pressed, Artha is notified of this. <ulink url="http://en.wikipedia.org/wiki/Xlib">Xlib</ulink> is used on Linux to register (<code>grab_ungrab_with_ignorable_modifiers</code>) with the X Windows System (core Linux GUI system atop which desktop environments like GNOME, KDE, Xfce, etc. are written) to notify Artha when such a key combo is pressed. Although Xlib is portable, in Windows, both cygwin and msys has no to minimal Xlib support; hence a simple Win32 API to register for a global hotkey (<code>RegisterHotKey</code>) was chosen over the Xlib option.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis role="bold">Querying Selected Text</emphasis><sbr />Again Xlib is used on Linux to get what the user last selected (primary clipboard contents), while on Windows this is implemented using <code>SendInput</code> and passing <keycombo action="press"><keycap>Ctrl</keycap><keycap>Insert</keycap></keycombo> i.e. we trick the system like the user pressed <keycombo action="press"><keycap>Ctrl</keycap><keycap>Insert</keycap></keycombo> combination which is equivalent of <keycombo action="press"><keycap>Ctrl</keycap><keycap>C</keycap></keycombo>.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis role="bold">Desktop Notification</emphasis><sbr />Linux has libnotify, the passive desktop notifications library whose .so file will be queried for when the app. launches for it to expose the notifications feature; while for Windows a minimal libnotify was written (<filename class='sourcefile'>src/libnotify.c</filename>) using Win32 API to mimic Linux libnotify's behaviour; this module might need rewriting for platforms which don't have libnotify.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis role="bold">Single Instance Only</emphasis><sbr />Artha is built as a single instance only app. i.e. at a given point of time, only one instance of Artha will be running on the user space. libdus on Linux <ulink url="http://sundaram.wordpress.com/2010/01/08/single-instance-apps-using-d-bus/">is used for this</ulink>; while on Windows this is done <ulink url="http://support.microsoft.com/kb/243953">using the mutex system object</ulink>.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis role="bold">Suggestions</emphasis><sbr />Enchant is a cross-platform spell engine which gives suggestions when a misspelt word is passed to it. This required no platform-specific code since both Linux and Windows ports of libenchant is stable; while if the target platform doesn't support libenchant, then the suggestions feature needs to be implemented using spell engines supported on that platform (or the platform's own, if it has one).
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </sect2>
+
+        <sect2>
+            <title>Build System</title>
+            <para>
+                Artha's build system is made of <ulink url="http://www.gnu.org/software/autoconf/">Autoconf</ulink> and <ulink url="http://www.gnu.org/software/automake/">Automake</ulink>, which are tools for packaging, building and installing software in a platform agnostic way; this, again, was a choice made with portability in mind; tweaking the configure and make scripts to the target platform should be minimal i.e. usually they will be required where the target platform has different file structure and the configure script needs to find the build dependencies like libwordnet, libglib, etc. On Windows MinGW and MSYS is used for getting Autotools to work. In both platforms <code><ulink url="http://www.freedesktop.org/wiki/Software/pkg-config">pkg-config</ulink></code> is used for finding library paths for static linking. Refer INSTALL for details on building.
+            </para>
+        </sect2>
+    </section>
+<beginpage />
+	<section>
+		<title>WNI Request</title>
+		<programlisting language="C">gboolean wni_request_nyms(gchar *search_str,
+												GSList **response_list,
+												WNIRequestFlags additional_request_flags,
+												gboolean advanced_mode);</programlisting>
+
+		<para>Requests made to WNI are of two types. One is more of a lookup while other is a query for detailed information from the database. Just know if a particular search term (lemma) is present in the WordNet database by passing the <code>GSList**</code> (i.e. pointer to a pointer pointing to a <code>GSList</code> - a singly linked list) param <code>NULL</code>; it returns a <code>TRUE</code>, if found. The other type is when passing a valid <code>GSList</code>, WNI populates the requested lemma's data onto the <code>GSList</code> based on the flags requested and the mode - simple or advanced. Simple mode is where relatives are just simple lists, while advanced mode is where the relatives will be made in to a N-ary tree i.e. in to a hierarcy of relative terms associated with the lemma.</para>
+
+		<example>
+		<title>Hypernyms for "comedy" in Simple and Advanced modes</title>
+		<para><emphasis role="bold">Simple mode</emphasis></para>
+		<screen>
+			drama
+			fun
+			play
+			sport
+		</screen>
+
+		<para><emphasis role="bold">Advanced mode</emphasis></para>
+		<screen>
+			+ drama
+			|---+ writing style, literary genre, genre
+			    |---+ expressive style, style
+			        |---+ communication
+			            |---+ abstraction, abstract entity
+			                |--- entity
+
+			+ fun, play, sport
+			|---+ wit, humor, humour, witticism, wittiness
+			    |---+ message, content, subject matter, substance
+			        |---+ communication
+			            |---+ abstraction, abstract entity
+			                |--- entity
+		</screen>
+
+		<note>All the root node terms of Kind Of relatives in Advanced mode's form the Simple mode's list; hence advanced mode is a superset of simple mode with additional semantic giving a meaning based on the hierarchy.</note>
+		</example>
+<beginpage />
+		<sect2>
+		<title>WNIRequestFlags</title>
+		<informaltable title="WNIRequestFlags and their meanings">
+			<tgroup cols='3' alight='left' cosep='1' rowsep='1'>
+				<colspec colwidth="2*" />
+				<colspec colwidth=".25*" align='center' />
+				<colspec colwidth="3*" />
+				<thead><row>
+					<entry>Flag</entry>
+					<entry>Type</entry>
+					<entry>Description</entry>
+				</row></thead>
+				<tbody>
+					<row>
+						<entry>WORDNET_INTERFACE_OVERVIEW</entry>
+						<entry>List</entry>
+						<entry>Senses (definitions for a lemma) and it's synonyms <emphasis role="bold">E.g.</emphasis> delight is a synonym for joy</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_ANTONYMS</entry>
+						<entry>List</entry>
+						<entry>Opposite words <emphasis role="bold">E.g.</emphasis> light is the antonym of dark and heavy</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_DERIVATIONS</entry>
+						<entry>List</entry>
+						<entry>Derivationally related terms <emphasis role="bold">E.g.</emphasis> joyous, joyfulness, etc. are derivatives of joy</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_PERTAINYMS</entry>
+						<entry>Tree</entry>
+						<entry>Terms having a relevant meaning <emphasis role="bold">E.g.</emphasis> the lemma culinary relates to cuisine and culinary art</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_ATTRIBUTES</entry>
+						<entry>List</entry>
+						<entry>Attributes (if present) for a given lemme (if it's a noun) <emphasis role="bold">E.g.</emphasis> long and short are the Attributes of length</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_SIMILAR</entry>
+						<entry>List</entry>
+						<entry>Terms that are similar in meaning, but not exactly synonyms <emphasis role="bold">E.g.</emphasis> lightweight, airy, floaty, etc. are similar to light</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_CLASS</entry>
+						<entry>List</entry>
+						<entry>Domain of a particular word <emphasis role="bold">E.g.</emphasis> photography belongs to the domain picture taking and words belonging to it are color, contrast, intensification, blow up, etc.</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_CAUSES</entry>
+						<entry>List</entry>
+						<entry>Possible states to which a verb leads to <emphasis role="bold">E.g.</emphasis> verb 'kill' causes to the state 'die'</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_ENTAILS</entry>
+						<entry>List</entry>
+						<entry>Possible action that happens due to a verb <emphasis role="bold">E.g.</emphasis> kick entails to move</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_HYPERNYMS</entry>
+						<entry>Tree</entry>
+						<entry>A more generic term to a given term <emphasis role="bold">E.g.</emphasis> car is a kind of motor vehicle; hence the latter is a hypernym to the former</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_HYPONYMS</entry>
+						<entry>Tree</entry>
+						<entry>A more specific term to a given term <emphasis role="bold">E.g.</emphasis> water has kinds tap water, holy water, etc.; the latter terms are hyponyms to the former</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_HOLONYMS</entry>
+						<entry>Tree</entry>
+						<entry>A term which gives the whole of which the given term is a part. Sub-classified into Substance of, Member of and Part of</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_MERONYMS</entry>
+						<entry>Tree</entry>
+						<entry>A term which gives the part of which the given term is the whole. Sub-classified into Substances, Members and Parts</entry>
+					</row>
+					<row>
+						<entry>WORDNET_INTERFACE_ALL</entry>
+						<entry>Tree</entry>
+						<entry>This flag means a request with all of the above flags set</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</informaltable>
+
+		<example><title>Holonyms</title>
+		<para>India is a member of Commonwealth of Nations</para>
+		<para>olive is a substance of olive tree</para>
+		<para>India is a part of Asia</para>
+		</example>
+		<example><title>Meronyms</title>
+		<para>genus Canis has members dog, wolf, jackal, etc.</para>
+		<para>milk has substance protien</para>
+		<para>gate has parts hinge, lock and flexible joint</para>
+		</example>
+	</sect2>
+	</section>
+<beginpage />
+    <section>
+        <title>WNI's Response Data Structure</title>
+        <para>
+            The data structure populated by WNI is essentially has lists and trees, which is built using GLib's GSList and GNode (N-ary tree) APIs; each node has strings and indices which have a meaning based on the node's type. Following are the relative types that can be queried from WordNet via WNI.
+        </para>
+		<para>
+			GSList is a data structure which has a void* (a.k.a gpointer) named data and another pointer of type GSList to a next node of it's kind. So every WNI request's response will be a GSList*; in which each node's data pointer will be a WNINym*. Each WNINym will have an id to identify the type of the relative it holds and a gpointer to some data based on the id i.e. based on the relative type the data contained by WNINym will vary. Lets get each relative type from a given WNINym* node.
+		</para>
+		<sect2><title>Sense and Synonyms</title>
+			<mediaobject id="SensesSynonyms">
+			  <imageobject>
+				<imagedata format="SVG" fileref="SVGs/WNIOverview.svg"/>
+			  </imageobject>
+			</mediaobject>
+<beginpage />
+			<sect3>
+				<title>Printing senses/definitions</title>
+				<programlisting language="C">
+					if (WORDNET_INTERFACE_OVERVIEW == node->id)
+					{
+						WNIOverview *overview = (WNIOverview*) node->data;
+						GSList *defs_list = overview->definitions_list;
+						while (defs_list)
+						{
+							if (defs_list->data)
+							{
+								WNIDefinitionItem *def_item = (WNIDefinitionItem*) defs_list->data;
+								printf("Following definitions belong to %d POS\n", def_item->pos);
+								GSList *defs = def_item->definitions;
+								while (defs)
+								{
+									if (defs->data)
+									{
+										WNIDefinition *def = (WNIDefinition*) defs->data;
+										// There! This is the definition or meaning or sense
+										printf("%s\n", def->definition);
+									}
+									defs = g_slist_next(defs);
+								}
+							}
+							defs_list = g_slist_next(defs_list);
+						}
+					}
+				</programlisting>
+			</sect3>
+			<sect3>
+				<title>Printing the synonyms list</title>
+				<programlisting language="C">
+					if (WORDNET_INTERFACE_OVERVIEW == node->id)
+					{
+						WNIOverview *overview = (WNIOverview*) node->data;
+						GSList *syns_list = overview->synonyms_list;
+						while (syns_list)
+						{
+							if (syns_list->data)
+							{
+								WNIPropertyItem *prop = (WNIPropertyItem*) syns_list->data;
+								printf("%s\n", prop->term);
+							}
+							syns_list = g_slist_next(syns_list);
+						}
+					}
+				</programlisting>
+			</sect3>
+		</sect2>
+		<sect2><title>Antonyms</title>
+			<mediaobject id="Antonyms">
+			  <imageobject>
+				<imagedata format="SVG" fileref="SVGs/WNIAntonym.svg"/>
+			  </imageobject>
+			</mediaobject>
+			<sect3>
+				<title>Printing (both direct and indirect) antonyms</title>
+				<programlisting language="C">
+					if (WORDNET_INTERFACE_ANTONYMS == node->id)
+					{
+						WNIProperties *props = (WNIProperties*) node->data;
+						GSList *props_list = props->properties_list;
+						while (props_list)
+						{
+							if (props_list->data)
+							{
+								WNIAntonymItem *anym = (WNIAntonymItem*) props_list->data;
+								// antonym type and term
+								printf("(%s) %s\n", (DIRECT_ANT == anym->relation)?"Direct":"Indirect", anym->term);
+							}
+							props_list = g_slist_next(props_list);
+						}
+					}
+				</programlisting>
+				<para>Indirect relation terms are actually synonyms for the curret term; its antonyms can be projected as the current terms' indirect antonyms. Refer <filename class='sourcefile'>src/gui.c</filename>.</para>
+			</sect3>
+		</sect2>
+		<sect2>
+			<title>Attributes/Derivations/Causes/Entails/Similar</title>
+			<mediaobject id="Lists">
+			  <imageobject>
+				<imagedata format="SVG" fileref="SVGs/WNIList.svg"/>
+			  </imageobject>
+			</mediaobject>
+			<sect3>
+			<title>Printing property-based relatives</title>
+			<para>These follow exactly the same data structure as Synonyms; instead of dereferencing synonyms_list, properties_list should be dereferenced here.</para>
+			<programlisting language="C">
+				if ((WORDNET_INTERFACE_DERIVATIONS == node->id) || (WORDNET_INTERFACE_CAUSES == node->id))
+				{
+					WNIProperties *props = (WNIProperties*) node->data;
+					GSList *props_list = props->properties_list;
+					while (props_list)
+					{
+						if (props_list->data)
+						{
+							WNIPropertyItem *prop = props_list->data;
+							printf("%s\n", prop->term);
+						}
+						props_list = g_slist_next(props_list);
+					}
+				}
+			</programlisting>
+			</sect3>
+		</sect2>
+		<sect2>
+			<title>Domains</title>
+			<mediaobject id="Domains">
+			  <imageobject>
+				<imagedata format="SVG" fileref="SVGs/WNIClass.svg"/>
+			  </imageobject>
+			</mediaobject>
+			<sect3><title>Printing domain type and terms</title>
+				<programlisting language="C">
+					if (WORDNET_INTERFACE_CLASS == node->id)
+					{
+						WNIProperties *props = (WNIProperties*) node->data;
+						GSList *props_list = props->properties_list;
+						while (props_list)
+						{
+							if (props_list->data)
+							{
+								WNIClassItem *item = (WNIClassItem*) props_list->data;
+								printf("(%s) %s\n", class_item->type, class_item->term);
+							}
+							props_list = g_slist_next(props_list);
+						}
+					}
+				</programlisting>
+			</sect3>
+		</sect2>
+		<sect2>
+			<title>Holonyms, Meronyms, Hypernyms, Hyponyms and Pertainyms</title>
+			<mediaobject id="Trees">
+			  <imageobject>
+				<imagedata format="SVG" fileref="SVGs/WNITree.svg"/>
+			  </imageobject>
+			</mediaobject>
+			<para>These results are in the form of a tree in the advanced mode.</para>
+			<sect3><title>Getting the first level of Part of and Parts terms and their subtype (Member, Substance and Part)</title>
+				<programlisting language="C">
+					if ((WORDNET_INTERFACE_HYPERNYMS == node->id) || (WORDNET_INTERFACE_HOLONYMS == node->id))
+					{
+						WNIProperties *props = (WNIProperties*) node->data;
+						GSList *props_list = props->properties_list;
+						while (props_list)
+						{
+							if (props_list->data)
+							{
+								// here GNode is the data structure used to form a N-ary Tree; refer GLib
+								GNode *tree = g_node_first_child((GNode*) props_list->data);
+								while (tree)
+								{
+									if (tree->data)
+									{
+										WNITreeList *tree_list = (WNITreeList*) tree->data;
+										GSList *term_list = tree_list->word_list;
+										while (term_list)
+										{
+											if (term_list->data)
+											{
+												WNIImplication *impl = (WNIImplication*) term_list->data; 
+												printf("%s/n", impl->term);
+											}
+											term_list = g_slist_next(term_list);
+										}
+									}
+									tree = g_node_next_sibling(tree);
+								}
+							}
+							props_list = g_slist_next(props_list);
+						}
+					}
+				</programlisting>
+			</sect3>
+		</sect2>
+    </section>
+
+</article>

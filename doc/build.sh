@@ -1,0 +1,1 @@
+dblatex -P doc.collab.show=0 -P latex.output.revhistory=0 -P doc.lot.show=0 -P doc.publisher.show=1 -P newtbl.bgcolor.thead=cyan -P latex.hyperparam="colorlinks,linkcolor=blue,urlcolor=blue,pdfsubject=Artha - The Open Thesaurus,pdfkeywords={artha} {thesaurus} {dictionary} {lexicon} {WordNet} {English}" artha.docbook
