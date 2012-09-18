@@ -53,7 +53,7 @@ static GSList *find_example(SynsetPtr synptr);
 static gpointer *get_from_global_list(WNIRequestFlags flag);
 static void prune_results(void);
 static WNIDefinitionItem *create_synonym_def(guint8 pos, IndexPtr index, WNIOverview **overview_ptr);
-static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr index, WNIDefinitionItem **def_item_ptr, WNIOverview **overview_ptr, guint8 sense, guint8 pos);
+static void populate_synonyms(WNIDefinitionItem **def_item_ptr, SynsetPtr cursyn, IndexPtr index, WNIOverview **overview_ptr, guint8 sense, guint8 pos);
 static gboolean add_synonym_def(WNIDefinitionItem **def_item_ptr, WNIOverview **overview_ptr, gchar *actual_search);
 static void populate_ptr(gchar *lemma, SynsetPtr synptr, WNIProperties **data_ptr, guint8 ptr, guint8 id, guint8 sense, WNIRequestFlags flag);
 static void grow_tree(gchar *lemma, SynsetPtr synptr, guint8 ptr, GNode **root, guint8 depth);
@@ -364,6 +364,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 						{
 							antonym = (WNIAntonymItem*) temp_list->data;
 							g_free(temp_str);
+							temp_str = NULL;
 						}
 						else
 						{
@@ -775,7 +776,7 @@ static void prune_results(void)
 
 /*
 	Creates the definition item for storing the definition, examples, synonyms and mapping.
-	In case if the term is already a synonym, remove that synonym alone from the synonyms list.
+	In case if the term is already a synonym, removes that synonym alone from the synonyms list.
 */
 
 static WNIDefinitionItem *create_synonym_def(guint8 pos, IndexPtr index, WNIOverview **overview_ptr)
@@ -800,6 +801,7 @@ static WNIDefinitionItem *create_synonym_def(guint8 pos, IndexPtr index, WNIOver
 	def_item->id = g_slist_length(overview->definitions_list);	// First time call will give 0, since it will be NULL; next time onwards it will be 1, 2, so on..
 
 	g_free(mutable_lemma);
+	mutable_lemma = NULL;
 	// Check for already added synonyms, if it is the current lemma added. If found, remove them, since they will be definitions when we are done, and not synonyms
 	// e.g. axes => axe should be upgraded from synonym to lemma state
 	if(overview->synonyms_list)
@@ -824,7 +826,7 @@ static WNIDefinitionItem *create_synonym_def(guint8 pos, IndexPtr index, WNIOver
 	Populates the definition, examples and synonyms for WNI Overview.
 */
 
-static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr index, WNIDefinitionItem **def_item_ptr, WNIOverview **overview_ptr, guint8 sense, guint8 pos)
+static void populate_synonyms(WNIDefinitionItem **def_item_ptr, SynsetPtr cursyn, IndexPtr index, WNIOverview **overview_ptr, guint8 sense, guint8 pos)
 {
 	WNIDefinition *defn = NULL;
 	gchar *temp_str = NULL, **splits = NULL;
@@ -835,6 +837,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 	WNIOverview *overview = *overview_ptr;
 	guint16 i = 0;
 	glong check_len = 0;
+	gchar **lemma_ptr = &def_item->lemma;
 	gchar *lemma = *lemma_ptr;
 
 	//defn = (WNIDefinition*) g_malloc0 (sizeof(WNIDefinition));
@@ -901,7 +904,7 @@ static void populate_synonyms(gchar **lemma_ptr, SynsetPtr cursyn, IndexPtr inde
 			else
 			{
 				//synm = (WNISynonym*) g_malloc0 (sizeof(WNISynonym));
-				//synm = (WNISynonym*) g_slice_new0 (WNISynonym);
+				//synm = g_slice_new0(WNISynonym);
 				synm = g_slice_new0(WNIPropertyItem);
 				synm->term = g_strdup(temp_str);
 				synm->mapping = g_slist_append(synm->mapping, mapping);
@@ -1250,6 +1253,7 @@ static void populate_ptr_tree(gchar *lemma, SynsetPtr synptr, WNIProperties **da
 			}
 
 			g_free(lemma);	// free the copy created for HOLO/MERO
+			lemma = NULL;
 		}
 		else
 		{
@@ -1347,7 +1351,7 @@ static void populate(gchar *lemma, guint8 pos, WNIRequestFlags flag, gchar *actu
 				cursyn = read_synset(pos, index->offset[sense], index->wd);
 
 				if(WORDNET_INTERFACE_OVERVIEW & flag)
-					populate_synonyms(&def_item->lemma, cursyn, index, &def_item, &overview, sense, def_item->pos);
+					populate_synonyms(&def_item, cursyn, index, &overview, sense, def_item->pos);
 
 				if((WORDNET_INTERFACE_ANTONYMS & flag) && antonyms)
 				{
@@ -1484,6 +1488,7 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 		}
 
 		g_free(search_str);
+		search_str = NULL;
 		// once all the requests are generated, prune the results
 		prune_results();
 

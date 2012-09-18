@@ -80,6 +80,7 @@ G_BEGIN_DECLS
 // WNI Data Structures Used
 typedef enum
 {
+	WORDNET_INTERFACE_NONE		= 0,
 	WORDNET_INTERFACE_OVERVIEW	= 1 << 0,
 	WORDNET_INTERFACE_ANTONYMS	= 1 << 1,
 	WORDNET_INTERFACE_DERIVATIONS	= 1 << 2,
@@ -102,116 +103,118 @@ typedef enum
 
 struct _nym
 {
-	WNIRequestFlags id;
-	gpointer data;
+	WNIRequestFlags id;			// type of the node
+	gpointer data;				// data based on the type
 };
 typedef struct _nym WNINym;
 
 
 struct _overview
 {
-	GSList *definitions_list;
-	GSList *synonyms_list;
+	GSList *definitions_list;	// list of WNIDefinitionItems
+	GSList *synonyms_list;		// list of WNIPropertyItems
 };
 typedef struct _overview WNIOverview;
 
 
 struct _definition_item
 {
-	gchar *lemma;
-	guint8 id;
-	guint8 pos;
-	guint8 count;
-	GSList *definitions;
+	gchar *lemma;				// searched term to which these definitions correspond to
+	guint8 id;					// unique ID for this node within definitions_list of it's parent
+	guint8 pos;					// part of speech
+	guint8 count;				// count of WNIDefinitions present
+	GSList *definitions;		// list of WNIDefinitions
 };
 typedef struct _definition_item WNIDefinitionItem;
 
 
 struct _definition
 {
-	gchar *definition;
-	guint16 tag_count;
-	GSList *examples;
+	gchar *definition;			// definition string
+	guint16 tag_count;			// number of semantic tags to sense; refer WN
+	GSList *examples;			// list of example strings
 };
 typedef struct _definition WNIDefinition;
 
 
+// each synonym belongs to a POS and inside a POS it maps to a particular sense
+// sense numbers starts from 0, for each POS category
 struct _synonym_mapping
 {
-	guint8 id;
-	guint16 sense;
+	guint8 id;					// POS it belongs to can be found by comparing against WNIDefinitionItem.id
+	guint16 sense;				// nth sense inside a particular POS
 };
 typedef struct _synonym_mapping WNISynonymMapping;
 
 
 struct _antonym_item
 {
-	gchar *term;
-	guint16 sense;
-	guint8 relation;
-	GSList *mapping;
-	GSList *implications;
+	gchar *term;				// antonym term
+	guint16 sense;				// WordNet sense number - 1
+	guint8 relation;			// direct of indirect antonym flag DIRECT_ANT/INDIRECT_ANT
+	GSList *mapping;			// list of WNIAntonymMappings
+	GSList *implications;		// list of WNIImplications
 };
 typedef struct _antonym_item WNIAntonymItem;
 
 
 struct _implication
 {
-	gchar *term;
-	guint16 sense;
+	gchar *term;				// relative term
+	guint16 sense;				// WordNet sense number - 1
 };
 typedef struct _implication WNIImplication;
 
 
 struct _antonym_mapping
 {
-	guint8 id;
-	guint16 sense;
-	guint8 related_word_count;
+	guint8 id;					// POS it belongs to can be found by comparing against WNIDefinitionItem.id
+	guint16 sense;				// nth sense inside a particular POS
+	guint8 related_word_count;	// number of related words
 };
 typedef struct _antonym_mapping WNIAntonymMapping;
 
 
 struct _properties_list
 {
-	GSList *properties_list;
+	GSList *properties_list;	// list of WNIPropertyItems
 };
 typedef struct _properties_list WNIProperties;
 
 
 struct _property_item
 {
-	gchar *term;
-	GSList *mapping;
+	gchar *term;				// relative term
+	GSList *mapping;			// list of WNIPropertyMappings or WNISynonymMappings
 };
 typedef struct _property_item WNIPropertyItem;
 
 
 struct _property_mapping
 {
-	guint16 self_sense;
-	guint8 id;
-	guint16 sense;
+	guint16 self_sense;			// WordNet sense id - 1
+	guint8 id;					// POS it belongs to can be found by comparing against WNIDefinitionItem.id
+	guint16 sense;              // nth sense inside a particular POS
 };
 typedef struct _property_mapping WNIPropertyMapping;
 
 
 struct _class_item
 {
-	gchar *term;
-	guint8 self_pos;
-	guint16 self_sense;
-	guint8 id;
-	guint16 sense;
-	guint8 type;
+	gchar *term;				// relative term based on classification
+	guint8 self_pos;			// POS of this term
+	guint16 self_sense;			// WordNet sense id - 1
+	guint8 id;					// mapping to which WNIDefinitionItem it belongs to
+	guint16 sense;				// nth sense inside a particular POS
+	guint8 type;				// type of the classification -> [ISMEMBERPTR ... HASPARTPTR] (refer wn.h)
 };
 typedef struct _class_item WNIClassItem;
 
 
 struct _tree_list
 {
-	GSList *word_list;
-	guint8 type;
+	GSList *word_list;			// list of WNIImplications
+	guint8 type;				// type of the implications -> [1 ... MAXPTR] (refer wn.h)
 };
 typedef struct _tree_list WNITreeList;
 

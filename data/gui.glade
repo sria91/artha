@@ -568,7 +568,7 @@
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">Artha can be summoned (from inside any window) with a key combination (global accelerator) to lookup the selected text in thesaurus.
 
-This hotkey can be set by double clicking on the above box and pressing the required key combination. Press backspace to disable this functionality.</property>
+This hotkey can be set by clicking on the Hotkey above box and pressing the required key combination. Press backspace to disable this functionality.</property>
                 <property name="use_markup">True</property>
                 <property name="wrap">True</property>
               </object>

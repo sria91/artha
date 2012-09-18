@@ -30,6 +30,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <wn.h>
+#include <string.h>
 
 #ifdef X11_AVAILABLE
 #include <gdk/gdkx.h>
@@ -78,6 +79,7 @@
 #define KEY_VERSION		"Version"
 #define KEY_MODE		"DetailedMode"
 #define KEY_NOTIFICATIONS	"Notifications"
+#define KEY_POLYSEMY		"Polysemy"
 
 /* UI element names - refer gui.glade */
 #define WINDOW_MAIN			"wndMain"
@@ -233,18 +235,17 @@ const gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","co
 const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
 /* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
 
-#ifdef X11_AVAILABLE
-	Display			*dpy = NULL;
-#endif
+/* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
 GSList 			*results = NULL;
 gchar 			*last_search = NULL;
 gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE;
-gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE;
+gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
 #ifdef X11_AVAILABLE
+Display			*dpy = NULL;
 guint32			last_hotkey_time = 0;
+guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
 #endif
 guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
-guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
 GtkAccelKey		app_hotkey = {0};
 gint			history_count = 0, notify_toolbar_index = -1;
 guint			status_msg_context_id = 0;

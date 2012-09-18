@@ -36,7 +36,7 @@
 #ifdef G_OS_WIN32
 #	define NOTIFY_FILE		"libnotify-1.dll"
 #else
-#	define NOTIFY_FILE		"libnotify.so"
+#	define NOTIFY_FILE		"libnotify.so.4"
 #endif
 
 GModule *mod_notify = NULL;

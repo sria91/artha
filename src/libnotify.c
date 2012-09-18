@@ -237,10 +237,10 @@ LIBNOTIFY_API gboolean notify_init(const char *app_name)
 
 	// block and confirm all things are right and then return success
 	wait_handles[0] = event_lib_inited, wait_handles[1] = notification_thread;
-	if((WAIT_OBJECT_0 + ARRAYSIZE(wait_handles)) > WaitForMultipleObjects(ARRAYSIZE(wait_handles),
-																		  wait_handles,
-																		  FALSE,
-																		  thread_wait_timeout))
+	if((WAIT_OBJECT_0 + G_N_ELEMENTS(wait_handles)) > WaitForMultipleObjects(G_N_ELEMENTS(wait_handles),
+																			 wait_handles,
+																			 FALSE,
+																			 thread_wait_timeout))
 	{
 		if(GetExitCodeThread(notification_thread, &thread_ret_code))
 		{
@@ -487,10 +487,10 @@ DWORD notification_daemon_main(LPVOID lpdwThreadParam)
 	// signal that the library initialization was successful before entering in to the message loop
 	SetEvent((HANDLE) lpdwThreadParam);
 
-	BOOL bRet = FALSE;
-	while((bRet = GetMessage(&msg, NULL, 0, 0)))
+	BOOL mesg_status = FALSE;
+	while((mesg_status = GetMessage(&msg, NULL, 0, 0)))
 	{
-		if(-1 != bRet)
+		if(-1 != mesg_status)
 		{
 			// these are sent as thread messages and not window messages, hence route it to the 
 			// window proc., passing the right HWND, since msg's HWND will be NULL
@@ -846,7 +846,7 @@ uint16_t word_count(const wchar_t *str)
 static gboolean byte_to_wide_string(const gchar *byte_string, wchar_t *wide_string, gint max_buffer)
 {
 	static const wchar_t ellipses[] = L"...";
-	const guint16 conversion_limit = max_buffer - ARRAYSIZE(ellipses);
+	const guint16 conversion_limit = max_buffer - G_N_ELEMENTS(ellipses);
 	gint conv_len = ((gint)strlen(byte_string) >= max_buffer) ? conversion_limit : -1;
 	if(0 != MultiByteToWideChar(CP_ACP, 0, byte_string, conv_len, wide_string, max_buffer))
 	{

@@ -32,7 +32,7 @@
 it will become impossible to type using this key.\nPlease try with a \
 combination key such as Control, Alt or Shift at the same time."
 
-#define STR_DUPLICATE_HOTKEY "This key combination (%s) is already \
+#define STR_DUPLICATE_HOTKEY "This key combination (%s) is perhaps already \
 taken up by another application. Please choose a different one!"
 
 #define STR_INVALID_HOTKEY_TITLE	"Invalid Hotkey"
@@ -95,6 +95,7 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 	GtkAccelKey *key_entry = NULL, temp_key = {0};
 	GtkWidget *msg_dialog = NULL;
 	gchar *temp_str = NULL;
+	gboolean reg_succeeded = FALSE;
 
 	model = gtk_tree_view_get_model (view);
 	gtk_tree_model_get_iter (model, &iter, path);
@@ -102,7 +103,7 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 	gtk_tree_model_get (model, &iter, HOTKEY_COLUMN, &key_entry, -1);
 
 	/* sanity check and check to see if the same key combo was pressed again */
-	if (key_entry == NULL || 
+	if(key_entry == NULL || 
 	(key_entry->accel_key == accel_key && 
 	key_entry->accel_mods == accel_mods && 
 	key_entry->accel_flags == hardware_keycode))
@@ -117,7 +118,7 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 
 
 	/* Check for unmodified keys */
-	if (temp_key.accel_mods == 0 && temp_key.accel_key != 0)
+	if(temp_key.accel_mods == 0 && temp_key.accel_key != 0)
 	{
 		if ((temp_key.accel_key >= GDK_a && temp_key.accel_key <= GDK_z)
 		   || (temp_key.accel_key >= GDK_A && temp_key.accel_key <= GDK_Z)
@@ -152,21 +153,32 @@ static void accel_edited_callback(GtkCellRendererText *cell, const char *path_st
 		}
 	}
 
-	/* try registering the new key combo */
-	if(grab_ungrab_with_ignorable_modifiers(&temp_key, TRUE))
+#ifdef G_OS_WIN32
+	/* Vista onwards calling RegisterHotKey registers more than one hotkey
+	with the same ID, avoid this by unregistering before registering
+	a new one */
+	if(!key_entry->accel_key || grab_ungrab_with_ignorable_modifiers(key_entry, FALSE))
 	{
-		/* unregistering previous hotkey is not necessary on Win32
-		   since the same prev. hotkey is modified to the new one */
-#ifndef G_OS_WIN32
+		reg_succeeded = grab_ungrab_with_ignorable_modifiers(&temp_key, TRUE);
+		/* if the new hotkey couldn't be set, then reset the old hotkey */
+		if(!reg_succeeded)
+		{
+			grab_ungrab_with_ignorable_modifiers(key_entry, TRUE);
+		}
+#else
+	/* try registering the new key combo */
+	if((reg_succeeded = grab_ungrab_with_ignorable_modifiers(&temp_key, TRUE)))
+	{
 		/* unregister the previous hotkey */
 		grab_ungrab_with_ignorable_modifiers(key_entry, FALSE);
 #endif
+	}
 
+	if(reg_succeeded)
+	{
 		/* set the value in the list store to the newly set key combo
-		   so that it gets reflected in the Accel Cell Renderer */
-		key_entry->accel_key = accel_key;
-		key_entry->accel_flags = hardware_keycode;
-		key_entry->accel_mods = accel_mods;
+		so that it gets reflected in the Accel Cell Renderer */
+		*key_entry = temp_key;
 	}
 	else
 	{
@@ -216,30 +228,13 @@ static void accel_set_func (GtkTreeViewColumn *tree_column, GtkCellRenderer *cel
 	gtk_tree_model_get (model, iter, HOTKEY_COLUMN, &key_entry, -1);
 
 	/* if key entry is not NULL, set properties of Egg Cell Renderer */
-	if (key_entry)
+	if(key_entry)
 	{
 		g_object_set (cell, "visible", TRUE, /*"editable", TRUE,*/ "accel-key", key_entry->accel_key, "accel-mods", key_entry->accel_mods,
 				"keycode", key_entry->accel_flags, "style", PANGO_STYLE_NORMAL, NULL);
 	}
 	else
 		g_object_set (cell, "visible", FALSE, NULL);
-}
-
-static gboolean start_editing_cb (GtkWidget *treeview, GdkEventButton *event, gpointer user_data)
-{
-	GtkTreePath *path = gtk_tree_path_new_first();
-
-	gtk_tree_view_set_cursor (GTK_TREE_VIEW(treeview), path, gtk_tree_view_get_column (GTK_TREE_VIEW(treeview), 0), TRUE);
-	gtk_widget_grab_focus (treeview);
-
-	gtk_tree_path_free(path);
-	return FALSE;
-}
-
-static void start_editing_keybd_cb (GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
-{
-	gtk_widget_grab_focus (GTK_WIDGET (treeview));
-	gtk_tree_view_set_cursor (treeview, path, gtk_tree_view_get_column (treeview, 0), TRUE);
 }
 
 GtkWidget* create_hotkey_editor(void)
@@ -253,8 +248,6 @@ GtkWidget* create_hotkey_editor(void)
 	/* create a tree view */
 	hotkey_tree_view = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(hotkey_tree_view), FALSE);
-	g_signal_connect (hotkey_tree_view, "button-press-event", G_CALLBACK (start_editing_cb), NULL);
-	g_signal_connect (hotkey_tree_view, "row-activated", G_CALLBACK (start_editing_keybd_cb), NULL);
 	g_object_set(hotkey_tree_view, "visible", TRUE, NULL);
 
 	/* create the Egg Cell Renderer and connect to signals */
@@ -277,8 +270,8 @@ GtkWidget* create_hotkey_editor(void)
 	gtk_list_store_set (model, &iter, HOTKEY_COLUMN, &app_hotkey, -1);
 
 	/* The tree view has acquired its own reference to the
-	*  model, so we can drop ours. That way the model will
-	*  be freed automatically when the tree view is destroyed */
+	 *  model, so we can drop ours. That way the model will
+	 *  be freed automatically when the tree view is destroyed */
 	g_object_unref (model);
 
 	g_object_set(hotkey_tree_view, "visible", TRUE, NULL);
