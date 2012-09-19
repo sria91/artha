@@ -54,13 +54,12 @@ AC_CHECK_LIB([wordnet], [wninit], [WORDNET_LIB=-lwordnet], [
 AC_SUBST([WORDNET_LIB])
 
 
-# gtk_widget_get_visible() since 2.18 only, hence check for GTK+-2.0 >= 2.18
-# GTK+ 2.18 depends on GLib 2.22, hence check for GLib-2.0 >= 2.22
+# GtkComboBox with entry only since 2.24 only, hence check for GTK+-2.0 >= 2.24
 # check for GTK+ and GLib
-PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.18 glib-2.0 >= 2.22], , [
+PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.24 glib-2.0 >= 2.22], , [
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([
-You must have GTK+ 2.0 (version 2.18 or above) and GLib 2.0 (version 2.22 
+You must have GTK+ 2.0 (version 2.24 or above) and GLib 2.0 (version 2.22 
 or above) development headers installed to build.
 
 If you have these installed already you may need to install pkg-config so 

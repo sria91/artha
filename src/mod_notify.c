@@ -43,11 +43,30 @@ GModule *mod_notify = NULL;
 gboolean notify_inited = FALSE;
 extern NotifyNotification *notifier;
 
+static GModule* lookup_dynamic_library()
+{
+	GModule *mod = g_module_open(NOTIFY_FILE, G_MODULE_BIND_LAZY);
+#ifndef G_OS_WIN32
+	// for non Win32 machines try to lookup older versions of libnotify
+	if(!mod)
+	{
+		gchar notify_file_str[] = NOTIFY_FILE;
+		const size_t version_index = G_N_ELEMENTS(NOTIFY_FILE) - 2;
+		for(gchar i = '3'; ((!mod) && (i > '0')); --i)
+		{
+			notify_file_str[version_index] = i;
+			mod = g_module_open(notify_file_str, G_MODULE_BIND_LAZY);
+		}
+	}
+#endif
+	return mod;
+}
+
 gboolean mod_notify_init()
 {
     gboolean retval = FALSE;
 
-	if(g_module_supported() && (mod_notify = g_module_open(NOTIFY_FILE, G_MODULE_BIND_LAZY)))
+	if(g_module_supported() && (mod_notify = lookup_dynamic_library()))
 	{
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_init), (gpointer *) &notify_init);
 		g_module_symbol(mod_notify, G_STRINGIFY(notify_uninit), (gpointer *) &notify_uninit);

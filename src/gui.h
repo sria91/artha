@@ -97,6 +97,7 @@
 #define DIALOG_HOTKEY			"dlgHotkeyChooser"
 #define DIALOG_HOTKEY_LABEL		"lblHotkey"
 #define DIALOG_HOTKEY_HBOX		"hboxHotkey"
+#define DIALOG_POLYSEMY_CHKBTN		"chkBtnPolysemy"
 
 /* Relative IDs */
 
@@ -134,7 +135,7 @@
 #define STR_TOOLITEM_QUIT	"Q_uit"
 #define STR_TOOLITEM_ABOUT	"_About"
 #define STR_TOOLITEM_NOTIFY	"N_otify"
-#define STR_TOOLITEM_HOTKEY	"_Hotkey"
+#define STR_TOOLITEM_OPTIONS	"_Options"
 #define STR_TOOLITEM_MODE	"_Detailed"
 #define STR_TOOLITEM_NEXT	"_Next"
 #define STR_TOOLITEM_PREV	"_Previous"
@@ -144,7 +145,7 @@
 #define TOOLITEM_TOOLTIP_PREV	"Go to the previous search term"
 #define TOOLITEM_TOOLTIP_NEXT	"Go to the next search term"
 #define TOOLITEM_TOOLTIP_MODE	"Toggle between simple/advanced modes"
-#define TOOLITEM_TOOLTIP_HOTKEY	"View/Modify the hotkey to summon Artha from inside a window, after selecting some text in it"
+#define TOOLITEM_TOOLTIP_OPTIONS "Select preferences like showing polysemy classification and the hotkey to summon Artha from inside a window, after selecting some text in it"
 #define TOOLITEM_TOOLTIP_NOTIFY	"Notify: When on the system tray, if called by the hotkey, instead of popping up, Artha will show a notification of the selected term's definition"
 
 #define STR_STATUS_QUERY_SUCCESS "Results returned: %d sense(s) in %d POS(s)!"

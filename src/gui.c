@@ -93,7 +93,7 @@ static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
-static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dialog);
+static void setup_toolbar(GtkBuilder *gui_builder);
 static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
 static gboolean load_preferences(GtkWindow *parent);
@@ -106,7 +106,7 @@ static void lookup_ignorable_modifiers(void);
 #endif //X11_AVAILABLE
 static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey);
 gboolean grab_ungrab_with_ignorable_modifiers(GtkAccelKey *binding, gboolean grab);
-static void setup_hotkey_editor(GtkBuilder *gui_builder, GtkWidget **hotkey_editor_dialog);
+static void setup_hotkey_editor(GtkBuilder *gui_builder);
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data);
 static void destructor(GtkBuilder *gui_builder);
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code);
@@ -298,7 +298,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 {
 	gchar *selection = NULL;
 	GtkBuilder *gui_builder = NULL;
-	GtkComboBoxEntry *combo_query = NULL;
+	GtkComboBox *combo_query = NULL;
 	GtkEntry *text_entry_query = NULL;
 	GtkButton *button_search = NULL;
 	GtkWindow *window = NULL;
@@ -329,7 +329,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 #endif
 
 		gui_builder = GTK_BUILDER(user_data);
-		combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+		combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 
 		if(selection)
 		{
@@ -375,7 +375,7 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-	GtkComboBoxEntry *combo_query = NULL;
+	GtkComboBox *combo_query = NULL;
 
 	if(gtk_widget_get_visible(GTK_WIDGET(window)))
 		gtk_widget_hide(GTK_WIDGET(window));
@@ -386,7 +386,7 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 		if(notifier)
 			notify_notification_close(notifier, NULL);
 		show_window(window);
-		combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+		combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 	}
 }
@@ -1701,14 +1701,14 @@ static gboolean text_view_button_released(GtkWidget *widget, GdkEventButton *eve
 static void text_view_selection_made(GtkWidget *widget, GtkSelectionData *sel_data, guint time, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkComboBoxEntry *combo_query = NULL;
+	GtkComboBox *combo_query = NULL;
 	GtkEntry *txtQuery = NULL;
 	GtkButton *button_search = NULL;
 	gchar *selection = (gchar*) gtk_selection_data_get_text(sel_data);
 
 	if(selection)
 	{
-		combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+		combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		txtQuery = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 		button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 	
@@ -2128,7 +2128,7 @@ static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, Gt
 	gchar *sel_term = NULL;
 	GtkTreeModel *tree_store = NULL;
 	GtkTreeIter iter = {0};
-	GtkComboBoxEntry *combo_query = NULL;
+	GtkComboBox *combo_query = NULL;
 	GtkEntry *txtQuery = NULL;
 	GtkButton *button_search = NULL;
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
@@ -2140,7 +2140,7 @@ static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, Gt
 
 		if(sel_term)
 		{
-			combo_query = GTK_COMBO_BOX_ENTRY(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+			combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 			txtQuery = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 			button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
@@ -2170,7 +2170,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	list_store_query = gtk_list_store_new(1, G_TYPE_STRING);
 	g_signal_connect(GTK_TREE_MODEL(list_store_query), "row-inserted", G_CALLBACK(query_list_updated), gui_builder);
 	gtk_combo_box_set_model(combo_query, GTK_TREE_MODEL(list_store_query));
-	gtk_combo_box_entry_set_text_column(GTK_COMBO_BOX_ENTRY(combo_query), 0);
+	gtk_combo_box_set_entry_text_column(combo_query, 0);
 	g_object_unref(list_store_query);
 	
 	for(i = 0; i < TOTAL_RELATIVES; i++)
@@ -2298,7 +2298,7 @@ static gboolean close_window(GtkAccelGroup *accel_group,
 	return TRUE;
 }
 
-static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dialog)
+static void setup_toolbar(GtkBuilder *gui_builder)
 {
 	GtkToolbar *toolbar = NULL;
 	GtkToolItem *toolbar_item = NULL;
@@ -2338,10 +2338,10 @@ static void setup_toolbar(GtkBuilder *gui_builder, GtkWidget *hotkey_editor_dial
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
 
 	toolbar_item = gtk_tool_button_new_from_stock(GTK_STOCK_PREFERENCES);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_HOTKEY);
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_OPTIONS);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
-	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_HOTKEY);
-	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(show_hotkey_editor), hotkey_editor_dialog);
+	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_OPTIONS);
+	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(show_hotkey_editor), gui_builder);
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
 
 	/* if mod notify is present */
@@ -2901,36 +2901,49 @@ static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_ho
 	return(grab_ungrab_with_ignorable_modifiers(&app_hotkey, setup_hotkey));
 }
 
-static void setup_hotkey_editor(GtkBuilder *gui_builder, GtkWidget **hotkey_editor_dialog)
+static void handle_polysemy_show_change(GtkToggleButton *polysemy_show_btn, gpointer user_data)
 {
-	GtkLabel *hotkey_label = NULL;
-	GtkContainer *hbox = NULL;
-	GtkWidget *hotkey_accel_cell = NULL;
+	show_polysemy = gtk_toggle_button_get_active(polysemy_show_btn);
+}
 
-	*hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
-	hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
-	hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_HBOX));
+static void setup_hotkey_editor(GtkBuilder *gui_builder)
+{
+	GtkLabel *hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
+	GtkContainer *hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_HBOX));
+	GtkToggleButton *polysemy_show_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, DIALOG_POLYSEMY_CHKBTN));
+	GtkWidget *hotkey_accel_cell = NULL;
+	GtkDialog *settings_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
 
 	hotkey_accel_cell = create_hotkey_editor();
 	gtk_container_add(hbox, hotkey_accel_cell);
 
 	gtk_label_set_mnemonic_widget(hotkey_label, hotkey_accel_cell);
+	gtk_toggle_button_set_active(polysemy_show_btn, show_polysemy);
 
-	g_signal_connect(GTK_WIDGET(*hotkey_editor_dialog), "response", G_CALLBACK(gtk_widget_hide), NULL);
+	g_signal_connect(GTK_WIDGET(settings_dialog), "response", G_CALLBACK(gtk_widget_hide), NULL);
+	g_signal_connect(GTK_WIDGET(polysemy_show_btn), "toggled", G_CALLBACK(handle_polysemy_show_change), NULL);
 }
 
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
 {
 	GtkAccelKey hotkey_backup = app_hotkey;
-	gint hotkey_dialog_response = gtk_dialog_run(GTK_DIALOG(user_data));
+	gboolean show_polysemy_backup = show_polysemy;
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkDialog *settings_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
+	GtkButton *search_button = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
 
-	/* if prev. hotkey and app_hotkey are not the same and 'Apply' wasn't clicked
-	   then revert hotkey before saving the preferences */
-	if(hotkey_backup.accel_key != app_hotkey.accel_key || 
-	   hotkey_backup.accel_mods != app_hotkey.accel_mods || 
-	   hotkey_backup.accel_flags != app_hotkey.accel_flags)
+	gint hotkey_dialog_response = gtk_dialog_run(settings_dialog);
+
+	if(GTK_RESPONSE_APPLY != hotkey_dialog_response)
 	{
-		if(GTK_RESPONSE_APPLY != hotkey_dialog_response)
+		// set the old polysemy setting
+		show_polysemy = show_polysemy_backup;
+
+		/* if prev. hotkey and app_hotkey are not the same and 'Apply' wasn't clicked
+		   then revert hotkey before saving the preferences */
+		if(hotkey_backup.accel_key != app_hotkey.accel_key || 
+		   hotkey_backup.accel_mods != app_hotkey.accel_mods || 
+		   hotkey_backup.accel_flags != app_hotkey.accel_flags)
 		{
 			grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE);
 			if (grab_ungrab_with_ignorable_modifiers(&hotkey_backup, TRUE))
@@ -2941,12 +2954,18 @@ static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
 				memset(&app_hotkey, 0, sizeof(GtkAccelKey));
 			}
 		}
-
-		/* set hotkey flag */
-		hotkey_set = (gboolean) app_hotkey.accel_key;
-
+	}
+	else
+	{
+		if (show_polysemy != show_polysemy_backup)
+		{
+			last_search_successful = FALSE;
+			gtk_button_clicked(search_button);
+		}
 		save_preferences();
 	}
+	/* set hotkey flag */
+	hotkey_set = (gboolean) app_hotkey.accel_key;
 }
 
 static void destructor(GtkBuilder *gui_builder)
@@ -3208,8 +3227,9 @@ int main(int argc, char *argv[])
 
 					/* save preferences here - after all setting based loads are done */
 					save_preferences();
-					
-					setup_hotkey_editor(gui_builder, &hotkey_editor_dialog);
+
+					setup_hotkey_editor(gui_builder);
+					hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
 
 					icon_file_path = g_build_filename(ICON_DIR, ICON_FILE, NULL);
 					if(g_file_test(icon_file_path, G_FILE_TEST_IS_REGULAR))
@@ -3251,7 +3271,7 @@ int main(int argc, char *argv[])
 					combo_query = GTK_WIDGET(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 					g_signal_connect(combo_query, "changed", G_CALLBACK(combo_query_changed), gui_builder);
 
-					/* get the GtkEntry in GtkComboBoxEntry and set activates-default to TRUE; so that
+					/* get the GtkEntry in GtkComboBox and set activates-default to TRUE; so that
 					   it pass the ENTER key signal to query button */
 					combo_entry = gtk_bin_get_child(GTK_BIN(combo_query));
 					g_object_set(combo_entry, "activates-default", TRUE, NULL);
@@ -3259,7 +3279,7 @@ int main(int argc, char *argv[])
 
 					create_text_view_tags(gui_builder);
 
-					setup_toolbar(gui_builder, hotkey_editor_dialog);
+					setup_toolbar(gui_builder);
 
 					/* do main window specific connects */
 					g_signal_connect(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
