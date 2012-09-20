@@ -81,12 +81,12 @@ Steps
 ~~~~~
 
 1. Install the latest MinGW and MSYS from http://sourceforge.net/projects/
-mingwbuilds/files/ windows-host/ and External binary packages/ respectively.
-Both are archived files that can be extracted to C:\; it's better to stick to
-this directory. Add C:\MinGW\bin to PATH. In a new command prompt, "gcc" should
-give you "gcc: no input files" error.
+mingwbuilds/files/<windows-host/> and <External binary packages/> respectively.
+Both are archived files that can be extracted to the root of C drive; it's
+better to stick to this directory. Add C:\MinGW\bin to PATH. In a new command
+prompt, "gcc" should give you "gcc: fatal error: no input files".
 
-2. Run C:\msys\1.0\msys.bat and try gcc, automake, autoconf commands to verify
+2. Run C:\msys\msys.bat and try gcc, automake, autoconf commands to verify
 if they work correctly.
 
 4. Download GTK+ Win32 development bundle from ftp.gnome.org or just google 
@@ -100,9 +100,9 @@ understandable by GCC. "Yay! GTK+ is also done, I am all set now!" ~ No, still
 pkg-config won't work in MSYS. Need to fix that.
 
 5. Create a new environment variable PKG_CONFIG_PATH and set its value to 
-/c/gtk+/lib/pkgconfig and copy C:/GTK+/share/aclocal/pkg.m4 to C:/MSYS/1.0/
-share/aclocal assuming C:/GTK+ and C:/MSYS are your chosen directories for
-the installations.
+/c/gtk+/lib/pkgconfig and copy C:/GTK+/share/aclocal/pkg.m4 to
+C:/MSYS/share/aclocal assuming C:/GTK+ and C:/MSYS are your chosen directories
+for the installations.
 
 6. Now shoot up MSYS terminal and try the above pkg-config command, it should 
 output the same output it gave in the cmd earlier window. There! Now you're 
@@ -146,7 +146,7 @@ When running the configure script, make sure you feed it with WordNet's
 path which contains the header (wn.h) and the static library (libwn.a).
 E.g.
 
-./configure CFLAGS="-I/e/artha/wn_3.0/inc/" LDFLAGS="-L/e/artha/wn_3.0/lib/"
+./configure CFLAGS="-I/D/artha/wn_3.0/inc/" LDFLAGS="-L/D/artha/wn_3.0/lib/"
 
 It is to be noted that the paths are in MSYS's format and not the OS's native
 format. This should satisfy configure when it looks for WordNet; pkg-config 

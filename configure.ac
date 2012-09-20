@@ -5,14 +5,14 @@ AC_PREREQ([2.50])
 
 m4_define([MAJOR_VER], 1)
 m4_define([MINOR_VER], 0)
-m4_define([BUILD_VER], 2)
+m4_define([BUILD_VER], 3)
 
 AC_INIT([Artha],[MAJOR_VER.MINOR_VER.BUILD_VER],[legends2k@yahoo.com],[artha],[http://artha.sourceforge.net/])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
 
-AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2])
+AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2 gnu])
 
 # Checks for programs.
 AM_PROG_CC_C_O
@@ -78,7 +78,7 @@ case $build_os in
         AC_DEFINE([_WIN32_WINNT],[_WIN32_WINDOWS],[Build machine is Windows XP])
 		AC_DEFINE_UNQUOTED([APP_VERSION],[MAJOR_VER, MINOR_VER, BUILD_VER, 0],[app. executable version])
 		m4_define([DLL_MAJOR_VER],1)
-		m4_define([DLL_MINOR_VER],0)
+		m4_define([DLL_MINOR_VER],1)
 		m4_define([DLL_BUILD_VER],0)
 		AC_DEFINE_UNQUOTED([DLL_VERSION],[DLL_MAJOR_VER, DLL_MINOR_VER, DLL_BUILD_VER, 0],[libnotify dll version as DWORD])
 		AC_DEFINE([DLL_VERSION_STR],["DLL_MAJOR_VER.DLL_MINOR_VER.DLL_BUILD_VER.0"],[libnotify dll version string])

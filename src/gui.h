@@ -80,6 +80,7 @@
 #define KEY_MODE		"DetailedMode"
 #define KEY_NOTIFICATIONS	"Notifications"
 #define KEY_POLYSEMY		"Polysemy"
+#define KEY_TRAYICON		"TrayIcon"
 
 /* UI element names - refer gui.glade */
 #define WINDOW_MAIN			"wndMain"
@@ -134,6 +135,7 @@
 
 #define STR_TOOLITEM_QUIT	"Q_uit"
 #define STR_TOOLITEM_ABOUT	"_About"
+#define STR_TOOLITEM_TRAYICON "_Tray Icon"
 #define STR_TOOLITEM_NOTIFY	"N_otify"
 #define STR_TOOLITEM_OPTIONS	"_Options"
 #define STR_TOOLITEM_MODE	"_Detailed"
@@ -147,6 +149,7 @@
 #define TOOLITEM_TOOLTIP_MODE	"Toggle between simple/advanced modes"
 #define TOOLITEM_TOOLTIP_OPTIONS "Select preferences like showing polysemy classification and the hotkey to summon Artha from inside a window, after selecting some text in it"
 #define TOOLITEM_TOOLTIP_NOTIFY	"Notify: When on the system tray, if called by the hotkey, instead of popping up, Artha will show a notification of the selected term's definition"
+#define TOOLITEM_TOOLTIP_TRAYICON "Toggle tray icon visibility. Even when invisible, Artha can be summoned using the set hotkey; notifications will continue to work as usual."
 
 #define STR_STATUS_QUERY_SUCCESS "Results returned: %d sense(s) in %d POS(s)!"
 #define STR_MSG_WN_ERROR	"Failed to open WordNet database files!\n\
@@ -239,7 +242,7 @@ const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "
 /* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
 GSList 			*results = NULL;
 gchar 			*last_search = NULL;
-gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE;
+gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE, show_trayicon = TRUE;
 gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
 #ifdef X11_AVAILABLE
 Display			*dpy = NULL;

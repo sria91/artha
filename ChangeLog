@@ -1,3 +1,21 @@
+version 1.0.3 (Sep 20, 2012):
+	* Polysemy count display now made optional; can be toggled via the toolbutton
+	* Status/tray icon now made optional; can be toggled via the toolbutton
+	* Added Member Of, Substance Of and Part Of classification to Holo and Meronyms
+	* "farcry" search should now fetch "far cry" correctly for both normal and
+	  notify lookup
+	* Added accelerators Ctrl + W and Ctrl + Q support
+	* Fixed issues in finding libnotify.so across distributions
+	* Fixed relative tab names by removing Similar for Nouns and Verbs (WNI)
+	* Fixed 671084 - Back button skips Wildmat search results
+	* Hotkey handling improved a lot in Win32; combos like Ctl + Alt + ` are fixed
+	* Fixed synchronisation, body limit and other issues in libnotify (Win32)
+	* Fixed 1010930 - CPU core pegging due to libnotify (Win32)
+	* Bumped min GTK+ version to 2.24 to remove deprecated GtkComboBoxEntry
+	  there by adding GtkComboBox with "has-entry" set to TRUE
+	* Bumped min GLib version to 2.22
+	* Lot of code clean-ups and minor fixes
+
 version 1.0.2 (May 27, 2010):
 	* Ported code to Win32 ~ added alternative code for special cases like 
 	  hotkey hook, selection capture, single instance check, etc.

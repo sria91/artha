@@ -35,6 +35,7 @@ static int x_error_handler(Display *dpy, XErrorEvent *xevent);
 #endif	// X11_AVAILABLE
 static void show_window(GtkWindow *window);
 static void notification_toggled(GObject *obj, gpointer user_data);
+static void trayicon_toggled(GtkToggleToolButton *trayicon_button, gpointer user_data);
 static gchar* strip_invalid_edges(gchar *selection);
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
 #ifdef G_OS_WIN32
@@ -93,7 +94,7 @@ static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
-static void setup_toolbar(GtkBuilder *gui_builder);
+static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon);
 static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
 static gboolean load_preferences(GtkWindow *parent);
@@ -162,6 +163,13 @@ static void notification_toggled(GObject *obj, gpointer user_data)
 	   intimate this to the user */
 	if(!hotkey_set && notifier_enabled && prev_state_of_notification != notifier_enabled)
 		show_message_dlg(NULL, MSG_HOTKEY_NOTSET);
+}
+
+static void trayicon_toggled(GtkToggleToolButton *trayicon_button, gpointer user_data)
+{
+	GtkStatusIcon *status_icon = GTK_STATUS_ICON(user_data);
+	show_trayicon = gtk_toggle_tool_button_get_active(trayicon_button);
+	gtk_status_icon_set_visible(status_icon, show_trayicon);
 }
 
 static gchar* strip_invalid_edges(gchar *selection)
@@ -2172,6 +2180,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	gtk_combo_box_set_model(combo_query, GTK_TREE_MODEL(list_store_query));
 	gtk_combo_box_set_entry_text_column(combo_query, 0);
 	g_object_unref(list_store_query);
+	list_store_query = NULL;
 	
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
@@ -2191,6 +2200,7 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 
 		gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(tree_store));
 		g_object_unref(tree_store);
+		tree_store = NULL;
 				
 		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(tree_view), FALSE);
 
@@ -2298,7 +2308,7 @@ static gboolean close_window(GtkAccelGroup *accel_group,
 	return TRUE;
 }
 
-static void setup_toolbar(GtkBuilder *gui_builder)
+static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon)
 {
 	GtkToolbar *toolbar = NULL;
 	GtkToolItem *toolbar_item = NULL;
@@ -2306,6 +2316,10 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	GClosure *close_window_closure = NULL;
 	GClosure *close_window_closure_dummy = NULL;
 
+	GtkIconSize toolbar_icon_size = GTK_ICON_SIZE_INVALID;
+	gint width = 0, height = 0;
+	GdkPixbuf *app_icon = NULL;
+	GtkWidget *tray_icon = NULL;
 
 	// toolbar code starts here
 	toolbar = GTK_TOOLBAR(gtk_builder_get_object(gui_builder, TOOLBAR));
@@ -2357,6 +2371,21 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 
 		notify_toolbar_index = gtk_toolbar_get_item_index(toolbar, toolbar_item);
 	}
+
+	toolbar_icon_size = gtk_tool_item_get_icon_size(toolbar_item);
+	gtk_icon_size_lookup(toolbar_icon_size, &width, &height);
+	app_icon = gdk_pixbuf_new_from_file_at_size(icon_file_path, width, height, NULL);
+	tray_icon = gtk_image_new_from_pixbuf(app_icon);
+	g_object_unref(app_icon);
+	app_icon = NULL;
+	toolbar_item = gtk_toggle_tool_button_new();
+	gtk_tool_button_set_icon_widget(GTK_TOOL_BUTTON(toolbar_item), tray_icon);
+	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
+	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_TRAYICON);
+	gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbar_item), show_trayicon);
+	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_TRAYICON);
+	g_signal_connect(toolbar_item, "toggled", G_CALLBACK(trayicon_toggled), status_icon);
+	gtk_toolbar_insert(toolbar, toolbar_item, -1);
 
 	toolbar_item = gtk_separator_tool_item_new();
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
@@ -2476,7 +2505,20 @@ static gboolean load_preferences(GtkWindow *parent)
 	{
 		advanced_mode = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_MODE, NULL);
 		notifier_enabled = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, NULL);
-		show_polysemy = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_POLYSEMY, NULL);
+		show_polysemy = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_POLYSEMY, &err);
+		if(err)
+		{
+			show_polysemy = TRUE;
+			g_error_free(err);
+			err = NULL;
+		}
+		show_trayicon = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_TRAYICON, &err);
+		if(err)
+		{
+			show_trayicon = TRUE;
+			g_error_free(err);
+			err = NULL;
+		}
 		version = g_key_file_get_string(key_file, GROUP_SETTINGS, KEY_VERSION, NULL);
 
 		if(version)
@@ -2556,6 +2598,7 @@ static void save_preferences()
 	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
 	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
 	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
+	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
 
 	file_contents = g_key_file_to_data(key_file, &file_len, NULL);
 	
@@ -3120,7 +3163,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 #endif
-	
+
 	g_set_application_name(PACKAGE_NAME);
 
 	if(gtk_init_check(&argc, &argv))
@@ -3236,14 +3279,12 @@ int main(int argc, char *argv[])
 					{
 						status_icon = gtk_status_icon_new_from_file(icon_file_path);
 						gtk_status_icon_set_tooltip(status_icon, STR_APP_TITLE);
-						gtk_status_icon_set_visible(status_icon, TRUE);
+						gtk_status_icon_set_visible(status_icon, show_trayicon);
 					}
 					else
 					{
 						g_warning("Error loading icon file!\n%s not found!\n", icon_file_path);
 					}
-					g_free(icon_file_path);
-					icon_file_path = NULL;
 
 					mod_notify_init();
 
@@ -3262,6 +3303,7 @@ int main(int argc, char *argv[])
 					{
 						gtk_window_set_default_icon(app_icon);
 						g_object_unref(app_icon);
+						app_icon = NULL;
 					}
 
 
@@ -3279,7 +3321,9 @@ int main(int argc, char *argv[])
 
 					create_text_view_tags(gui_builder);
 
-					setup_toolbar(gui_builder);
+					setup_toolbar(gui_builder, icon_file_path, status_icon);
+					g_free(icon_file_path);
+					icon_file_path = NULL;
 
 					/* do main window specific connects */
 					g_signal_connect(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
@@ -3313,6 +3357,9 @@ int main(int argc, char *argv[])
 
 					gtk_main();
 
+					/* on Win32 platform, icon stays even after app close, this is
+					   a workaround to fix that */
+					gtk_status_icon_set_visible(status_icon, FALSE);
 					destructor(gui_builder);
 
 					/* GtkBuilder drops references to any held, except toplevel widgets */

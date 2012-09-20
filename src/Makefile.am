@@ -20,7 +20,7 @@ artha_SOURCES += app_icon.rc
 lib_LTLIBRARIES = libnotify.la
 libnotify_la_SOURCES = libnotify.c libnotify.h libnotify_ver.rc
 libnotify_la_CFLAGS = -Wall -Wextra -pedantic -std=c99 \
-	-s -Wno-unused-parameter -fstrict-aliasing -mwin32 \
+	-Wno-unused-parameter -fstrict-aliasing -mwin32 \
 	-Wno-missing-field-initializers -DUNICODE -D_UNICODE \
 	-DNDEBUG @GTK_CFLAGS@
 libnotify_la_LDFLAGS = -mwindows -version-info @dll_ver@ \
