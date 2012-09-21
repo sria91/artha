@@ -1,14 +1,16 @@
 1.0.3 (Sep 20, 2012)
 	After a long hiatus, Artha gets an updated with lot of fixes in overall portable code and 
 	in Win32-specific code as well. Lookup history is now persistant and can be cleared or saved
-	to a file when required. Minor features like making the display of status/tray icon and
-	polysemy classification optional and adding sub-classifications in Holo and Meronyms were
-	implemented; simple but handy feature of Ctrl + W and Ctrl + Q for close and quit makes Artha
-	more compliant to platform hotkeys; although this release is mainly a clean-up release aimed
-	at making way for the next major release with pronunciation feature using some TTS engine.
-	Documentation was lacking for WNI for a long time, which was done and checked in as a docbook.
-	Another issue of finding the libnotify.so on different distros has a decent fix	right now,
-	although a more concrete fix would be better. Since GtkComboxBoxEntry was deprecated since
+	to a file when required. Initially saving lookup history was coupled with the config/settings
+	file and implemented, but this was deemed slow and instead storing them in a plain file was
+	opted and found to be faster/simpler. Minor features like making the display of status/tray
+	icon and polysemy classification optional and adding sub-classifications in Holo and Meronyms
+	were implemented; simple but handy feature of Ctrl + W and Ctrl + Q for close and quit makes
+	Artha more compliant to platform hotkeys; although this release is mainly a clean-up release
+	aimed at making way for the next major release with pronunciation feature using some TTS
+	engine.	Documentation was lacking for WNI for a long time, which was done and checked in as a
+	docbook. Another issue of finding the libnotify.so on different distros has a decent fix right
+	now, although a more concrete fix would be better. Since GtkComboxBoxEntry was deprecated since
 	2.14 and GtkComboBox got it's "has-entry" property only since 2.24, this will be the minimum
 	version of GTK+ from now on that Artha depends on. libgtkhotkey seems to be a good way of
 	removing platform-specific code to manage hotkey. flite seems to be good speech	engine for

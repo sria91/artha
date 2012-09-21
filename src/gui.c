@@ -31,48 +31,46 @@
 
 /* Global variables */
 
-const gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
+static const gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
 
 /* Names of relative tree tab widgets from UI file
    Note that the 'tree" prefix will be stripped and will be used within code */
-const gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
+static const gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
 "treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
 
 #define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
-const gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
+static const gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
 
 #define HOLO_MERO_COUNT		3
-const gchar *holo_mero_types[][3] = {{"Member Of", "Substance Of", "Part Of"}, {"Has Members", "Has Substances", "Has Parts"}};
+static const gchar *holo_mero_types[][3] = {{"Member Of", "Substance Of", "Part Of"}, {"Has Members", "Has Substances", "Has Parts"}};
 
 #define FAMILIARITY_COUNT	8
-const gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
-const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
+static const gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
+static const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
 /* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
 
 /* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
-GSList 			*results = NULL;
-gchar 			*last_search = NULL;
-gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE, show_trayicon = TRUE;
-gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
+static GSList 			*results = NULL;
+static gchar 			*last_search = NULL;
+static gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE, show_trayicon = TRUE;
+static gboolean		hotkey_set = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
+gboolean				hotkey_processing = FALSE;
 #ifdef X11_AVAILABLE
-Display			*dpy = NULL;
+static Display			*dpy = NULL;
 guint32			last_hotkey_time = 0;
-guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
+static guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
 #endif
-guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
+static guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
 GtkAccelKey		app_hotkey = {0};
-gint			notify_toolbar_index = -1;
-guint			status_msg_context_id = 0;
-GString			*wordnet_terms = NULL;
+static gint			notify_toolbar_index = -1;
+static guint			status_msg_context_id = 0;
+static GString			*wordnet_terms = NULL;
 NotifyNotification	*notifier = NULL;
-GtkCheckMenuItem	*menu_notify = NULL;
-
-GKeyFile			*config_file = NULL;
-GPtrArray			*lookup_ptrs = NULL;
-GStringChunk		*lookup_data = NULL;
-
+static GtkCheckMenuItem	*menu_notify = NULL;
+static GKeyFile			*config_file = NULL;
+	
 #ifdef G_OS_WIN32
-HWND			hMainWindow = NULL;
+static HWND			hMainWindow = NULL;
 #endif
 
 
@@ -138,11 +136,10 @@ static void highlight_senses_from_domain(guint8 category, guint16 relative_index
 static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view);
 static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data);
 static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data);
-static void add_term_to_store(const gchar *term, GtkListStore *list_store_query);
-static void clear_history(GtkMenuItem *menu_item, gpointer user_data);
-static void print_lookup_to_file(const gchar *term, FILE *fp);
+static void clear_history(GtkMenuItem *menu_item, GtkListStore *list_store_query);
 static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data);
-static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, gpointer user_data);
+static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, GtkListStore *list_store_query);
+static void load_history(GtkListStore *list_store_query);
 static void create_stores_renderers(GtkBuilder *gui_builder);
 static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data);
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
@@ -155,16 +152,15 @@ static void trayicon_menu_toggled(GtkMenuItem *menu, GtkToggleToolButton *button
 static GtkMenu *create_popup_menu(GtkBuilder *gui_builder, GtkToggleToolButton *status_icon);
 static void create_text_view_tags(GtkBuilder *gui_builder);
 static void load_preference_hotkey(gboolean *first_run);
-static void load_preference_history();
 static gboolean load_preferences(GtkWindow *parent);
-static void save_history();
+static void save_history(const gchar *term);
 static void save_polysemy();
 static void save_trayicon();
 static void save_mode();
 static void save_hotkey();
 static void save_notify();
 static void save_preferences_to_file();
-static void save_preferences(GtkBuilder *gui_builder);
+static void save_preferences();
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
@@ -1313,9 +1309,7 @@ static void update_history(GtkComboBox *combo_query, const char *lemma)
 	{
 		gtk_list_store_prepend(query_list_store, &query_list_iter);
 		gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
-		gchar *term = g_string_chunk_insert(lookup_data, lemma);
-		g_ptr_array_add(lookup_ptrs, term);
-		save_history();
+		save_history(lemma);
 	}
 }
 
@@ -2241,27 +2235,22 @@ static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, Gt
 	}
 }
 
-static void add_term_to_store(const gchar *term, GtkListStore *list_store_query)
+static void clear_history(GtkMenuItem *menu_item, GtkListStore *list_store_query)
 {
-	GtkTreeIter iter = { 0 };
-	
-	gtk_list_store_append(list_store_query, &iter);
-	gtk_list_store_set(list_store_query, &iter, 0, term, -1);
-}
+	gchar *hist_file_path = NULL;
+	GFile *history_file = NULL;
 
-static void clear_history(GtkMenuItem *menu_item, gpointer user_data)
-{
-	GtkListStore *list_store_query = GTK_LIST_STORE(user_data);
 	gtk_list_store_clear(list_store_query);
-	g_ptr_array_ref(lookup_ptrs);
-	g_ptr_array_free(lookup_ptrs, FALSE);
-	g_string_chunk_clear(lookup_data);
-	save_history();
-}
-
-static void print_lookup_to_file(const gchar *term, FILE *fp)
-{
-	fprintf(fp, "%s\n", term);
+	hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+	history_file = g_file_new_for_path(hist_file_path);
+	if(g_file_query_exists(history_file, NULL))
+	{
+		g_file_delete(history_file, NULL, NULL);
+	}
+	g_object_unref(history_file);
+	history_file = NULL;
+	g_free(hist_file_path);
+	hist_file_path = NULL;
 }
 
 static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
@@ -2277,36 +2266,92 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 	gtk_file_chooser_set_create_folders(dialog, TRUE);
 	if(GTK_RESPONSE_OK == gtk_dialog_run(GTK_DIALOG(dialog)))
 	{
-		gchar *filename = gtk_file_chooser_get_filename(dialog);
-		FILE *fp = fopen(filename, "w+");
-		if(!fp)
+		gchar *dest_filename = gtk_file_chooser_get_filename(dialog);
+		GFile *history_file = NULL;
+		gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+		if(!hist_file_path)
 		{
-			g_error("Error opening file to write lookup history!");
+			g_free(dest_filename);
+			dest_filename = NULL;
+			g_error("Failed creating path to load history");
 		}
-		g_ptr_array_foreach(lookup_ptrs, (GFunc) print_lookup_to_file, fp);
-		fclose(fp);
-		g_free(filename);
+		history_file = g_file_new_for_path(hist_file_path);
+		g_free(hist_file_path);
+		hist_file_path = NULL;
+		if(g_file_query_exists(history_file, NULL))
+		{
+			GFile *dest_file = g_file_new_for_path(dest_filename);
+			g_file_copy(history_file, dest_file, 0, NULL, NULL, NULL, NULL);
+			g_object_unref(dest_file);
+			dest_file = NULL;
+		}
+		g_object_unref(history_file);
+		history_file = NULL;
+		g_free(dest_filename);
+		dest_filename = NULL;
 	}
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
-static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, gpointer user_data)
+static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, GtkListStore *list_store_query)
 {
 	GtkWidget *menu_item = NULL;
-	
+	GtkTreeIter iter = {0};
+	gboolean menu_item_enabled = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(list_store_query), &iter);
+
 	menu_item = GTK_WIDGET(gtk_separator_menu_item_new());
 	gtk_menu_shell_prepend(GTK_MENU_SHELL(popup_menu), menu_item);
 	gtk_widget_show(menu_item);
 
 	menu_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE, NULL);
+	gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), "_Save History");
+	gtk_widget_set_sensitive(menu_item, menu_item_enabled);
 	g_signal_connect(menu_item, "activate", G_CALLBACK(save_history_to_file), NULL);
 	gtk_menu_shell_prepend(GTK_MENU_SHELL(popup_menu), menu_item);
 	gtk_widget_show(menu_item);
 
 	menu_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_CLEAR, NULL);
-	g_signal_connect(menu_item, "activate", G_CALLBACK(clear_history), user_data);
+	gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), "Cl_ear History");
+	gtk_widget_set_sensitive(menu_item, menu_item_enabled);
+	g_signal_connect(menu_item, "activate", G_CALLBACK(clear_history), list_store_query);
 	gtk_menu_shell_prepend(GTK_MENU_SHELL(popup_menu), menu_item);
 	gtk_widget_show(menu_item);
+}
+
+static void load_history(GtkListStore *list_store_query)
+{
+	GFile *history_file = NULL;
+	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+	if(!hist_file_path)
+	{
+		g_error("Failed creating path to load history");
+	}
+	history_file = g_file_new_for_path(hist_file_path);
+	g_free(hist_file_path);
+	hist_file_path = NULL;
+	if(g_file_query_exists(history_file, NULL))
+	{
+		gchar *term = NULL;
+		GDataInputStream *dis = NULL;
+		GFileInputStream *fis = g_file_read(history_file, NULL, NULL);
+		if(!fis)
+		{
+			g_error("Failed reading history file");
+		}
+		dis = g_data_input_stream_new(G_INPUT_STREAM(fis));
+		g_object_unref(fis);
+		fis = NULL;
+		while((term = g_data_input_stream_read_line(dis, NULL, NULL, NULL)))
+		{
+			GtkTreeIter iter = {0};
+			gtk_list_store_append(list_store_query, &iter);
+			gtk_list_store_set(list_store_query, &iter, 0, term, -1);
+		}
+		g_object_unref(dis);
+		dis = NULL;
+	}
+	g_object_unref(history_file);
+	history_file = NULL;
 }
 
 static void create_stores_renderers(GtkBuilder *gui_builder)
@@ -2320,16 +2365,15 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	GtkCellRenderer *tree_renderer = NULL;
 	const gchar *col_name = NULL;
 	GtkEntry *query_entry = NULL;
-	
+
 	// combo box data store
 	combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	list_store_query = gtk_list_store_new(1, G_TYPE_STRING);
 
-	// popup for saving & clearing bookmarks
+	load_history(list_store_query);
+	// popup for saving & clearing history
 	query_entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 	g_signal_connect(query_entry, "populate-popup", G_CALLBACK(query_combo_popup), list_store_query);
-	// impregnate list store with history, if any
-	g_ptr_array_foreach(lookup_ptrs, (GFunc) add_term_to_store, list_store_query);
 
 	g_signal_connect(GTK_TREE_MODEL(list_store_query), "row-inserted", G_CALLBACK(query_list_updated), gui_builder);
 	gtk_combo_box_set_model(combo_query, GTK_TREE_MODEL(list_store_query));
@@ -2707,32 +2751,6 @@ static void load_preference_hotkey(gboolean *first_run)
 		*first_run = FALSE;	/* a first run is not right, it's just a version above 1.0.1 where hotkeys are already set */
 }
 
-static void load_preference_history()
-{
-	gsize num_entries = 0;
-	const guint8 per_lookup_block_size = 10;
-	gchar **lookup_history = NULL;
-
-	// irrespective of history's availability in the conf file, create these for later references
-	lookup_ptrs = g_ptr_array_sized_new(num_entries);
-	lookup_data = g_string_chunk_new(per_lookup_block_size);
-	if(!lookup_ptrs || !lookup_data)
-	{
-		g_error("Error creating buffers for lookup history!");
-	}
-
-	lookup_history = g_key_file_get_string_list(config_file, GROUP_HISTORY, KEY_LOOKUPS, &num_entries, NULL);
-	if(lookup_history)
-	{
-		while(num_entries)
-		{
-			gchar *entry = g_string_chunk_insert(lookup_data, lookup_history[--num_entries]);
-			g_ptr_array_add(lookup_ptrs, entry);
-		}
-		g_strfreev(lookup_history);
-	}
-}
-
 static gboolean load_preferences(GtkWindow *parent)
 {
 	gchar *conf_file_path = NULL;
@@ -2768,7 +2786,6 @@ static gboolean load_preferences(GtkWindow *parent)
 			g_error_free(err);
 			err = NULL;
 		}
-		load_preference_history();
 		load_preference_hotkey(&first_run);
 	}
 	else
@@ -2781,12 +2798,35 @@ static gboolean load_preferences(GtkWindow *parent)
 	return first_run;
 }
 
-static void save_history()
+static void save_history(const gchar *term)
 {
-	guint count = lookup_ptrs->len;
-	const gchar * const * data = (const gchar * const *) lookup_ptrs->pdata;
-	g_key_file_set_string_list(config_file, GROUP_HISTORY, KEY_LOOKUPS, data, count);
-	save_preferences_to_file();
+	GFile *history_file = NULL;
+	GFileOutputStream *fos = NULL;
+	GDataOutputStream *dos = NULL;
+	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
+	if(!hist_file_path)
+	{
+		g_error("Failed creating path to save history");
+	}
+	history_file = g_file_new_for_path(hist_file_path);
+	g_free(hist_file_path);
+	hist_file_path = NULL;
+	fos = g_file_append_to(history_file, G_FILE_CREATE_PRIVATE, NULL, NULL);
+	if(!fos)
+	{
+		g_error("Failed appending lookup to history file");
+	}
+	dos  = g_data_output_stream_new(G_OUTPUT_STREAM(fos));
+	g_object_unref(fos);
+	fos = NULL;
+	
+	g_data_output_stream_put_string(dos, term, NULL, NULL);
+	g_data_output_stream_put_byte(dos, '\n', NULL, NULL);
+
+	g_object_unref(dos);
+	dos = NULL;
+	g_object_unref(history_file);
+	history_file = NULL;
 }
 
 static void save_polysemy()
@@ -2828,7 +2868,7 @@ static void save_preferences_to_file()
 	gchar *file_contents = g_key_file_to_data(config_file, &file_len, NULL);
 	GError *err = NULL;
 
-	if(!config_file_path || !file_contents)
+	if(!conf_file_path || !file_contents)
 	{
 		g_error("Error saving preferences to file");
 	}
@@ -2845,20 +2885,18 @@ static void save_preferences_to_file()
 	file_contents = NULL;
 }
 
-static void save_preferences(GtkBuilder *gui_builder)
+static void save_preferences()
 {
 	g_key_file_set_comment(config_file, NULL, NULL, SETTINGS_COMMENT, NULL);
 
 	g_key_file_set_string(config_file, GROUP_SETTINGS, KEY_VERSION, PACKAGE_VERSION);
-	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
-	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
-	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
 
-	save_history(gui_builder);
+	// this will set hotkey to GKeyFile AND save it to the conf file
+	save_hotkey();
 }
 
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data)
@@ -3251,18 +3289,6 @@ static void destructor(GtkBuilder *gui_builder)
 		g_key_file_free(config_file);
 		config_file = NULL;
 	}
-	
-	if(lookup_ptrs)
-	{
-		g_ptr_array_free(lookup_ptrs, FALSE);
-		lookup_ptrs = NULL;
-	}
-	
-	if(lookup_data)
-	{
-		g_string_chunk_free(lookup_data);
-		lookup_data = NULL;
-	}
 
 	if(wordnet_terms)
 	{
@@ -3517,7 +3543,7 @@ int main(int argc, char *argv[])
 					}
 
 					/* save preferences here - after all setting based loads are done */
-					save_preferences(gui_builder);
+					save_preferences();
 
 					setup_hotkey_editor(gui_builder);
 					hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));

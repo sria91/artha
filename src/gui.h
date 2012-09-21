@@ -81,8 +81,7 @@
 #define KEY_NOTIFICATIONS	"Notifications"
 #define KEY_POLYSEMY		"Polysemy"
 #define KEY_TRAYICON		"TrayIcon"
-#define GROUP_HISTORY		"History"
-#define KEY_LOOKUPS			"Lookups"
+#define HISTORY_FILE_EXT	".log"
 
 /* UI element names - refer gui.glade */
 #define WINDOW_MAIN			"wndMain"
