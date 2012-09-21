@@ -81,6 +81,8 @@
 #define KEY_NOTIFICATIONS	"Notifications"
 #define KEY_POLYSEMY		"Polysemy"
 #define KEY_TRAYICON		"TrayIcon"
+#define GROUP_HISTORY		"History"
+#define KEY_LOOKUPS			"Lookups"
 
 /* UI element names - refer gui.glade */
 #define WINDOW_MAIN			"wndMain"
@@ -218,48 +220,6 @@ typedef enum
 	MSG_HOTKEY_NOTSET
 } MessageResposeCode;
 
-
-/* Global variables */
-
-const gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
-
-/* Names of relative tree tab widgets from UI file
-   Note that the 'tree" prefix will be stripped and will be used within code */
-const gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
-"treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
-
-#define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
-const gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
-
-#define HOLO_MERO_COUNT		3
-const gchar *holo_mero_types[][3] = {{"Member Of", "Substance Of", "Part Of"}, {"Has Members", "Has Substances", "Has Parts"}};
-
-#define FAMILIARITY_COUNT	8
-const gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
-const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
-/* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
-
-/* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
-GSList 			*results = NULL;
-gchar 			*last_search = NULL;
-gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE, show_trayicon = TRUE;
-gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
-#ifdef X11_AVAILABLE
-Display			*dpy = NULL;
-guint32			last_hotkey_time = 0;
-guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
-#endif
-guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
-GtkAccelKey		app_hotkey = {0};
-gint			history_count = 0, notify_toolbar_index = -1;
-guint			status_msg_context_id = 0;
-GString			*wordnet_terms = NULL;
-NotifyNotification	*notifier = NULL;
-GtkCheckMenuItem	*menu_notify = NULL;
-
-#ifdef G_OS_WIN32
-HWND			hMainWindow = NULL;
-#endif
 
 #endif		/* __GUI_H__ */
 

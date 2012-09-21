@@ -1,9 +1,7 @@
 Users' Wish List:
 * Pronunciations
-* Persistent History
 * Option to make the hotkey a switch
 * Single click jump to words in both senses and relatives as an option.
-* Make the status icon's visibility customizable as Always, Never and Auto.
 * Spacing issue; not all spaces are filled with '_' in the index files E.g. 24-karet_gold in index.noun
 * WNI can used g_slist_free_full to make free code cleaner (but raises GLib to 2.28 version dependency)
 
@@ -25,4 +23,3 @@ Start-up mode -> tray/show
 Notification system -> duration, etc.
 Watch clipboard/selection
 Fonts and Colours
-History storage pattern -> count/days to keep, should it be cleared on exit? etc.

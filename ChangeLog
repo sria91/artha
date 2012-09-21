@@ -1,4 +1,5 @@
 version 1.0.3 (Sep 20, 2012):
+	* Lookup history made persistant; can be cleared or saved when required
 	* Polysemy count display now made optional; can be toggled via the toolbutton
 	* Status/tray icon now made optional; can be toggled via the toolbutton
 	* Added Member Of, Substance Of and Part Of classification to Holo and Meronyms

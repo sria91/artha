@@ -29,6 +29,54 @@
 
 #include "gui.h"
 
+/* Global variables */
+
+const gchar *strv_authors[] = {"Sundaram Ramaswamy <legends2k@yahoo.com>", NULL};
+
+/* Names of relative tree tab widgets from UI file
+   Note that the 'tree" prefix will be stripped and will be used within code */
+const gchar *relative_tree[] = {"treeSynonyms", "treeAntonyms", "treeDerivatives", "treePertainyms", "treeAttributes", "treeSimilar", 
+"treeDomain", "treeCauses", "treeEntails", "treeHypernyms", "treeHyponyms", "treeHolonyms", "treeMeronyms"};
+
+#define DOMAINS_COUNT (CLASS_END - CLASSIF_START + 1)
+const gchar *domain_types[] = {"Topic", "Usage", "Region", "Topic Terms", "Usage Terms", "Regional Terms"};
+
+#define HOLO_MERO_COUNT		3
+const gchar *holo_mero_types[][3] = {{"Member Of", "Substance Of", "Part Of"}, {"Has Members", "Has Substances", "Has Parts"}};
+
+#define FAMILIARITY_COUNT	8
+const gchar *familiarity[] = {"extremely rare","very rare","rare","uncommon","common", "familiar","very familiar","extremely familiar"};
+const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGreen", "DarkOrange", "gold", "PaleGoldenrod", "PeachPuff1"};
+/* words for checking familiarity types - none, scroll (v), scroll (n), alright, sequence, set (n), set (v), give */
+
+/* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
+GSList 			*results = NULL;
+gchar 			*last_search = NULL;
+gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE, show_trayicon = TRUE;
+gboolean		hotkey_set = FALSE, hotkey_processing = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
+#ifdef X11_AVAILABLE
+Display			*dpy = NULL;
+guint32			last_hotkey_time = 0;
+guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
+#endif
+guint 			hotkey_trials[] = {GDK_w, GDK_a, GDK_t, GDK_q};
+GtkAccelKey		app_hotkey = {0};
+gint			notify_toolbar_index = -1;
+guint			status_msg_context_id = 0;
+GString			*wordnet_terms = NULL;
+NotifyNotification	*notifier = NULL;
+GtkCheckMenuItem	*menu_notify = NULL;
+
+GKeyFile			*config_file = NULL;
+GPtrArray			*lookup_ptrs = NULL;
+GStringChunk		*lookup_data = NULL;
+
+#ifdef G_OS_WIN32
+HWND			hMainWindow = NULL;
+#endif
+
+
+/* function declarations */
 
 #ifdef X11_AVAILABLE
 static int x_error_handler(Display *dpy, XErrorEvent *xevent);
@@ -36,13 +84,16 @@ static int x_error_handler(Display *dpy, XErrorEvent *xevent);
 static void show_window(GtkWindow *window);
 static void notification_toggled(GObject *obj, gpointer user_data);
 static void trayicon_toggled(GtkToggleToolButton *trayicon_button, gpointer user_data);
+static void polysemy_display_toggle(GtkToggleButton *polysemy_show_btn, gpointer user_data);
 static gchar* strip_invalid_edges(gchar *selection);
-static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
+static gchar* strip_non_alpha_num(const gchar *str);
+static gboolean are_same_after_strip(const gchar *strA, const gchar *strB);
 #ifdef G_OS_WIN32
 static inline gboolean is_alt_pressed();
 static inline void print_last_error();
 static gchar* win32_capture_selection();
 #endif
+static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
 static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
 static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpointer user_data);
@@ -64,7 +115,7 @@ static gchar* wildmat_to_regex(const gchar *wildmat);
 static gboolean set_regex_results(const gchar *wildmat_exp, GtkBuilder *gui_builder);
 static gboolean is_wildmat_expr();
 static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
-static void update_history(GtkComboBox *combo_query);
+static void update_history(GtkComboBox *combo_query, const char *lemma);
 static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
 static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, gchar ***suggestions_base);
 static void construct_show_notification();
@@ -78,8 +129,6 @@ static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data);
 static gboolean text_view_button_pressed(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean text_view_button_released(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static void text_view_selection_made(GtkWidget *widget, GtkSelectionData *sel_data, guint time, gpointer user_data);
-static gboolean close_window(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-							 GdkModifierType modifier, GObject *user_data);
 static void expander_clicked(GtkExpander *expander, gpointer user_data);
 static void query_list_updated(GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, gpointer user_data);
 static GtkTextMark *highlight_definition(guint8 id, guint16 sense, GtkTextView *text_view);
@@ -89,30 +138,60 @@ static void highlight_senses_from_domain(guint8 category, guint16 relative_index
 static void highlight_senses_from_relative_lists(WNIRequestFlags id, guint16 relative_index, GtkTextView *text_view);
 static void relative_selection_changed(GtkTreeView *tree_view, gpointer user_data);
 static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data);
+static void add_term_to_store(const gchar *term, GtkListStore *list_store_query);
+static void clear_history(GtkMenuItem *menu_item, gpointer user_data);
+static void print_lookup_to_file(const gchar *term, FILE *fp);
+static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data);
+static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, gpointer user_data);
 static void create_stores_renderers(GtkBuilder *gui_builder);
 static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data);
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
-static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon);
-static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
+static gboolean close_window(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
+							 GdkModifierType modifier, GObject *user_data);
+static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon);
+static void trayicon_menu_toggled(GtkMenuItem *menu, GtkToggleToolButton *button);
+static GtkMenu *create_popup_menu(GtkBuilder *gui_builder, GtkToggleToolButton *status_icon);
 static void create_text_view_tags(GtkBuilder *gui_builder);
+static void load_preference_hotkey(gboolean *first_run);
+static void load_preference_history();
 static gboolean load_preferences(GtkWindow *parent);
-static void save_preferences();
+static void save_history();
+static void save_polysemy();
+static void save_trayicon();
+static void save_mode();
+static void save_hotkey();
+static void save_notify();
+static void save_preferences_to_file();
+static void save_preferences(GtkBuilder *gui_builder);
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
 #ifdef X11_AVAILABLE
 static void lookup_ignorable_modifiers(void);
+#elif defined G_OS_WIN32
+
+#ifndef MOD_NOREPEAT
+#define MOD_NOREPEAT 0x4000
+#endif
+
+typedef struct
+{
+	guint gdk_key;
+	BYTE  vk_key;
+} gdk_vk;
+
+static gboolean try_convert_to_vk(guint gdk_key, BYTE *vk);
 #endif //X11_AVAILABLE
-static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey);
 gboolean grab_ungrab_with_ignorable_modifiers(GtkAccelKey *binding, gboolean grab);
+static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey);
 static void setup_hotkey_editor(GtkBuilder *gui_builder);
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data);
 static void destructor(GtkBuilder *gui_builder);
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code);
 static gboolean window_visibility_toggled(GtkWidget *widget, GdkEventVisibility *event, gpointer user_data);
-static gboolean are_same_after_strip(const gchar *strA, const gchar *strB);
+
 
 
 #ifdef X11_AVAILABLE
@@ -157,7 +236,7 @@ static void notification_toggled(GObject *obj, gpointer user_data)
 
 	gtk_check_menu_item_set_active(menu_notify, notifier_enabled);
 
-	save_preferences();
+	save_notify();
 
 	/* if not hotkey is set; then there's no point in enabling notifications
 	   intimate this to the user */
@@ -170,6 +249,13 @@ static void trayicon_toggled(GtkToggleToolButton *trayicon_button, gpointer user
 	GtkStatusIcon *status_icon = GTK_STATUS_ICON(user_data);
 	show_trayicon = gtk_toggle_tool_button_get_active(trayicon_button);
 	gtk_status_icon_set_visible(status_icon, show_trayicon);
+	save_trayicon();
+}
+
+static void polysemy_display_toggle(GtkToggleButton *polysemy_show_btn, gpointer user_data)
+{
+	show_polysemy = gtk_toggle_button_get_active(polysemy_show_btn);
+	save_polysemy();
 }
 
 static gchar* strip_invalid_edges(gchar *selection)
@@ -1117,11 +1203,8 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 	GtkExpander *expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	GtkListStore *query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));;
 
 	gchar status_msg[MAX_STATUS_MSG] = "";
-	GtkTreeIter query_list_iter = {0};
-	GtkTextIter cur = {0};
 	gboolean results_set = FALSE;
 
 	// Check if the fed string is a wildmat expr.
@@ -1161,14 +1244,11 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 
 			/* if the results were set rightly, then add it to the search history */
 			if(set_regex_results(regex_text, gui_builder))
-			{
-				gtk_list_store_prepend(query_list_store, &query_list_iter);
-				gtk_list_store_set(query_list_store, &query_list_iter, 0, regex_text, -1);
-				history_count++;
-			}
+				update_history(combo_query, regex_text);
 		}
 		else
 		{
+			GtkTextIter cur = {0};
 			gchar *lemma = NULL;
 			// report that the search index (index.sense) is missing
 			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_REGEX_FILE_MISSING);
@@ -1196,20 +1276,19 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 	return results_set;
 }
 
-static void update_history(GtkComboBox *combo_query)
+static void update_history(GtkComboBox *combo_query, const char *lemma)
 {
-	glong count = 0;
 	GtkTreeIter query_list_iter = {0};
 	GtkListStore *query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));
 	gchar *str_list_item = NULL;
-	const gchar *lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
+	gboolean duplicate = FALSE, iter_valid = FALSE;
 
 	if(!query_list_store)
 		g_error("Unable to get query combo box's model!");
 
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(query_list_store), &query_list_iter);
+	iter_valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(query_list_store), &query_list_iter);
 
-	while(gtk_list_store_iter_is_valid(query_list_store, &query_list_iter))
+	while((!duplicate) && iter_valid)
 	{
 		gtk_tree_model_get(GTK_TREE_MODEL(query_list_store), &query_list_iter, 0, &str_list_item, -1);
 		if(0 == g_strcmp0(lemma, str_list_item))
@@ -1223,20 +1302,20 @@ static void update_history(GtkComboBox *combo_query)
 			//gtk_list_store_move_after(query_list_store, &query_list_iter, NULL);
 			
 			// flag cleared to not append it again
-			count = -1;
-			break;
+			duplicate = TRUE;
 		}
 		g_free(str_list_item);
 		str_list_item = NULL;
-		gtk_tree_model_iter_next(GTK_TREE_MODEL(query_list_store), &query_list_iter);
-		count++;
+		iter_valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(query_list_store), &query_list_iter);
 	}
 
-	if(count != -1)
+	if(!duplicate)
 	{
 		gtk_list_store_prepend(query_list_store, &query_list_iter);
 		gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
-		history_count++;
+		gchar *term = g_string_chunk_insert(lookup_data, lemma);
+		g_ptr_array_add(lookup_ptrs, term);
+		save_history();
 	}
 }
 
@@ -1309,7 +1388,7 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 				count++;
 			}
 
-			if (show_polysemy)
+			if(show_polysemy)
 			{
 				gtk_text_buffer_get_iter_at_mark(buffer, &cur, freq_marker);
 
@@ -1344,7 +1423,7 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 	gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
 	// manage history
-	update_history(combo_query);
+	update_history(combo_query, ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
 }
 
 static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, gchar ***suggestions_base)
@@ -1430,7 +1509,7 @@ static void query_wni(GtkBuilder *gui_builder,
 
 	// if the search failed and suggestions are available, check if the prime
 	// suggestion is the same as the search string
-	if (!results && mod_suggest)
+	if(!results && mod_suggest)
 	{
 		*suggestions = suggestions_get(search_str);
 		*suggestions_looked = TRUE;
@@ -1483,7 +1562,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 			relatives_clear_all(gui_builder);
 
 			// set definitions
-			if (results)
+			if(results)
 			{
 				G_MESSAGE("Results successful!\n");
 
@@ -1535,7 +1614,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 
 				if(mod_suggest)
 				{
-					if (!suggestions_looked)
+					if(!suggestions_looked)
 						suggestions = suggestions_get(search_str);
 					if(suggestions)
 						show_suggestions(gui_builder, buffer, &cur, &suggestions);
@@ -2162,6 +2241,74 @@ static void relative_row_activated(GtkTreeView *tree_view, GtkTreePath *path, Gt
 	}
 }
 
+static void add_term_to_store(const gchar *term, GtkListStore *list_store_query)
+{
+	GtkTreeIter iter = { 0 };
+	
+	gtk_list_store_append(list_store_query, &iter);
+	gtk_list_store_set(list_store_query, &iter, 0, term, -1);
+}
+
+static void clear_history(GtkMenuItem *menu_item, gpointer user_data)
+{
+	GtkListStore *list_store_query = GTK_LIST_STORE(user_data);
+	gtk_list_store_clear(list_store_query);
+	g_ptr_array_ref(lookup_ptrs);
+	g_ptr_array_free(lookup_ptrs, FALSE);
+	g_string_chunk_clear(lookup_data);
+	save_history();
+}
+
+static void print_lookup_to_file(const gchar *term, FILE *fp)
+{
+	fprintf(fp, "%s\n", term);
+}
+
+static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
+{
+	GtkFileChooser *dialog = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new("Save As",
+																		  NULL,
+																		  GTK_FILE_CHOOSER_ACTION_SAVE,
+																		  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+																		  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+																		  NULL));
+	gtk_file_chooser_set_do_overwrite_confirmation(dialog, TRUE);
+	gtk_file_chooser_set_local_only(dialog, TRUE);
+	gtk_file_chooser_set_create_folders(dialog, TRUE);
+	if(GTK_RESPONSE_OK == gtk_dialog_run(GTK_DIALOG(dialog)))
+	{
+		gchar *filename = gtk_file_chooser_get_filename(dialog);
+		FILE *fp = fopen(filename, "w+");
+		if(!fp)
+		{
+			g_error("Error opening file to write lookup history!");
+		}
+		g_ptr_array_foreach(lookup_ptrs, (GFunc) print_lookup_to_file, fp);
+		fclose(fp);
+		g_free(filename);
+	}
+	gtk_widget_destroy(GTK_WIDGET(dialog));
+}
+
+static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, gpointer user_data)
+{
+	GtkWidget *menu_item = NULL;
+	
+	menu_item = GTK_WIDGET(gtk_separator_menu_item_new());
+	gtk_menu_shell_prepend(GTK_MENU_SHELL(popup_menu), menu_item);
+	gtk_widget_show(menu_item);
+
+	menu_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE, NULL);
+	g_signal_connect(menu_item, "activate", G_CALLBACK(save_history_to_file), NULL);
+	gtk_menu_shell_prepend(GTK_MENU_SHELL(popup_menu), menu_item);
+	gtk_widget_show(menu_item);
+
+	menu_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_CLEAR, NULL);
+	g_signal_connect(menu_item, "activate", G_CALLBACK(clear_history), user_data);
+	gtk_menu_shell_prepend(GTK_MENU_SHELL(popup_menu), menu_item);
+	gtk_widget_show(menu_item);
+}
+
 static void create_stores_renderers(GtkBuilder *gui_builder)
 {
 	guint8 i = 0;
@@ -2172,16 +2319,24 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	GtkTreeStore *tree_store = NULL;
 	GtkCellRenderer *tree_renderer = NULL;
 	const gchar *col_name = NULL;
+	GtkEntry *query_entry = NULL;
 	
 	// combo box data store
 	combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 	list_store_query = gtk_list_store_new(1, G_TYPE_STRING);
+
+	// popup for saving & clearing bookmarks
+	query_entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
+	g_signal_connect(query_entry, "populate-popup", G_CALLBACK(query_combo_popup), list_store_query);
+	// impregnate list store with history, if any
+	g_ptr_array_foreach(lookup_ptrs, (GFunc) add_term_to_store, list_store_query);
+
 	g_signal_connect(GTK_TREE_MODEL(list_store_query), "row-inserted", G_CALLBACK(query_list_updated), gui_builder);
 	gtk_combo_box_set_model(combo_query, GTK_TREE_MODEL(list_store_query));
 	gtk_combo_box_set_entry_text_column(combo_query, 0);
 	g_object_unref(list_store_query);
 	list_store_query = NULL;
-	
+
 	for(i = 0; i < TOTAL_RELATIVES; i++)
 	{
 		tree_view = GTK_TREE_VIEW(gtk_builder_get_object(gui_builder, relative_tree[i]));
@@ -2224,7 +2379,7 @@ static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 		relatives_load(gui_builder, FALSE);
 	}
 	
-	save_preferences();
+	save_mode();
 }
 
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data)
@@ -2271,6 +2426,10 @@ static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpo
 
 	if((GDK_SCROLL_UP == event->direction) || (GDK_SCROLL_DOWN == event->direction))
 	{
+		GtkComboBox *combo_box = GTK_COMBO_BOX(widget);
+		GtkTreeModel *model = gtk_combo_box_get_model(combo_box);
+		gint history_count = gtk_tree_model_iter_n_children(model, NULL);
+
 		current_index = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
 
 		if(-1 == current_index && history_count > 0) current_index = 0;
@@ -2308,7 +2467,7 @@ static gboolean close_window(GtkAccelGroup *accel_group,
 	return TRUE;
 }
 
-static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon)
+static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon)
 {
 	GtkToolbar *toolbar = NULL;
 	GtkToolItem *toolbar_item = NULL;
@@ -2320,6 +2479,7 @@ static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, 
 	gint width = 0, height = 0;
 	GdkPixbuf *app_icon = NULL;
 	GtkWidget *tray_icon = NULL;
+	GtkToggleToolButton *status_icon_toolitem = NULL;
 
 	// toolbar code starts here
 	toolbar = GTK_TOOLBAR(gtk_builder_get_object(gui_builder, TOOLBAR));
@@ -2386,6 +2546,7 @@ static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, 
 	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_TRAYICON);
 	g_signal_connect(toolbar_item, "toggled", G_CALLBACK(trayicon_toggled), status_icon);
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
+	status_icon_toolitem = GTK_TOGGLE_TOOL_BUTTON(toolbar_item);
 
 	toolbar_item = gtk_separator_tool_item_new();
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
@@ -2423,13 +2584,20 @@ static void setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, 
 	gtk_accel_group_connect(accel_group, GDK_Escape, 0, 0, close_window_closure_dummy);
 
 	gtk_widget_show_all(GTK_WIDGET(toolbar));
+	
+	return status_icon_toolitem;
 }
 
-static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
+static void trayicon_menu_toggled(GtkMenuItem *menu, GtkToggleToolButton *button)
+{
+	gtk_toggle_tool_button_set_active(button, FALSE);
+}
+
+static GtkMenu *create_popup_menu(GtkBuilder *gui_builder, GtkToggleToolButton *button)
 {
 	GtkMenu *menu = NULL;
 	GtkSeparatorMenuItem *menu_separator = NULL;
-	GtkImageMenuItem *menu_quit = NULL;
+	GtkImageMenuItem *menu_item = NULL;
 	
 	// Initialize popup menu/sub menus
 	menu = GTK_MENU(gtk_menu_new());
@@ -2446,11 +2614,16 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_separator));
 		g_signal_connect(menu_notify, "toggled", G_CALLBACK(notification_toggled), gui_builder);
 	}
+	
+	menu_item = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_CLOSE, NULL));
+	gtk_menu_item_set_use_underline(GTK_MENU_ITEM(menu_item), TRUE);
+	gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), "_Hide");
+	g_signal_connect(menu_item, "activate", G_CALLBACK(trayicon_menu_toggled), button);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_item));
 
-	menu_quit = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL));
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_quit));
-
-	g_signal_connect(menu_quit, "activate", G_CALLBACK(quit_activate), NULL);
+	menu_item = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL));
+	g_signal_connect(menu_item, "activate", G_CALLBACK(quit_activate), NULL);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_item));
 
 	gtk_widget_show_all(GTK_WIDGET(menu));
 
@@ -2486,87 +2659,117 @@ static void create_text_view_tags(GtkBuilder *gui_builder)
 	g_signal_connect(text_view, "selection-received", G_CALLBACK(text_view_selection_made), gui_builder);
 }
 
+static void load_preference_hotkey(gboolean *first_run)
+{
+	GError *err = NULL;
+	gchar *version = g_key_file_get_string(config_file, GROUP_SETTINGS, KEY_VERSION, NULL);
+
+	if(version)
+	{
+		if(0 != g_strcmp0(version, PACKAGE_VERSION))
+		{
+			/* version number is split here. Major, Minor, Micro */
+			gchar **version_numbers = g_strsplit(version, ".", 3);
+			gchar **current_version_numbers = g_strsplit(PACKAGE_VERSION, ".", 3);
+			
+			for(guint8 i = 0; (NULL != version_numbers[i] && NULL != current_version_numbers[i]); i++)
+			{
+				if(g_ascii_digit_value(version_numbers[i][0]) < g_ascii_digit_value(current_version_numbers[i][0]))
+				{
+					*first_run = TRUE;
+					break;
+				}
+			}
+
+			g_strfreev(version_numbers);
+			g_strfreev(current_version_numbers);
+			version_numbers = current_version_numbers = NULL;
+		}
+		g_free(version);
+		version = NULL;
+	}
+
+	/* zero can be returned in three cases:
+		i.   Older version - no key set in conf (err will be set)
+		ii.  New version with no key in conf file set (err will be set)
+		iii. New version & entries present (err will not be set) */
+
+	app_hotkey.accel_key = g_key_file_get_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, &err);
+	app_hotkey.accel_mods = g_key_file_get_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, NULL);
+	app_hotkey.accel_flags = g_key_file_get_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, NULL);
+
+	if(err)
+	{
+		g_error_free(err);
+		err = NULL;
+	}
+	else if(*first_run)		/* if no error was set, then the key is present, in that case */
+		*first_run = FALSE;	/* a first run is not right, it's just a version above 1.0.1 where hotkeys are already set */
+}
+
+static void load_preference_history()
+{
+	gsize num_entries = 0;
+	const guint8 per_lookup_block_size = 10;
+	gchar **lookup_history = NULL;
+
+	// irrespective of history's availability in the conf file, create these for later references
+	lookup_ptrs = g_ptr_array_sized_new(num_entries);
+	lookup_data = g_string_chunk_new(per_lookup_block_size);
+	if(!lookup_ptrs || !lookup_data)
+	{
+		g_error("Error creating buffers for lookup history!");
+	}
+
+	lookup_history = g_key_file_get_string_list(config_file, GROUP_HISTORY, KEY_LOOKUPS, &num_entries, NULL);
+	if(lookup_history)
+	{
+		while(num_entries)
+		{
+			gchar *entry = g_string_chunk_insert(lookup_data, lookup_history[--num_entries]);
+			g_ptr_array_add(lookup_ptrs, entry);
+		}
+		g_strfreev(lookup_history);
+	}
+}
+
 static gboolean load_preferences(GtkWindow *parent)
 {
 	gchar *conf_file_path = NULL;
-	GKeyFile *key_file = NULL;
 	gboolean first_run = FALSE;
 
-	gchar *version = NULL;
-	gchar **version_numbers = NULL;
-	gchar **current_version_numbers = NULL;
-	guint8 i = 0;
 	GError *err = NULL;
 
-	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
-	key_file = g_key_file_new();
-
-	if(g_key_file_load_from_file(key_file, conf_file_path, G_KEY_FILE_KEEP_COMMENTS, NULL))
+	config_file = g_key_file_new();
+	if(!config_file)
 	{
-		advanced_mode = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_MODE, NULL);
-		notifier_enabled = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, NULL);
-		show_polysemy = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_POLYSEMY, &err);
+		g_error("Error creating GKeyFile to load/store preferences");
+	}
+
+	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
+	if(g_key_file_load_from_file(config_file, conf_file_path, G_KEY_FILE_KEEP_COMMENTS, NULL))
+	{
+		g_free(conf_file_path);
+		conf_file_path = NULL;
+
+		advanced_mode = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_MODE, NULL);
+		notifier_enabled = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, NULL);
+		show_polysemy = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, &err);
 		if(err)
 		{
 			show_polysemy = TRUE;
 			g_error_free(err);
 			err = NULL;
 		}
-		show_trayicon = g_key_file_get_boolean(key_file, GROUP_SETTINGS, KEY_TRAYICON, &err);
+		show_trayicon = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, &err);
 		if(err)
 		{
 			show_trayicon = TRUE;
 			g_error_free(err);
 			err = NULL;
 		}
-		version = g_key_file_get_string(key_file, GROUP_SETTINGS, KEY_VERSION, NULL);
-
-		if(version)
-		{
-			if(0 != g_strcmp0(version, PACKAGE_VERSION))
-			{
-				/* version number is split here. Major, Minor, Micro */
-				version_numbers = g_strsplit(version, ".", 3);
-				current_version_numbers = g_strsplit(PACKAGE_VERSION, ".", 3);
-				
-				for(i = 0; (NULL != version_numbers[i] && NULL != current_version_numbers[i]); i++)
-				{
-					if(g_ascii_digit_value(version_numbers[i][0]) < g_ascii_digit_value(current_version_numbers[i][0]))
-					{
-						first_run = TRUE;
-						break;
-					}
-				}
-
-				g_strfreev(version_numbers);
-				g_strfreev(current_version_numbers);
-				version_numbers = current_version_numbers = NULL;
-			}
-			g_free(version);
-			version = NULL;
-		}
-
-		/* zero can be returned in three cases:
-			i.   Older version - no key set in conf (err will be set)
-			ii.  New version with no key in conf file set (err will be set)
-			iii. New version & entries present (err will not be set) */
-
-		app_hotkey.accel_key = g_key_file_get_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_KEY, &err);
-		app_hotkey.accel_mods = g_key_file_get_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_MODS, NULL);
-		app_hotkey.accel_flags = g_key_file_get_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, NULL);
-		
-		if(err)
-		{
-			g_error_free(err);
-			err = NULL;
-		}
-		else if(first_run)		/* if no error was set, then the key is present, in that case */
-			first_run = FALSE;	/* a first run is not right, it's just a version above 1.0.1 where hotkeys are already set */
-
-		g_key_file_free(key_file);
-		key_file = NULL;
-		g_free(conf_file_path);
-		conf_file_path = NULL;
+		load_preference_history();
+		load_preference_hotkey(&first_run);
 	}
 	else
 		first_run = TRUE;
@@ -2578,43 +2781,84 @@ static gboolean load_preferences(GtkWindow *parent)
 	return first_run;
 }
 
-static void save_preferences()
+static void save_history()
 {
-	gchar *conf_file_path = NULL;
-	GKeyFile *key_file = NULL;
-	gchar *file_contents = NULL;
+	guint count = lookup_ptrs->len;
+	const gchar * const * data = (const gchar * const *) lookup_ptrs->pdata;
+	g_key_file_set_string_list(config_file, GROUP_HISTORY, KEY_LOOKUPS, data, count);
+	save_preferences_to_file();
+}
+
+static void save_polysemy()
+{
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
+	save_preferences_to_file();
+}
+
+static void save_trayicon()
+{
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
+	save_preferences_to_file();	
+}
+
+static void save_mode()
+{
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
+	save_preferences_to_file();
+}
+
+static void save_hotkey()
+{
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
+	save_preferences_to_file();
+}
+
+static void save_notify()
+{
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
+	save_preferences_to_file();
+}
+
+static void save_preferences_to_file()
+{
 	gsize file_len = 0;
+	gchar *conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
+	gchar *file_contents = g_key_file_to_data(config_file, &file_len, NULL);
 	GError *err = NULL;
 
-	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
-	key_file = g_key_file_new();
-	
-	g_key_file_set_comment(key_file, NULL, NULL, SETTINGS_COMMENT, NULL);
-
-	g_key_file_set_string(key_file, GROUP_SETTINGS, KEY_VERSION, PACKAGE_VERSION);
-	g_key_file_set_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
-	g_key_file_set_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
-	g_key_file_set_integer(key_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
-	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
-	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
-	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
-	g_key_file_set_boolean(key_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
-
-	file_contents = g_key_file_to_data(key_file, &file_len, NULL);
-	
+	if(!config_file_path || !file_contents)
+	{
+		g_error("Error saving preferences to file");
+	}
 	if(!g_file_set_contents(conf_file_path, file_contents, file_len, &err))
 	{
 		g_warning("Failed to save preferences to %s\nError: %s\n", conf_file_path, err->message);
 		g_error_free(err);
 		err = NULL;
 	}
-	
-	g_free(file_contents);
 
-	g_key_file_free(key_file);
-	key_file = NULL;
 	g_free(conf_file_path);
-	file_contents = conf_file_path = NULL;
+	conf_file_path = NULL;
+	g_free(file_contents);
+	file_contents = NULL;
+}
+
+static void save_preferences(GtkBuilder *gui_builder)
+{
+	g_key_file_set_comment(config_file, NULL, NULL, SETTINGS_COMMENT, NULL);
+
+	g_key_file_set_string(config_file, GROUP_SETTINGS, KEY_VERSION, PACKAGE_VERSION);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
+
+	save_history(gui_builder);
 }
 
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data)
@@ -2768,7 +3012,7 @@ gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean gr
 
 	egg_keymap_resolve_virtual_modifiers (gdk_keymap_get_default(), binding->accel_mods, &actual_mods);
 
-	for (i = 0; (i < G_N_ELEMENTS (mod_masks) && (False == x_error)); i++) 
+	for(i = 0; (i < G_N_ELEMENTS (mod_masks) && (False == x_error)); i++) 
 	{
 		if(grab)
 		{
@@ -2794,17 +3038,7 @@ gboolean grab_ungrab_with_ignorable_modifiers (GtkAccelKey *binding, gboolean gr
 
 #elif defined G_OS_WIN32
 
-#ifndef MOD_NOREPEAT
-#define MOD_NOREPEAT 0x4000
-#endif
-
-typedef struct
-{
-	guint gdk_key;
-	BYTE  vk_key;
-} gdk_vk;
-
-gboolean try_convert_to_vk(guint gdk_key, BYTE *vk)
+static gboolean try_convert_to_vk(guint gdk_key, BYTE *vk)
 {
 	gboolean converted = FALSE;
 	static const gdk_vk keys[] = {
@@ -2871,7 +3105,7 @@ gboolean try_convert_to_vk(guint gdk_key, BYTE *vk)
 		guint8 i = 0;
 		for(; i < G_N_ELEMENTS(keys); ++i)
 		{
-			if (keys[i].gdk_key == gdk_key)
+			if(keys[i].gdk_key == gdk_key)
 			{
 				*vk = keys[i].vk_key;
 				converted = TRUE;
@@ -2944,11 +3178,6 @@ static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_ho
 	return(grab_ungrab_with_ignorable_modifiers(&app_hotkey, setup_hotkey));
 }
 
-static void handle_polysemy_show_change(GtkToggleButton *polysemy_show_btn, gpointer user_data)
-{
-	show_polysemy = gtk_toggle_button_get_active(polysemy_show_btn);
-}
-
 static void setup_hotkey_editor(GtkBuilder *gui_builder)
 {
 	GtkLabel *hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
@@ -2964,7 +3193,7 @@ static void setup_hotkey_editor(GtkBuilder *gui_builder)
 	gtk_toggle_button_set_active(polysemy_show_btn, show_polysemy);
 
 	g_signal_connect(GTK_WIDGET(settings_dialog), "response", G_CALLBACK(gtk_widget_hide), NULL);
-	g_signal_connect(GTK_WIDGET(polysemy_show_btn), "toggled", G_CALLBACK(handle_polysemy_show_change), NULL);
+	g_signal_connect(GTK_WIDGET(polysemy_show_btn), "toggled", G_CALLBACK(polysemy_display_toggle), gui_builder);
 }
 
 static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
@@ -2989,7 +3218,7 @@ static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
 		   hotkey_backup.accel_flags != app_hotkey.accel_flags)
 		{
 			grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE);
-			if (grab_ungrab_with_ignorable_modifiers(&hotkey_backup, TRUE))
+			if(grab_ungrab_with_ignorable_modifiers(&hotkey_backup, TRUE))
 				app_hotkey = hotkey_backup;
 			else
 			{
@@ -3000,12 +3229,12 @@ static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
 	}
 	else
 	{
-		if (show_polysemy != show_polysemy_backup)
+		if(show_polysemy != show_polysemy_backup)
 		{
 			last_search_successful = FALSE;
 			gtk_button_clicked(search_button);
 		}
-		save_preferences();
+		save_hotkey();
 	}
 	/* set hotkey flag */
 	hotkey_set = (gboolean) app_hotkey.accel_key;
@@ -3016,6 +3245,24 @@ static void destructor(GtkBuilder *gui_builder)
 #ifdef G_OS_WIN32
 	GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 #endif
+
+	if(config_file)
+	{
+		g_key_file_free(config_file);
+		config_file = NULL;
+	}
+	
+	if(lookup_ptrs)
+	{
+		g_ptr_array_free(lookup_ptrs, FALSE);
+		lookup_ptrs = NULL;
+	}
+	
+	if(lookup_data)
+	{
+		g_string_chunk_free(lookup_data);
+		lookup_data = NULL;
+	}
 
 	if(wordnet_terms)
 	{
@@ -3144,6 +3391,7 @@ int main(int argc, char *argv[])
 	GtkBuilder *gui_builder = NULL;
 	GtkWidget *window = NULL, *button_search = NULL, *combo_query = NULL, *combo_entry = NULL, *hotkey_editor_dialog = NULL;
 	GtkMenu *popup_menu = NULL;
+	GtkToggleToolButton *status_icon_menu = NULL;
 	GtkExpander *expander = NULL;
 	GdkPixbuf *app_icon = NULL;
 	GtkStatusIcon *status_icon = NULL;
@@ -3269,7 +3517,7 @@ int main(int argc, char *argv[])
 					}
 
 					/* save preferences here - after all setting based loads are done */
-					save_preferences();
+					save_preferences(gui_builder);
 
 					setup_hotkey_editor(gui_builder);
 					hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
@@ -3287,11 +3535,15 @@ int main(int argc, char *argv[])
 					}
 
 					mod_notify_init();
+					
+					status_icon_menu = setup_toolbar(gui_builder, icon_file_path, status_icon);
+					g_free(icon_file_path);
+					icon_file_path = NULL;
 
 					/* pop-up menu creation should be after assessing the availability of notifications
 					   since if it is not available, the Notify menu option can be stripped
 					   create pop-up menu */
-					popup_menu = create_popup_menu(gui_builder);
+					popup_menu = create_popup_menu(gui_builder, status_icon_menu);
 
 					g_signal_connect(status_icon, "activate", G_CALLBACK(status_icon_activate), gui_builder);
 					g_signal_connect(status_icon, "popup-menu", G_CALLBACK(status_icon_popup), GTK_WIDGET(popup_menu));
@@ -3318,26 +3570,21 @@ int main(int argc, char *argv[])
 					combo_entry = gtk_bin_get_child(GTK_BIN(combo_query));
 					g_object_set(combo_entry, "activates-default", TRUE, NULL);
 
-
 					create_text_view_tags(gui_builder);
-
-					setup_toolbar(gui_builder, icon_file_path, status_icon);
-					g_free(icon_file_path);
-					icon_file_path = NULL;
 
 					/* do main window specific connects */
 					g_signal_connect(window, "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
 					g_signal_connect(window, "visibility-notify-event", G_CALLBACK(window_visibility_toggled), button_search);
-					
+
 					g_signal_connect(combo_query, "scroll-event", G_CALLBACK(combo_query_scroll), button_search);
-					
+
 					expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
 					g_signal_connect(expander, "activate", G_CALLBACK(expander_clicked), gui_builder);
 
 					gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 
 					G_DEBUG("GUI loaded successfully!\n");
-					
+
 					create_stores_renderers(gui_builder);
 
 					gtk_about_dialog_set_email_hook(about_email_hook, NULL, NULL);
@@ -3357,13 +3604,14 @@ int main(int argc, char *argv[])
 
 					gtk_main();
 
+					gtk_widget_destroy(GTK_WIDGET(popup_menu));
 					/* on Win32 platform, icon stays even after app close, this is
 					   a workaround to fix that */
 					gtk_status_icon_set_visible(status_icon, FALSE);
 					destructor(gui_builder);
 
 					/* GtkBuilder drops references to any held, except toplevel widgets */
-					gtk_widget_destroy(hotkey_editor_dialog);	
+					gtk_widget_destroy(hotkey_editor_dialog);
 					gtk_widget_destroy(window);
 				}
 				else
