@@ -2,28 +2,28 @@
 <interface>
   <requires lib="gtk+" version="2.24"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkDialog" id="dlgHotkeyChooser">
+  <object class="GtkDialog" id="optionsDialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Artha ~ Hotkey</property>
+    <property name="title" translatable="yes">Artha ~ Preferences</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center-on-parent</property>
-    <property name="type_hint">normal</property>
+    <property name="type_hint">dialog</property>
     <property name="transient_for">wndMain</property>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="vboxMain">
+      <object class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="spacing">2</property>
+        <property name="spacing">10</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area">
+          <object class="GtkHButtonBox" id="dialog-action_area2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="layout_style">spread</property>
+            <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="btnApply">
-                <property name="label">gtk-apply</property>
+              <object class="GtkButton" id="btnCancel">
+                <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -37,8 +37,8 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="btnCancel">
-                <property name="label">gtk-cancel</property>
+              <object class="GtkButton" id="btnApply">
+                <property name="label">gtk-apply</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -60,15 +60,64 @@
           </packing>
         </child>
         <child>
-          <object class="GtkVBox" id="vboxBody">
+          <object class="GtkVBox" id="vbox4">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="spacing">10</property>
             <child>
-              <object class="GtkVBox" id="vbox3">
+              <object class="GtkCheckButton" id="chkBtnStatusIcon">
+                <property name="label" translatable="yes">_Hide status icon (runs Artha invisibly)</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="use_underline">True</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="chkBtnLaunchMin">
+                <property name="label" translatable="yes">Show Artha's _window on launch</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="use_underline">True</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkVBox" id="vbox6">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkLabel" id="lblDescPolysemy">
+                  <object class="GtkCheckButton" id="chkBtnPolysemy">
+                    <property name="label" translatable="yes">Show _Polysemy count based classification</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="use_action_appearance">False</property>
+                    <property name="use_underline">True</property>
+                    <property name="draw_indicator">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="lblPolysemy">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Polysemy count is the number of senses a term has in a given part of speech. Based on this count WordNet classifies the word as &lt;i&gt;Rare&lt;/i&gt;, &lt;i&gt;Common&lt;/i&gt;, &lt;i&gt;very familiar&lt;/i&gt;, etc.</property>
@@ -78,44 +127,27 @@
                   <packing>
                     <property name="expand">True</property>
                     <property name="fill">True</property>
-                    <property name="padding">10</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="chkBtnPolysemy">
-                    <property name="label" translatable="yes">Show Polysemy Classification</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_action_appearance">False</property>
-                    <property name="draw_indicator">False</property>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
                     <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkHSeparator" id="hseparator1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="padding">10</property>
-                    <property name="position">2</property>
                   </packing>
                 </child>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">2</property>
               </packing>
             </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkVBox" id="vbox5">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
             <child>
               <object class="GtkHBox" id="hboxHotkey">
                 <property name="visible">True</property>
@@ -143,11 +175,11 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="lblDescText">
+              <object class="GtkLabel" id="lblHotkeyDesc">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Artha can be summoned (from inside any window) with a key combination (global accelerator) to lookup the selected text in thesaurus.
@@ -160,23 +192,25 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                 <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="padding">10</property>
-                <property name="position">2</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="padding">10</property>
+            <property name="position">2</property>
           </packing>
         </child>
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-10">btnApply</action-widget>
       <action-widget response="-6">btnCancel</action-widget>
+      <action-widget response="-10">btnApply</action-widget>
     </action-widgets>
   </object>
+  <object class="GtkStatusIcon" id="statusIcon"/>
   <object class="GtkWindow" id="wndMain">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Artha ~ The Open Thesaurus</property>
@@ -210,6 +244,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                 <property name="can_focus">False</property>
                 <property name="label_xalign">0</property>
                 <property name="label_yalign">0</property>
+                <property name="shadow_type">in</property>
                 <child>
                   <object class="GtkVBox" id="vbox2">
                     <property name="visible">True</property>
@@ -276,7 +311,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                         <property name="can_focus">True</property>
                         <property name="hscrollbar_policy">automatic</property>
                         <property name="vscrollbar_policy">automatic</property>
-                        <property name="shadow_type">etched-in</property>
+                        <property name="shadow_type">etched-out</property>
                         <child>
                           <object class="GtkTextView" id="txtDefinitions">
                             <property name="visible">True</property>
@@ -311,6 +346,7 @@ This hotkey can be set by clicking on the Hotkey above box and pressing the requ
                 <property name="can_focus">False</property>
                 <property name="label_xalign">0</property>
                 <property name="label_yalign">0</property>
+                <property name="shadow_type">in</property>
                 <child>
                   <object class="GtkExpander" id="expander">
                     <property name="visible">True</property>

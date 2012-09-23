@@ -52,8 +52,10 @@ static const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGr
 /* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
 static GSList 			*results = NULL;
 static gchar 			*last_search = NULL;
-static gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE, show_trayicon = TRUE;
-static gboolean		hotkey_set = FALSE, notifier_enabled = FALSE, mod_suggest = FALSE, show_polysemy = FALSE;
+static gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE;
+static gboolean		hotkey_set = FALSE, mod_suggest = FALSE;
+// options which default to true
+static gboolean		notifier_enabled = TRUE, show_polysemy = TRUE, launch_minimized = TRUE, show_trayicon = TRUE;
 gboolean				hotkey_processing = FALSE;
 #ifdef X11_AVAILABLE
 static Display			*dpy = NULL;
@@ -81,8 +83,8 @@ static int x_error_handler(Display *dpy, XErrorEvent *xevent);
 #endif	// X11_AVAILABLE
 static void show_window(GtkWindow *window);
 static void notification_toggled(GObject *obj, gpointer user_data);
-static void trayicon_toggled(GtkToggleToolButton *trayicon_button, gpointer user_data);
-static void polysemy_display_toggle(GtkToggleButton *polysemy_show_btn, gpointer user_data);
+static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data);
+static void trayicon_menu_toggled(GtkMenuItem *menu, GtkBuilder *gui_builder);
 static gchar* strip_invalid_edges(gchar *selection);
 static gchar* strip_non_alpha_num(const gchar *str);
 static gboolean are_same_after_strip(const gchar *strA, const gchar *strB);
@@ -143,24 +145,17 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data);
 static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, GtkListStore *list_store_query);
 static void load_history(GtkListStore *list_store_query);
 static void create_stores_renderers(GtkBuilder *gui_builder);
-static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data);
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static void button_prev_clicked(GtkToolButton *toolbutton, gpointer user_data);
 static gboolean combo_query_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static gboolean close_window(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
 							 GdkModifierType modifier, GObject *user_data);
-static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon);
-static void trayicon_menu_toggled(GtkMenuItem *menu, GtkToggleToolButton *button);
-static GtkMenu *create_popup_menu(GtkBuilder *gui_builder, GtkToggleToolButton *status_icon);
+static void setup_toolbar(GtkBuilder *gui_builder);
+static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
 static void load_preference_hotkey(gboolean *first_run);
 static gboolean load_preferences(GtkWindow *parent);
 static void save_history(const gchar *term);
-static void save_polysemy();
-static void save_trayicon();
-static void save_mode();
-static void save_hotkey();
-static void save_notify();
 static void save_preferences_to_file();
 static void save_preferences();
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
@@ -186,8 +181,15 @@ static gboolean try_convert_to_vk(guint gdk_key, BYTE *vk);
 #endif //X11_AVAILABLE
 gboolean grab_ungrab_with_ignorable_modifiers(GtkAccelKey *binding, gboolean grab);
 static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_hotkey);
-static void setup_hotkey_editor(GtkBuilder *gui_builder);
-static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data);
+static void setup_settings_dialog(GtkBuilder *gui_builder);
+static void set_settings_to_check_boxes(GtkBuilder *gui_builder);
+static void get_settings_from_check_boxes(GtkBuilder *gui_builder,
+											gboolean *new_trayicon_show,
+											gboolean *new_launch_min,
+											gboolean *new_polysemy_show);
+static void apply_and_save_settings(GtkBuilder *gui_builder);
+static void revert_settings(GtkBuilder *gui_builder, GtkAccelKey *hotkey_backup);
+static void show_settings_dialog(GtkToolButton *toolbutton, gpointer user_data);
 static void destructor(GtkBuilder *gui_builder);
 static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_code);
 static gboolean window_visibility_toggled(GtkWidget *widget, GdkEventVisibility *event, gpointer user_data);
@@ -236,7 +238,7 @@ static void notification_toggled(GObject *obj, gpointer user_data)
 
 	gtk_check_menu_item_set_active(menu_notify, notifier_enabled);
 
-	save_notify();
+	save_preferences();
 
 	/* if not hotkey is set; then there's no point in enabling notifications
 	   intimate this to the user */
@@ -244,18 +246,31 @@ static void notification_toggled(GObject *obj, gpointer user_data)
 		show_message_dlg(NULL, MSG_HOTKEY_NOTSET);
 }
 
-static void trayicon_toggled(GtkToggleToolButton *trayicon_button, gpointer user_data)
+static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 {
-	GtkStatusIcon *status_icon = GTK_STATUS_ICON(user_data);
-	show_trayicon = gtk_toggle_tool_button_get_active(trayicon_button);
-	gtk_status_icon_set_visible(status_icon, show_trayicon);
-	save_trayicon();
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+
+	advanced_mode = gtk_toggle_tool_button_get_active(toggle_button);
+
+	if(last_search_successful)
+	{
+		G_MESSAGE("Re-requesting with changed mode: %d\n", advanced_mode);
+
+		wni_request_nyms(last_search, &results, WORDNET_INTERFACE_ALL, advanced_mode);
+		relatives_clear_all(gui_builder);
+		relatives_load(gui_builder, FALSE);
+	}
+	
+	save_preferences();
 }
 
-static void polysemy_display_toggle(GtkToggleButton *polysemy_show_btn, gpointer user_data)
+static void trayicon_menu_toggled(GtkMenuItem *menu, GtkBuilder *gui_builder)
 {
-	show_polysemy = gtk_toggle_button_get_active(polysemy_show_btn);
-	save_polysemy();
+	GtkStatusIcon *status_icon = GTK_STATUS_ICON(gtk_builder_get_object(gui_builder, STATUS_ICON));
+
+	show_trayicon = FALSE;
+	gtk_status_icon_set_visible(status_icon, show_trayicon);
+	save_preferences();
 }
 
 static gchar* strip_invalid_edges(gchar *selection)
@@ -2271,12 +2286,19 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 																		  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 																		  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
 																		  NULL));
+	gchar *dest_filename = NULL;
+	gint response = 0;
 	gtk_file_chooser_set_do_overwrite_confirmation(dialog, TRUE);
 	gtk_file_chooser_set_local_only(dialog, TRUE);
 	gtk_file_chooser_set_create_folders(dialog, TRUE);
-	if(GTK_RESPONSE_OK == gtk_dialog_run(GTK_DIALOG(dialog)))
-	{
-		gchar *dest_filename = gtk_file_chooser_get_filename(dialog);
+
+	response = gtk_dialog_run(GTK_DIALOG(dialog));
+	dest_filename = gtk_file_chooser_get_filename(dialog);
+	gtk_widget_destroy(GTK_WIDGET(dialog));
+	dialog = NULL;
+
+	if((GTK_RESPONSE_OK == response) && dest_filename)
+	{		
 		GFile *history_file = NULL;
 		gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
 		if(!hist_file_path)
@@ -2291,16 +2313,54 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 		if(g_file_query_exists(history_file, NULL))
 		{
 			GFile *dest_file = g_file_new_for_path(dest_filename);
-			g_file_copy(history_file, dest_file, 0, NULL, NULL, NULL, NULL);
+			GError *err = NULL;
+			GtkWidget *save_complete_dialog = NULL;
+			if(g_file_copy(history_file, dest_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err))
+			{
+				save_complete_dialog = gtk_message_dialog_new(NULL,
+															GTK_DIALOG_DESTROY_WITH_PARENT,
+															GTK_MESSAGE_INFO,
+															GTK_BUTTONS_OK,
+															STR_HISTORY_SAVE_SUCCESS);
+				g_object_set(save_complete_dialog, "title", "Artha ~ Save successful!", NULL);
+				gtk_dialog_run(GTK_DIALOG(save_complete_dialog));
+			}
+			else
+			{
+				save_complete_dialog = gtk_message_dialog_new(NULL,
+															GTK_DIALOG_DESTROY_WITH_PARENT,
+															GTK_MESSAGE_WARNING,
+															GTK_BUTTONS_OK,
+															STR_HISTORY_SAVE_FAILED,
+															err->message);
+				g_object_set(save_complete_dialog, "title", "Artha ~ Save failed!", NULL);
+				gtk_dialog_run(GTK_DIALOG(save_complete_dialog));
+				g_error_free(err);
+				err = NULL;
+			}
+			gtk_widget_destroy(save_complete_dialog);
+
 			g_object_unref(dest_file);
 			dest_file = NULL;
+		}
+		else
+		{
+			GtkWidget *save_failed_msgbox = gtk_message_dialog_new(NULL,
+																GTK_DIALOG_DESTROY_WITH_PARENT,
+																GTK_MESSAGE_WARNING,
+																GTK_BUTTONS_OK,
+																STR_HISTORY_SAVE_FAILED,
+																STR_HISTORY_MISSING);
+			g_object_set(save_failed_msgbox, "title", "Artha ~ Save failed!", NULL);
+			gtk_dialog_run(GTK_DIALOG(save_failed_msgbox));
+			gtk_widget_destroy(save_failed_msgbox);
+			save_failed_msgbox = NULL;
 		}
 		g_object_unref(history_file);
 		history_file = NULL;
 		g_free(dest_filename);
 		dest_filename = NULL;
 	}
-	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
 static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu, GtkListStore *list_store_query)
@@ -2419,24 +2479,6 @@ static void create_stores_renderers(GtkBuilder *gui_builder)
 	}
 }
 
-static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
-{
-	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-
-	advanced_mode = gtk_toggle_tool_button_get_active(toggle_button);
-
-	if(last_search_successful)
-	{
-		G_MESSAGE("Re-requesting with changed mode: %d\n", advanced_mode);
-
-		wni_request_nyms(last_search, &results, WORDNET_INTERFACE_ALL, advanced_mode);
-		relatives_clear_all(gui_builder);
-		relatives_load(gui_builder, FALSE);
-	}
-	
-	save_mode();
-}
-
 static void button_next_clicked(GtkToolButton *toolbutton, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
@@ -2522,19 +2564,13 @@ static gboolean close_window(GtkAccelGroup *accel_group,
 	return TRUE;
 }
 
-static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *icon_file_path, GtkStatusIcon *status_icon)
+static void setup_toolbar(GtkBuilder *gui_builder)
 {
 	GtkToolbar *toolbar = NULL;
 	GtkToolItem *toolbar_item = NULL;
 	GtkAccelGroup *accel_group = NULL;
 	GClosure *close_window_closure = NULL;
 	GClosure *close_window_closure_dummy = NULL;
-
-	GtkIconSize toolbar_icon_size = GTK_ICON_SIZE_INVALID;
-	gint width = 0, height = 0;
-	GdkPixbuf *app_icon = NULL;
-	GtkWidget *tray_icon = NULL;
-	GtkToggleToolButton *status_icon_toolitem = NULL;
 
 	// toolbar code starts here
 	toolbar = GTK_TOOLBAR(gtk_builder_get_object(gui_builder, TOOLBAR));
@@ -2570,7 +2606,7 @@ static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *
 	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_OPTIONS);
 	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
 	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_OPTIONS);
-	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(show_hotkey_editor), gui_builder);
+	g_signal_connect(toolbar_item, "clicked", G_CALLBACK(show_settings_dialog), gui_builder);
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
 
 	/* if mod notify is present */
@@ -2586,22 +2622,6 @@ static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *
 
 		notify_toolbar_index = gtk_toolbar_get_item_index(toolbar, toolbar_item);
 	}
-
-	toolbar_icon_size = gtk_tool_item_get_icon_size(toolbar_item);
-	gtk_icon_size_lookup(toolbar_icon_size, &width, &height);
-	app_icon = gdk_pixbuf_new_from_file_at_size(icon_file_path, width, height, NULL);
-	tray_icon = gtk_image_new_from_pixbuf(app_icon);
-	g_object_unref(app_icon);
-	app_icon = NULL;
-	toolbar_item = gtk_toggle_tool_button_new();
-	gtk_tool_button_set_icon_widget(GTK_TOOL_BUTTON(toolbar_item), tray_icon);
-	gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
-	gtk_tool_button_set_label(GTK_TOOL_BUTTON(toolbar_item), STR_TOOLITEM_TRAYICON);
-	gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(toolbar_item), show_trayicon);
-	gtk_tool_item_set_tooltip_text(toolbar_item, TOOLITEM_TOOLTIP_TRAYICON);
-	g_signal_connect(toolbar_item, "toggled", G_CALLBACK(trayicon_toggled), status_icon);
-	gtk_toolbar_insert(toolbar, toolbar_item, -1);
-	status_icon_toolitem = GTK_TOGGLE_TOOL_BUTTON(toolbar_item);
 
 	toolbar_item = gtk_separator_tool_item_new();
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
@@ -2639,16 +2659,9 @@ static GtkToggleToolButton *setup_toolbar(GtkBuilder *gui_builder, const gchar *
 	gtk_accel_group_connect(accel_group, GDK_Escape, 0, 0, close_window_closure_dummy);
 
 	gtk_widget_show_all(GTK_WIDGET(toolbar));
-	
-	return status_icon_toolitem;
 }
 
-static void trayicon_menu_toggled(GtkMenuItem *menu, GtkToggleToolButton *button)
-{
-	gtk_toggle_tool_button_set_active(button, FALSE);
-}
-
-static GtkMenu *create_popup_menu(GtkBuilder *gui_builder, GtkToggleToolButton *button)
+static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
 {
 	GtkMenu *menu = NULL;
 	GtkSeparatorMenuItem *menu_separator = NULL;
@@ -2669,11 +2682,11 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder, GtkToggleToolButton *
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_separator));
 		g_signal_connect(menu_notify, "toggled", G_CALLBACK(notification_toggled), gui_builder);
 	}
-	
+
 	menu_item = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_CLOSE, NULL));
 	gtk_menu_item_set_use_underline(GTK_MENU_ITEM(menu_item), TRUE);
 	gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), "_Hide");
-	g_signal_connect(menu_item, "activate", G_CALLBACK(trayicon_menu_toggled), button);
+	g_signal_connect(menu_item, "activate", G_CALLBACK(trayicon_menu_toggled), gui_builder);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), GTK_WIDGET(menu_item));
 
 	menu_item = GTK_IMAGE_MENU_ITEM(gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL));
@@ -2798,6 +2811,13 @@ static gboolean load_preferences(GtkWindow *parent)
 			err = NULL;
 		}
 		load_preference_hotkey(&first_run);
+		launch_minimized = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_LAUNCH_HIDDEN, &err);
+		if(err)
+		{
+			launch_minimized = TRUE;
+			g_error_free(err);
+			err = NULL;
+		}
 	}
 	else
 		first_run = TRUE;
@@ -2840,38 +2860,6 @@ static void save_history(const gchar *term)
 	history_file = NULL;
 }
 
-static void save_polysemy()
-{
-	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
-	save_preferences_to_file();
-}
-
-static void save_trayicon()
-{
-	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
-	save_preferences_to_file();	
-}
-
-static void save_mode()
-{
-	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
-	save_preferences_to_file();
-}
-
-static void save_hotkey()
-{
-	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
-	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
-	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
-	save_preferences_to_file();
-}
-
-static void save_notify()
-{
-	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
-	save_preferences_to_file();
-}
-
 static void save_preferences_to_file()
 {
 	gsize file_len = 0;
@@ -2901,13 +2889,16 @@ static void save_preferences()
 	g_key_file_set_comment(config_file, NULL, NULL, SETTINGS_COMMENT, NULL);
 
 	g_key_file_set_string(config_file, GROUP_SETTINGS, KEY_VERSION, PACKAGE_VERSION);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_KEY, app_hotkey.accel_key);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_MODS, app_hotkey.accel_mods);
+	g_key_file_set_integer(config_file, GROUP_SETTINGS, KEY_ACCEL_FLAGS, app_hotkey.accel_flags);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_MODE, advanced_mode);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, notifier_enabled);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, show_polysemy);
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, show_trayicon);
+	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_LAUNCH_HIDDEN, launch_minimized);
 
-	// this will set hotkey to GKeyFile AND save it to the conf file
-	save_hotkey();
+	save_preferences_to_file();
 }
 
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data)
@@ -2974,8 +2965,6 @@ static void show_loading(GtkBuilder *gui_builder)
 
 static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
 {
-	gboolean ret_val = FALSE;
-
 	if(SetSearchdir())
 	{
 		gsize file_size = 0;
@@ -3053,14 +3042,12 @@ static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
 			
 			g_free(contents);
 			contents = NULL;
-
-			ret_val = TRUE;
 		}
 		g_free(index_file_path);
 		index_file_path = NULL;
 	}
 
-	return ret_val;
+	return FALSE;
 }
 
 #ifdef X11_AVAILABLE
@@ -3261,63 +3248,116 @@ static gboolean register_unregister_hotkey(gboolean first_run, gboolean setup_ho
 	return(grab_ungrab_with_ignorable_modifiers(&app_hotkey, setup_hotkey));
 }
 
-static void setup_hotkey_editor(GtkBuilder *gui_builder)
+static void setup_settings_dialog(GtkBuilder *gui_builder)
 {
-	GtkLabel *hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_LABEL));
-	GtkContainer *hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY_HBOX));
-	GtkToggleButton *polysemy_show_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, DIALOG_POLYSEMY_CHKBTN));
-	GtkWidget *hotkey_accel_cell = NULL;
-	GtkDialog *settings_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
+	GtkLabel *hotkey_label = GTK_LABEL(gtk_builder_get_object(gui_builder, LABEL_HOTKEY));
+	GtkContainer *hbox = GTK_CONTAINER(gtk_builder_get_object(gui_builder, HBOX_HOTKEY));
+	GtkDialog *settings_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_OPTIONS));
+	GtkWidget *hotkey_accel_cell = create_hotkey_editor();
 
-	hotkey_accel_cell = create_hotkey_editor();
 	gtk_container_add(hbox, hotkey_accel_cell);
-
 	gtk_label_set_mnemonic_widget(hotkey_label, hotkey_accel_cell);
-	gtk_toggle_button_set_active(polysemy_show_btn, show_polysemy);
-
 	g_signal_connect(GTK_WIDGET(settings_dialog), "response", G_CALLBACK(gtk_widget_hide), NULL);
-	g_signal_connect(GTK_WIDGET(polysemy_show_btn), "toggled", G_CALLBACK(polysemy_display_toggle), gui_builder);
+	set_settings_to_check_boxes(gui_builder);
 }
 
-static void show_hotkey_editor(GtkToolButton *toolbutton, gpointer user_data)
+static void set_settings_to_check_boxes(GtkBuilder *gui_builder)
+{
+	GtkToggleButton *polysemy_show_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, CHKBTN_POLYSEMY));
+	GtkToggleButton *status_show_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, CHKBTN_STATUS));
+	GtkToggleButton *launch_min_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, CHKBTN_LAUNCH_MIN));
+	
+	// show_trayicon is the variable, while the checkbox is "hide status icon"
+	// hence the NOT op.; same goes for launch_minimized too
+	gtk_toggle_button_set_active(status_show_btn, !show_trayicon);
+	gtk_toggle_button_set_active(launch_min_btn, !launch_minimized);
+	gtk_toggle_button_set_active(polysemy_show_btn, show_polysemy);
+}
+
+static void get_settings_from_check_boxes(GtkBuilder *gui_builder,
+											gboolean *new_trayicon_show,
+											gboolean *new_launch_min,
+											gboolean *new_polysemy_show)
+{
+	GtkToggleButton *polysemy_show_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, CHKBTN_POLYSEMY));
+	GtkToggleButton *status_show_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, CHKBTN_STATUS));
+	GtkToggleButton *launch_min_btn = GTK_TOGGLE_BUTTON(gtk_builder_get_object(gui_builder, CHKBTN_LAUNCH_MIN));
+
+	// show_trayicon is the variable, while the checkbox is "hide status icon"
+	// hence the NOT op.; same goes for launch_minimized
+	*new_trayicon_show = !gtk_toggle_button_get_active(status_show_btn);
+	*new_launch_min = !gtk_toggle_button_get_active(launch_min_btn);
+	*new_polysemy_show = gtk_toggle_button_get_active(polysemy_show_btn);
+}
+
+static void apply_and_save_settings(GtkBuilder *gui_builder)
+{
+	GtkButton *search_button = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
+	gboolean new_show_trayicon = FALSE, new_show_polysemy = FALSE;
+
+	get_settings_from_check_boxes(gui_builder, &new_show_trayicon, &launch_minimized, &new_show_polysemy);
+	if(show_polysemy != new_show_polysemy)
+	{
+		show_polysemy = new_show_polysemy;
+		last_search_successful = FALSE;
+		gtk_button_clicked(search_button);
+	}
+	if(show_trayicon != new_show_trayicon)
+	{
+		GtkStatusIcon *status_icon = GTK_STATUS_ICON(gtk_builder_get_object(gui_builder, STATUS_ICON));
+		show_trayicon = new_show_trayicon;
+		gtk_status_icon_set_visible(status_icon, show_trayicon);
+	}
+
+	save_preferences();	
+}
+
+/* flags when changed and reverted don't affect, since only Apply code makes permanent
+ * changes, while hotkey alone is an exception to this; when changed, it captures the
+ * hotkey changed to; hence when reverted, this alone should be undone and the old
+ * hotkey should be set again
+ */
+static void revert_settings(GtkBuilder *gui_builder, GtkAccelKey *hotkey_backup)
+{
+	/* if prev. hotkey and app_hotkey are not the same and 'Apply' wasn't clicked
+	   then revert hotkey before saving the preferences */
+	if(hotkey_backup->accel_key != app_hotkey.accel_key || 
+	   hotkey_backup->accel_mods != app_hotkey.accel_mods || 
+	   hotkey_backup->accel_flags != app_hotkey.accel_flags)
+	{
+		grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE);
+		if(grab_ungrab_with_ignorable_modifiers(hotkey_backup, TRUE))
+			app_hotkey = *hotkey_backup;
+		else
+		{
+			show_message_dlg(NULL, MSG_HOTKEY_FAILED);
+			memset(&app_hotkey, 0, sizeof(GtkAccelKey));
+		}
+	}
+}
+
+static void show_settings_dialog(GtkToolButton *toolbutton, gpointer user_data)
 {
 	GtkAccelKey hotkey_backup = app_hotkey;
-	gboolean show_polysemy_backup = show_polysemy;
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
-	GtkDialog *settings_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
-	GtkButton *search_button = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
+	GtkDialog *settings_dialog = GTK_DIALOG(gtk_builder_get_object(gui_builder, DIALOG_OPTIONS));
+	gint hotkey_dialog_response = 0;
 
-	gint hotkey_dialog_response = gtk_dialog_run(settings_dialog);
+	// load settings from variables to check boxes
+	/* update the old value on the controls
+	 * this is done for a scenario where the user changes the form value and presses cancel
+	 * in the next launch of the Options dialog, the old 'Cancel'ed form states shouldn't be there
+	 */
+	set_settings_to_check_boxes(gui_builder);
 
-	if(GTK_RESPONSE_APPLY != hotkey_dialog_response)
+	hotkey_dialog_response = gtk_dialog_run(settings_dialog);
+	if(GTK_RESPONSE_APPLY == hotkey_dialog_response)
 	{
-		// set the old polysemy setting
-		show_polysemy = show_polysemy_backup;
-
-		/* if prev. hotkey and app_hotkey are not the same and 'Apply' wasn't clicked
-		   then revert hotkey before saving the preferences */
-		if(hotkey_backup.accel_key != app_hotkey.accel_key || 
-		   hotkey_backup.accel_mods != app_hotkey.accel_mods || 
-		   hotkey_backup.accel_flags != app_hotkey.accel_flags)
-		{
-			grab_ungrab_with_ignorable_modifiers(&app_hotkey, FALSE);
-			if(grab_ungrab_with_ignorable_modifiers(&hotkey_backup, TRUE))
-				app_hotkey = hotkey_backup;
-			else
-			{
-				show_message_dlg(NULL, MSG_HOTKEY_FAILED);
-				memset(&app_hotkey, 0, sizeof(GtkAccelKey));
-			}
-		}
+		apply_and_save_settings(gui_builder);
 	}
 	else
 	{
-		if(show_polysemy != show_polysemy_backup)
-		{
-			last_search_successful = FALSE;
-			gtk_button_clicked(search_button);
-		}
-		save_hotkey();
+		revert_settings(gui_builder, &hotkey_backup);
 	}
 	/* set hotkey flag */
 	hotkey_set = (gboolean) app_hotkey.accel_key;
@@ -3460,12 +3500,10 @@ static gboolean window_visibility_toggled(GtkWidget *widget, GdkEventVisibility 
 int main(int argc, char *argv[])
 {
 	GtkBuilder *gui_builder = NULL;
-	GtkWidget *window = NULL, *button_search = NULL, *combo_query = NULL, *combo_entry = NULL, *hotkey_editor_dialog = NULL;
+	GtkWidget *window = NULL, *button_search = NULL, *combo_query = NULL, *combo_entry = NULL, *settings_dialog = NULL;
 	GtkMenu *popup_menu = NULL;
-	GtkToggleToolButton *status_icon_menu = NULL;
 	GtkExpander *expander = NULL;
 	GdkPixbuf *app_icon = NULL;
-	GtkStatusIcon *status_icon = NULL;
 	GError *err = NULL;
 	gboolean first_run = FALSE, hotkey_reg_failed = FALSE;
 	gchar *ui_file_path = NULL, *icon_file_path = NULL;
@@ -3513,6 +3551,7 @@ int main(int argc, char *argv[])
 				window = GTK_WIDGET(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 				if(window)
 				{
+					GtkStatusIcon *status_icon = NULL;
 #ifdef DBUS_AVAILABLE
 					/* if the control's here, then it's sure that we're the unique instance;
 					register for dbus signals from possible duplicate instances */
@@ -3590,13 +3629,14 @@ int main(int argc, char *argv[])
 					/* save preferences here - after all setting based loads are done */
 					save_preferences();
 
-					setup_hotkey_editor(gui_builder);
-					hotkey_editor_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_HOTKEY));
+					setup_settings_dialog(gui_builder);
+					settings_dialog = GTK_WIDGET(gtk_builder_get_object(gui_builder, DIALOG_OPTIONS));
 
 					icon_file_path = g_build_filename(ICON_DIR, ICON_FILE, NULL);
 					if(g_file_test(icon_file_path, G_FILE_TEST_IS_REGULAR))
 					{
-						status_icon = gtk_status_icon_new_from_file(icon_file_path);
+						status_icon = GTK_STATUS_ICON(gtk_builder_get_object(gui_builder, STATUS_ICON));
+						gtk_status_icon_set_from_file(status_icon, icon_file_path);
 						gtk_status_icon_set_tooltip(status_icon, STR_APP_TITLE);
 						gtk_status_icon_set_visible(status_icon, show_trayicon);
 					}
@@ -3604,20 +3644,25 @@ int main(int argc, char *argv[])
 					{
 						g_warning("Error loading icon file!\n%s not found!\n", icon_file_path);
 					}
+					g_free(icon_file_path);
+					icon_file_path = NULL;
 
 					mod_notify_init();
 					
-					status_icon_menu = setup_toolbar(gui_builder, icon_file_path, status_icon);
-					g_free(icon_file_path);
-					icon_file_path = NULL;
+					setup_toolbar(gui_builder);
 
 					/* pop-up menu creation should be after assessing the availability of notifications
 					   since if it is not available, the Notify menu option can be stripped
 					   create pop-up menu */
-					popup_menu = create_popup_menu(gui_builder, status_icon_menu);
+					popup_menu = create_popup_menu(gui_builder);
 
-					g_signal_connect(status_icon, "activate", G_CALLBACK(status_icon_activate), gui_builder);
-					g_signal_connect(status_icon, "popup-menu", G_CALLBACK(status_icon_popup), GTK_WIDGET(popup_menu));
+					/* status icon connections made here since popup menu should be ready for this
+					 * which wouldn't be ready when status_icon is inited */
+					 if(status_icon)
+					 {
+						 g_signal_connect(status_icon, "activate", G_CALLBACK(status_icon_activate), gui_builder);
+						 g_signal_connect(status_icon, "popup-menu", G_CALLBACK(status_icon_popup), GTK_WIDGET(popup_menu));
+					 }
 
 
 					// using the status icon, app. icon is also set
@@ -3665,24 +3710,24 @@ int main(int argc, char *argv[])
 
 					// show the window if it's a first run or a hotkey couldn't be set
 					// if the window is not shown, set notify the startup is complete
-					if(first_run || hotkey_reg_failed)
+					if(first_run || hotkey_reg_failed || !launch_minimized)
 						gtk_widget_show_all(window);
 					else
 						gdk_notify_startup_complete();
 
 					// index all wordnet terms from the index.sense onto memory
-					wordnet_terms_load(gui_builder);
+					g_idle_add((GSourceFunc) wordnet_terms_load, gui_builder);
 
 					gtk_main();
 
-					gtk_widget_destroy(GTK_WIDGET(popup_menu));
 					/* on Win32 platform, icon stays even after app close, this is
 					   a workaround to fix that */
 					gtk_status_icon_set_visible(status_icon, FALSE);
 					destructor(gui_builder);
 
 					/* GtkBuilder drops references to any held, except toplevel widgets */
-					gtk_widget_destroy(hotkey_editor_dialog);
+					gtk_widget_destroy(GTK_WIDGET(popup_menu));
+					gtk_widget_destroy(settings_dialog);
 					gtk_widget_destroy(window);
 				}
 				else
