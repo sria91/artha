@@ -1,4 +1,6 @@
 Users' Wish List:
+* Make show/hide tray icon part of options dialog
+* Format UI of options dialog, polysemy count should be a checkbox and description seems misaligned
 * Pronunciations
 * Command-line interface
 * Option to make the hotkey a switch
@@ -11,8 +13,6 @@ To Do:
 * Help docs and Preferences windows are to be added with few more features.
 
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
-
-* Clearing search history
 
 * Auto complete of the query combo using history or the whole dict. index?
 

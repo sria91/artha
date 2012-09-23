@@ -113,7 +113,9 @@ static gchar* wildmat_to_regex(const gchar *wildmat);
 static gboolean set_regex_results(const gchar *wildmat_exp, GtkBuilder *gui_builder);
 static gboolean is_wildmat_expr();
 static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
-static void update_history(GtkComboBox *combo_query, const char *lemma);
+static gboolean is_entry_unique(GtkTreeModel *query_list_store, GtkTreePath *path, GtkTreeIter *iter, gchar **lemma);
+static gboolean update_history(GtkComboBox *combo_query, char *lemma);
+static gboolean update_history_and_save(GtkComboBox *combo_query, char *lemma);
 static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
 static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, gchar ***suggestions_base);
 static void construct_show_notification();
@@ -163,6 +165,8 @@ static void save_preferences_to_file();
 static void save_preferences();
 static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
+static gboolean autocomplete_selected(GtkEntryCompletion *query_completion, GtkTreeModel *model, GtkTreeIter *iter, GtkButton *button);
+static void show_loading(GtkBuilder *gui_builder);
 static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
 #ifdef X11_AVAILABLE
 static void lookup_ignorable_modifiers(void);
@@ -1272,45 +1276,50 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 	return results_set;
 }
 
-static void update_history(GtkComboBox *combo_query, const char *lemma)
+static gboolean is_entry_unique(GtkTreeModel *query_list_store, GtkTreePath *path, GtkTreeIter *iter, gchar **lemma)
 {
-	GtkTreeIter query_list_iter = {0};
-	GtkListStore *query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));
+	gboolean duplicate = FALSE;
 	gchar *str_list_item = NULL;
-	gboolean duplicate = FALSE, iter_valid = FALSE;
+	gtk_tree_model_get(query_list_store, iter, 0, &str_list_item, -1);
+	duplicate = (0 == g_strcmp0(*lemma, str_list_item));
+	g_free(str_list_item);
+	str_list_item = NULL;
+	if(duplicate)
+	{
+		*lemma = NULL;
+	}
+	return duplicate;
+}
+
+static gboolean update_history(GtkComboBox *combo_query, char *lemma)
+{
+	GtkListStore *query_list_store = GTK_LIST_STORE(gtk_combo_box_get_model(combo_query));
+	gboolean inserted = FALSE;
 
 	if(!query_list_store)
 		g_error("Unable to get query combo box's model!");
 
-	iter_valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(query_list_store), &query_list_iter);
+	gtk_tree_model_foreach(GTK_TREE_MODEL(query_list_store), (GtkTreeModelForeachFunc) is_entry_unique, (gpointer) &lemma);
 
-	while((!duplicate) && iter_valid)
+	if(lemma)
 	{
-		gtk_tree_model_get(GTK_TREE_MODEL(query_list_store), &query_list_iter, 0, &str_list_item, -1);
-		if(0 == g_strcmp0(lemma, str_list_item))
-		{
-			// While in here, if you set a particular index item as active, 
-			// it again calls the button_search_click from within as an after effect of combo_query "changed" signal
-			//gtk_combo_box_set_active(combo_query, count);
-
-			// move it to top, is it reqd. for history impl.? No, as it only makes 
-			// Prev. key confusing by cycling thru' the same 2 items again & again.
-			//gtk_list_store_move_after(query_list_store, &query_list_iter, NULL);
-			
-			// flag cleared to not append it again
-			duplicate = TRUE;
-		}
-		g_free(str_list_item);
-		str_list_item = NULL;
-		iter_valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(query_list_store), &query_list_iter);
-	}
-
-	if(!duplicate)
-	{
+		GtkTreeIter query_list_iter = {0};
 		gtk_list_store_prepend(query_list_store, &query_list_iter);
 		gtk_list_store_set(query_list_store, &query_list_iter, 0, lemma, -1);
-		save_history(lemma);
+		inserted = TRUE;
 	}
+	return inserted;
+}
+
+static gboolean update_history_and_save(GtkComboBox *combo_query, char *lemma)
+{
+	gboolean saved = FALSE;
+	if(update_history(combo_query, lemma))
+	{
+		save_history(lemma);
+		saved = TRUE;
+	}
+	return saved;
 }
 
 static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
@@ -1417,7 +1426,8 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 	gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 
 	// manage history
-	update_history(combo_query, ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
+	update_history_and_save(combo_query,
+	((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
 }
 
 static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, gchar ***suggestions_base)
@@ -2243,14 +2253,14 @@ static void clear_history(GtkMenuItem *menu_item, GtkListStore *list_store_query
 	gtk_list_store_clear(list_store_query);
 	hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
 	history_file = g_file_new_for_path(hist_file_path);
+	g_free(hist_file_path);
+	hist_file_path = NULL;
 	if(g_file_query_exists(history_file, NULL))
 	{
 		g_file_delete(history_file, NULL, NULL);
 	}
 	g_object_unref(history_file);
 	history_file = NULL;
-	g_free(hist_file_path);
-	hist_file_path = NULL;
 }
 
 static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
@@ -2344,8 +2354,9 @@ static void load_history(GtkListStore *list_store_query)
 		while((term = g_data_input_stream_read_line(dis, NULL, NULL, NULL)))
 		{
 			GtkTreeIter iter = {0};
-			gtk_list_store_append(list_store_query, &iter);
+			gtk_list_store_prepend(list_store_query, &iter);
 			gtk_list_store_set(list_store_query, &iter, 0, term, -1);
+			g_free(term); term = NULL;
 		}
 		g_object_unref(dis);
 		dis = NULL;
@@ -2929,92 +2940,126 @@ static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpoi
 	}
 }
 
-static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
+static gboolean autocomplete_selected(GtkEntryCompletion *query_completion, GtkTreeModel *model, GtkTreeIter *iter, GtkButton *button)
 {
-	gchar *index_file_path = NULL;
-	gchar *contents = NULL;
-	GString *word, *prev_word = NULL;
-	gchar ch = 0;
-	guint32 i = 0;
-	guint32 count = 0;
-	gboolean ret_val = FALSE;
+	gchar *match = NULL;
+	gtk_tree_model_get(model, iter, 0, &match, -1);
+	if(match)
+	{
+		GtkEntry *query_entry = GTK_ENTRY(gtk_entry_completion_get_entry(query_completion));
+		gtk_entry_set_text(query_entry, match);
+		g_free(match);
+		match = NULL;
+		gtk_button_clicked(button);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void show_loading(GtkBuilder *gui_builder)
+{
+	gchar status_msg[MAX_STATUS_MSG] = "";
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
-	gchar status_msg[MAX_STATUS_MSG] = "";
+	// set the loading message on status bar
+	gtk_statusbar_pop(status_bar, status_msg_context_id);
+	g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_INDEXING);
+	status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_LOADING_INDEX);
+	gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
+
+	// if visible, repaint the statusbar after setting the status message, for it to get reflected
+	if(gtk_widget_get_visible(GTK_WIDGET(window)))
+		gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
+}
+
+static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
+{
+	gboolean ret_val = FALSE;
 
 	if(SetSearchdir())
 	{
-		index_file_path = g_strdup_printf(SENSEIDXFILE, SetSearchdir());
-		
-		if(g_file_get_contents(index_file_path, &contents, NULL, NULL))
+		gsize file_size = 0;
+		gchar *contents = NULL;
+		gchar *index_file_path = g_strdup_printf(SENSEIDXFILE, SetSearchdir());
+		if(g_file_get_contents(index_file_path, &contents, &file_size, NULL))
 		{
-			word = g_string_new("");
-			prev_word = g_string_new("");
-			wordnet_terms = g_string_new("");
+			GtkBin *query_combo = GTK_BIN(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+			GtkEntry *query_entry = GTK_ENTRY(gtk_bin_get_child(query_combo));
+			GtkButton *query_button = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
+			GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
+			GtkEntryCompletion *query_entry_completion = NULL;
+			GtkListStore *completion_list = gtk_list_store_new(1, G_TYPE_STRING);
+			GtkTreeIter iter = {0};
 
-			// set the loading message on status bar
-			gtk_statusbar_pop(status_bar, status_msg_context_id);
-			g_snprintf(status_msg, MAX_STATUS_MSG, STR_STATUS_INDEXING);
-			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_LOADING_INDEX);
-			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
+			gchar last_lemma[MAX_LEMMA_LEN] = "";
+			gchar lemma[MAX_LEMMA_LEN] = "";
+			gsize i = 0;
+			guint8 j = 0;
+			gboolean is_reading = TRUE;
 
-			// if visible, repaint the statusbar after setting the status message, for it to get reflected
-			if(gtk_widget_get_visible(GTK_WIDGET(window)))
-				gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
-
-			do
+			show_loading(gui_builder);
+			wordnet_terms = g_string_new(NULL);
+			while(i < file_size)
 			{
-				ch = contents[i++];
+				gchar ch = contents[i++];
 				
-				if(ch == '_') ch = ' ';
-
-				if(ch == '%')
+				if(is_reading)
 				{
-					for(; ((contents[i] != '\n') && (contents[i] != '\0')); i++);
-
-					ch = contents[i++];
-					word = g_string_append_c(word, ch);
-
-					if(!g_string_equal(prev_word, word))
+					if('%' == ch)
 					{
-						wordnet_terms = g_string_append(wordnet_terms, word->str);
-						g_string_erase(prev_word, 0, prev_word->len);
-						g_string_append(prev_word, word->str);
+						is_reading = FALSE;
+						lemma[j++]='\n';
+						lemma[j] = '\0';
+						if(g_strcmp0(lemma, last_lemma))
+						{
+							wordnet_terms = g_string_append(wordnet_terms, lemma);
+							memcpy(last_lemma, lemma, MAX_LEMMA_LEN);
+							lemma[j - 1] = '\0';
 
-						count++;
+							gtk_list_store_append(completion_list, &iter);
+							gtk_list_store_set(completion_list, &iter, 0, lemma, -1);
+						}
+						j = 0;
 					}
-					word = g_string_erase(word, 0, word->len);
+					else
+					{
+						if('_' == ch)
+							ch = ' ';
+						lemma[j++] = ch;
+					}
 				}
 				else
 				{
-					word = g_string_append_c(word, ch);
+					if('\n' == ch)
+					{
+						is_reading = TRUE;
+					}
 				}
+			}
 
-			} while(ch != '\0');
-
-			// put up the EOF char in place of the lastly appended '\n'
-			// Note: since it's a GString, after this '\n' there will be
-			// a default '\0' managed by GLib; GString->len gives you
-			// the length without counting this char.
-			wordnet_terms->str[wordnet_terms->len - 1] = ch;
-			
 			G_DEBUG("Total Dict. Terms Loaded: %d\n", ++count);
 
-			g_free(contents);
-			g_string_free(word, TRUE);
-			g_string_free(prev_word, TRUE);
-			contents = NULL, word = prev_word = NULL;
-			
-			ret_val = TRUE;
+			query_entry_completion = gtk_entry_completion_new();
+			gtk_entry_completion_set_model(query_entry_completion, GTK_TREE_MODEL(completion_list));
+			g_object_unref(completion_list);
+			completion_list = NULL;
+			gtk_entry_completion_set_text_column(query_entry_completion, 0);
+			gtk_entry_completion_set_minimum_key_length(query_entry_completion, 3);
+			gtk_entry_set_completion(query_entry, query_entry_completion);
+			g_signal_connect(query_entry_completion, "match-selected", G_CALLBACK(autocomplete_selected), query_button);
 
 			// clear the loading message from status bar
 			gtk_statusbar_pop(status_bar, status_msg_context_id);
+			
+			g_free(contents);
+			contents = NULL;
+
+			ret_val = TRUE;
 		}
-		
 		g_free(index_file_path);
 		index_file_path = NULL;
 	}
-	
+
 	return ret_val;
 }
 

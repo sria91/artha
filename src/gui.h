@@ -62,6 +62,7 @@
 #define UI_FILE			"gui.glade"
 #define MAX_CONCAT_STR		500
 #define MAX_STATUS_MSG		100
+#define MAX_LEMMA_LEN		200
 #define	MAX_SENSE_DIGITS	5
 
 /* about box constants */
