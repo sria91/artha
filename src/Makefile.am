@@ -1,5 +1,7 @@
 AM_CFLAGS = -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
--fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@
+-fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@ \
+-DGTK_DISABLE_DEPRECATED=1 -DGDK_DISABLE_DEPRECATED=1 \
+-DGDK_PIXBUF_DISABLE_DEPRECATED=1 -DG_DISABLE_DEPRECATED=1
 
 bin_PROGRAMS = artha
 

@@ -41,7 +41,7 @@
 
 GModule *mod_notify = NULL;
 gboolean notify_inited = FALSE;
-extern NotifyNotification *notifier;
+extern NotifyNotification *mod_notifier;
 
 static GModule* lookup_dynamic_library()
 {
@@ -84,8 +84,8 @@ gboolean mod_notify_init()
 
 				/* initialize summary as Artha (Package Name)
 				   this will, however, be modified to the looked up word before display */
-				notifier = notify_notification_new(PACKAGE_NAME, NULL, "gtk-dialog-info");
-                if(notifier)
+				mod_notifier = notify_notification_new(PACKAGE_NAME, NULL, "gtk-dialog-info");
+                if(mod_notifier)
                 {
                     G_MESSAGE("Notification module successfully loaded");
                     retval = TRUE;
@@ -93,7 +93,7 @@ gboolean mod_notify_init()
 			}
 		}
 
-		if(!notifier)
+		if(!mod_notifier)
 		{
             if(notify_inited)
             {
@@ -111,10 +111,10 @@ gboolean mod_notify_init()
 
 gboolean mod_notify_uninit()
 {
-	if(notifier)
+	if(mod_notifier)
 	{
 		/* close notifications, if open */
-		notify_notification_close(notifier, NULL);
+		notify_notification_close(mod_notifier, NULL);
 
         /*
            reason it's not required in Win32 is this
@@ -125,12 +125,12 @@ gboolean mod_notify_uninit()
            NotifyNotification*
         */
 #ifdef G_OS_WIN32
-		free(notifier);
-		notifier = NULL;
+		free(mod_notifier);
+		mod_notifier = NULL;
 #else
-		g_object_unref(G_OBJECT(notifier));
+		g_object_unref(G_OBJECT(mod_notifier));
 #endif
-		notifier = NULL;
+		mod_notifier = NULL;
 	}
     
     if(notify_inited)

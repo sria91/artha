@@ -291,6 +291,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Wextra -std=c99 -pedantic -Wno-unused-parameter \
 	-fstrict-aliasing -Wno-missing-field-initializers @GTK_CFLAGS@ \
+	-DGTK_DISABLE_DEPRECATED=1 -DGDK_DISABLE_DEPRECATED=1 \
+	-DGDK_PIXBUF_DISABLE_DEPRECATED=1 -DG_DISABLE_DEPRECATED=1 \
 	$(am__append_3)
 noinst_LIBRARIES = libwni.a
 libwni_a_SOURCES = wni.c wni.h

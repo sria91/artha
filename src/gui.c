@@ -51,12 +51,12 @@ static const gchar *freq_colors[] = {"Black", "SaddleBrown", "FireBrick", "SeaGr
 
 /* notifier_enabled is for the setting "Notify" and *notifier is for the module availability */
 static GSList 			*results = NULL;
-static gchar 			*last_search = NULL;
 static gboolean 		was_double_click = FALSE, last_search_successful = FALSE, advanced_mode = FALSE, auto_contract = FALSE;
 static gboolean		hotkey_set = FALSE, mod_suggest = FALSE;
 // options which default to true
 static gboolean		notifier_enabled = TRUE, show_polysemy = TRUE, launch_minimized = TRUE, show_trayicon = TRUE;
-gboolean				hotkey_processing = FALSE;
+static gboolean		hotkey_processing = FALSE, last_lookup_a_notification = FALSE;
+static gchar		last_search[MAX_LEMMA_LEN] = "";
 #ifdef X11_AVAILABLE
 static Display			*dpy = NULL;
 guint32			last_hotkey_time = 0;
@@ -67,7 +67,7 @@ GtkAccelKey		app_hotkey = {0};
 static gint			notify_toolbar_index = -1;
 static guint			status_msg_context_id = 0;
 static GString			*wordnet_terms = NULL;
-NotifyNotification	*notifier = NULL;
+NotifyNotification	*mod_notifier = NULL;
 static GtkCheckMenuItem	*menu_notify = NULL;
 static GKeyFile			*config_file = NULL;
 	
@@ -93,10 +93,12 @@ static inline gboolean is_alt_pressed();
 static inline void print_last_error();
 static gchar* win32_capture_selection();
 #endif
+static void notification_lookup(gchar *query);
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
 static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
 static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpointer user_data);
+static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data);
 static void about_activate(GtkToolButton *menu_item, gpointer user_data);
 static void quit_activate(GtkWidget *widget, gpointer user_data);
 static guint8 get_frequency(guint sense_count);
@@ -119,13 +121,12 @@ static gboolean is_entry_unique(GtkTreeModel *query_list_store, GtkTreePath *pat
 static gboolean update_history(GtkComboBox *combo_query, char *lemma);
 static gboolean update_history_and_save(GtkComboBox *combo_query, char *lemma);
 static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer);
-static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, gchar ***suggestions_base);
+static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, GSList *suggestions);
 static void construct_show_notification();
-static void query_wni(GtkBuilder *gui_builder,
-					  gchar *search_str,
-					  gchar ***suggestions,
-					  gboolean notification_lookup,
-					  gboolean *suggestions_looked);
+static void show_searching(GtkBuilder *gui_builder);
+static void query_wni(gchar *search_str,
+					  WNIRequestFlags lookup_type,
+					  GSList **suggestions);
 static void button_search_click(GtkButton *button, gpointer user_data);
 static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data);
 static gboolean text_view_button_pressed(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
@@ -158,8 +159,6 @@ static gboolean load_preferences(GtkWindow *parent);
 static void save_history(const gchar *term);
 static void save_preferences_to_file();
 static void save_preferences();
-static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
-static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data);
 static gboolean autocomplete_selected(GtkEntryCompletion *query_completion, GtkTreeModel *model, GtkTreeIter *iter, GtkButton *button);
 static void show_loading(GtkBuilder *gui_builder);
 static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
@@ -260,7 +259,7 @@ static void mode_toggled(GtkToggleToolButton *toggle_button, gpointer user_data)
 		relatives_clear_all(gui_builder);
 		relatives_load(gui_builder, FALSE);
 	}
-	
+
 	save_preferences();
 }
 
@@ -403,14 +402,49 @@ static gchar* win32_capture_selection()
 }
 #endif
 
+static void notification_lookup(gchar *query)
+{
+	gchar *stripped_lookup = g_strstrip(strip_invalid_edges(query));
+	// make sure this isn't a zero length string; valid but zero length
+	if(stripped_lookup[0])
+	{
+		gboolean new_search = TRUE;
+		if(last_search_successful)
+			new_search = (g_ascii_strcasecmp(last_search, stripped_lookup) != 0);
+
+		if(new_search)
+			query_wni(stripped_lookup, WORDNET_INTERFACE_NONE, NULL);
+
+		if(results)
+		{
+			construct_show_notification();
+
+			g_stpcpy(last_search, stripped_lookup);
+			last_search_successful = TRUE;
+		}
+		else
+		{
+			gboolean update_successful = notify_notification_update(mod_notifier,
+																	stripped_lookup,
+																	STR_STATUS_QUERY_FAILED,
+																	"gtk-dialog-warning");
+			if(!update_successful || (FALSE == notify_notification_show(mod_notifier, NULL)))
+			{
+				g_warning("Failed to display notification!\n");
+			}
+			last_search_successful = FALSE;
+		}
+		g_free(stripped_lookup);
+		stripped_lookup = NULL;
+	}
+	last_lookup_a_notification = TRUE;
+}
+
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data)
 {
 	gchar *selection = NULL;
-	GtkBuilder *gui_builder = NULL;
-	GtkComboBox *combo_query = NULL;
-	GtkEntry *text_entry_query = NULL;
-	GtkButton *button_search = NULL;
-	GtkWindow *window = NULL;
+	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
+	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 
 #ifdef X11_AVAILABLE
 	XEvent *xe = (XEvent*) xevent;
@@ -425,6 +459,8 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 	if(WM_HOTKEY == msg->message)
 	{
 #endif
+		GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+
 		hotkey_processing = TRUE;
 		
 #ifdef X11_AVAILABLE
@@ -437,28 +473,30 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 		selection = win32_capture_selection();
 #endif
 
-		gui_builder = GTK_BUILDER(user_data);
-		combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-
 		if(selection)
 		{
-			text_entry_query = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
-			button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
+			// setting the text is needed for both notification and normal lookup
+			// since on unobscuring the window, a proper lookup needs to be done
+			GtkEntry *text_entry_query = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
+			gtk_entry_set_text(text_entry_query, selection);
+			//gtk_editable_set_position(GTK_EDITABLE(text_entry_query), -1);
 
-			if(0 != g_ascii_strncasecmp(gtk_entry_get_text(text_entry_query), selection, strlen(selection) + 1))
+			if(gtk_widget_get_visible(GTK_WIDGET(window)) || !notifier_enabled)
 			{
-				gtk_entry_set_text(text_entry_query, selection);
-				//gtk_editable_set_position(GTK_EDITABLE(text_entry_query), -1);
+				GtkButton *button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
+				gtk_button_clicked(button_search);
+			}
+			// if notifier_enabled and notifier mod is present
+			else if(mod_notifier)
+			{
+				notification_lookup(selection);
 			}
 			g_free(selection);
 			selection = NULL;
-
-			gtk_button_clicked(button_search);
 		}
 		else
 		{
 			// see if in case notify is selected, should we popup or we should just notify "No selection made!"
-			window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 			show_window(window);
 			gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 		}
@@ -470,7 +508,6 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 #ifdef G_OS_WIN32
 	else if(WM_ARTHA_RELAUNCH == msg->message)
 	{
-		gui_builder = GTK_BUILDER(user_data);
 		window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 		gtk_window_present(window);
 		return GDK_FILTER_REMOVE;
@@ -492,8 +529,8 @@ static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data)
 	{
 
 		/* close notifications, if any */
-		if(notifier)
-			notify_notification_close(notifier, NULL);
+		if(mod_notifier)
+			notify_notification_close(mod_notifier, NULL);
 		show_window(window);
 		combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
 		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
@@ -510,19 +547,43 @@ static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpo
 {
 	switch(response_id)
 	{
-		case GTK_RESPONSE_CLOSE:
-		case GTK_RESPONSE_CANCEL:
-		case GTK_RESPONSE_DELETE_EVENT:
-			gtk_widget_destroy(GTK_WIDGET(about_dialog));
-			break;
 		case ARTHA_RESPONSE_REPORT_BUG:
-			gtk_show_uri(NULL, STR_BUG_WEBPAGE, GDK_CURRENT_TIME, NULL);
+		{
+#ifndef G_OS_WIN32
+			GError *err = NULL;
+			if(!gtk_show_uri(NULL, STR_BUG_WEBPAGE, GDK_CURRENT_TIME, &err))
+			{
+				GtkDialog *err_msg = GTK_DIALOG(gtk_message_dialog_new(
+															GTK_WINDOW(about_dialog),
+															GTK_DIALOG_DESTROY_WITH_PARENT,
+															GTK_MESSAGE_ERROR,
+															GTK_BUTTONS_CLOSE,
+															"Error opening %s\n\n%s",
+															STR_BUG_WEBPAGE,
+															err->message));
+				gtk_dialog_run(err_msg);
+				gtk_widget_destroy(GTK_WIDGET(err_msg));
+				g_error_free(err);
+				err = NULL;
+			}
+#else
+			link_launch(GTK_ABOUT_DIALOG(about_dialog), STR_BUG_WEBPAGE, NULL);
+#endif
 			break;
+		}
 		default:
 			g_warning("About Dialog: Unhandled response_id: %d!\n", response_id);
 			break;
 	}
+	gtk_widget_destroy(GTK_WIDGET(about_dialog));
 }
+
+#ifdef G_OS_WIN32
+static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data)
+{
+	return ((int)ShellExecute(hMainWindow, "open", uri, NULL, NULL, SW_SHOWNORMAL) > 32);
+}
+#endif
 
 static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 {
@@ -535,8 +596,11 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 	"website", PACKAGE_URL, NULL);
 
 	gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
-
 	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), NULL);
+	
+#ifdef G_OS_WIN32
+	g_signal_connect(about_dialog, "activate-link", G_CALLBACK(link_launch), NULL);
+#endif
 	
 	gtk_dialog_run(GTK_DIALOG(about_dialog));
 }
@@ -1218,22 +1282,21 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 	GtkExpander *expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	GtkEntry *query_entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	gboolean results_set = FALSE;
 
 	// Check if the fed string is a wildmat expr.
 	// If true, call the regex mod. to set the results and return
-	gchar *regex_text = g_strstrip(gtk_combo_box_get_active_text(combo_query));
-	if( (!notifier || !notifier_enabled || gtk_widget_get_visible(GTK_WIDGET(window))) &&
-		 is_wildmat_expr(regex_text) )
+	gchar *regex_text = g_strstrip(g_strdup(gtk_entry_get_text(query_entry)));
+	if(is_wildmat_expr(regex_text))
 	{
 		// clear previously set relatives
 		// clear search successful flag; without this when the prev. looked up
 		// word is again dbl clicked from the results, it won't jump to the word
 		relatives_clear_all(gui_builder);
 		last_search_successful = FALSE;
-		last_search = NULL;
 
 		// contract the expander, since relatives aren't required here
 		if(gtk_expander_get_expanded(expander))
@@ -1243,7 +1306,7 @@ static gboolean handle_wildmat_expr(GtkBuilder *gui_builder, GtkTextBuffer *buff
 		}
 
 		gtk_statusbar_pop(status_bar, status_msg_context_id);
-		
+
 		if(wordnet_terms)
 		{
 			// set the status bar to inform that the search is on going
@@ -1445,28 +1508,24 @@ static void show_definitions(GtkBuilder *gui_builder, GtkTextBuffer *buffer)
 	((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma);
 }
 
-static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, gchar ***suggestions_base)
+static void show_suggestions(GtkBuilder *gui_builder, GtkTextBuffer *buffer, GtkTextIter *cur, GSList *suggestions)
 {
-	guint16 i = 0;
 	GtkExpander *expander = GTK_EXPANDER(gtk_builder_get_object(gui_builder, EXPANDER));
-	gchar **suggestions = *suggestions_base;
 
 	gtk_text_buffer_insert(buffer, cur, NEW_LINE, -1);
 	gtk_text_buffer_insert_with_tags_by_name(buffer, cur, STR_SUGGEST_MATCHES, -1, TAG_MATCH, NULL);
 
-	while(suggestions[i])
+	while(suggestions)
 	{
 		gtk_text_buffer_insert(buffer, cur, NEW_LINE, -1);
 		gtk_text_buffer_insert_with_tags_by_name(buffer,
 							 cur,
-							 suggestions[i++],
+							 suggestions->data,
 							 -1,
 							 TAG_SUGGESTION,
 							 NULL);
+		suggestions = g_slist_next(suggestions);
 	}
-
-	g_strfreev(*suggestions_base);
-	*suggestions_base = NULL;
 
 	// contract the expander, since relatives aren't required here
 	if(gtk_expander_get_expanded(expander))
@@ -1486,12 +1545,12 @@ static void construct_show_notification()
 				NULL);
 
 	// close any previous updates
-	notify_notification_close(notifier, NULL);
+	notify_notification_close(mod_notifier, NULL);
 
 	if(definition)
 	{
-		gboolean update_successful = notify_notification_update(notifier, lemma, definition, "gtk-dialog-info");
-		if(!update_successful || (FALSE == notify_notification_show(notifier, NULL)))
+		gboolean update_successful = notify_notification_update(mod_notifier, lemma, definition, "gtk-dialog-info");
+		if(!update_successful || (FALSE == notify_notification_show(mod_notifier, NULL)))
 		{
 			g_warning("Failed to display notification\n");
 		}
@@ -1500,15 +1559,8 @@ static void construct_show_notification()
 	}
 }
 
-static void query_wni(GtkBuilder *gui_builder,
-					  gchar *search_str,
-					  gchar ***suggestions,
-					  gboolean notification_lookup,
-					  gboolean *suggestions_looked)
+static void show_searching(GtkBuilder *gui_builder)
 {
-	/* if it's only for notification, then instead of an unwanted 
-	   heavy look-up, just make the simplest notify lookup (quickie) */
-	WNIRequestFlags lookup_flag = notification_lookup ? WORDNET_INTERFACE_NONE : WORDNET_INTERFACE_ALL;
 	gchar status_msg[MAX_STATUS_MSG] = "";
 	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
@@ -1521,20 +1573,36 @@ static void query_wni(GtkBuilder *gui_builder,
 	// if visible, repaint the statusbar after setting the status message, for it to get reflected
 	if(gtk_widget_get_visible(GTK_WIDGET(window)))
 		gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
+}
 
+static void query_wni(gchar *search_str,
+					  WNIRequestFlags lookup_type,
+					  GSList **suggestions)
+{
 	G_MESSAGE("'%s' requested from WNI!\n", search_str);
 
-	wni_request_nyms(search_str, &results, lookup_flag, advanced_mode);
+	wni_request_nyms(search_str, &results, lookup_type, advanced_mode);
 
 	// if the search failed and suggestions are available, check if the prime
 	// suggestion is the same as the search string
 	if(!results && mod_suggest)
 	{
-		*suggestions = suggestions_get(search_str);
-		*suggestions_looked = TRUE;
-		if(*suggestions && are_same_after_strip(search_str, (*suggestions)[0]))
+		GSList *temp_suggestions = suggestions_get(search_str);
+		if(temp_suggestions && are_same_after_strip(search_str, temp_suggestions->data))
 		{
-			wni_request_nyms((*suggestions)[0], &results, lookup_flag, advanced_mode);
+			wni_request_nyms(temp_suggestions->data, &results, lookup_type, advanced_mode);
+		}
+		// if the caller wanted the suggestions and the suggestions lookup succeeded
+		// then don't free the results, but pass it on
+		else if(suggestions)
+		{
+			*suggestions = temp_suggestions;
+		}
+
+		// if not passing on, free
+		if(!suggestions || (*suggestions != temp_suggestions))
+		{
+			g_slist_free_full(temp_suggestions, g_free);
 		}
 	}
 }
@@ -1543,38 +1611,37 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 	GtkTextView *text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
 
-	gchar *search_str = NULL, **suggestions = NULL;
-	gboolean results_set = FALSE, suggestions_looked = FALSE;	
-	glong search_len = 0;
-
-	/* if mod notify is present & if notifications are enabled and window is invisible then lookup is for notification  */
-	const gboolean notification_lookup = (notifier && notifier_enabled && (!gtk_widget_get_visible(GTK_WIDGET(window))));
-
+	gchar *search_str = NULL;
 
 	// if it was a regex, then results are now furnished, so return
 	if(handle_wildmat_expr(gui_builder, buffer))
 		return;
 
 	// from here on normal lookup starts
-	search_str = g_strstrip(strip_invalid_edges(gtk_combo_box_get_active_text(combo_query)));
-	
-	if(search_str && (search_len = strlen(search_str)))
+	search_str = g_strdup(gtk_entry_get_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)))));
+	search_str = g_strstrip(strip_invalid_edges(search_str));
+
+	// make sure this isn't a 0 length string
+	if(search_str && search_str[0])
 	{
 		gboolean new_search = TRUE;
+		GSList *suggestions = NULL;
+
 		G_MESSAGE("'%s' queried!\n", search_str);
 
-		if(last_search)
-			new_search = (g_ascii_strncasecmp(last_search, search_str, search_len + 1) != 0);
+		if(last_search_successful)
+			new_search = (g_ascii_strcasecmp(last_search, search_str) != 0);
 
 		// check if this isn't the previous search query
-		if(!last_search || new_search || !last_search_successful)
+		if(new_search)
 		{
-			query_wni(gui_builder, search_str, &suggestions, notification_lookup, &suggestions_looked);
+			GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
+
+			show_searching(gui_builder);
+			query_wni(search_str, WORDNET_INTERFACE_ALL, &suggestions);
 
 			// clear prior text in definitons text view & relatives
 			gtk_text_buffer_set_text(buffer, "", -1);
@@ -1586,79 +1653,47 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				G_MESSAGE("Results successful!\n");
 
 				show_definitions(gui_builder, buffer);
-				/* don't populate relatives if in notify mode; clear the last_search 
-				   so that if the user opens the window next lookup works */
-				if(notification_lookup)
-				{
-					g_free(search_str);
-					search_str = NULL;
-				}
-				else
-				{
-					relatives_load(gui_builder, TRUE);
-				}
+				relatives_load(gui_builder, TRUE);
 
-				last_search = search_str;
+				g_stpcpy(last_search, search_str);
 				last_search_successful = TRUE;
-				results_set = TRUE;
-			}
-		}
-
-		if(results)
-		{
-			if(notification_lookup)
-				construct_show_notification();
-			else
-				show_window(window);
-		}
-		else
-		{
-			if(notification_lookup)
-			{
-				gboolean update_successful = notify_notification_update(notifier,
-											search_str,
-											STR_STATUS_QUERY_FAILED,
-											"gtk-dialog-warning");
-				if(!update_successful || (FALSE == notify_notification_show(notifier, NULL)))
-				{
-					g_warning("Failed to display notification!\n");
-				}
 			}
 			else
 			{
+				GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
 				GtkTextIter cur = {0};
 				gtk_text_buffer_set_text(buffer, "", -1);
 				gtk_text_buffer_get_start_iter(buffer, &cur);
 				gtk_text_buffer_insert_with_tags_by_name(buffer, &cur, STR_QUERY_FAILED, -1, TAG_POS, NULL);
 
-				if(mod_suggest)
-				{
-					if(!suggestions_looked)
-						suggestions = suggestions_get(search_str);
-					if(suggestions)
-						show_suggestions(gui_builder, buffer, &cur, &suggestions);
-				}
-				show_window(window);
+				if(suggestions)
+					show_suggestions(gui_builder, buffer, &cur, suggestions);
+
+				/* status bar should be updated */
+				gtk_statusbar_pop(status_bar, status_msg_context_id);
+				status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
+				gtk_statusbar_push(status_bar, status_msg_context_id, STR_STATUS_QUERY_FAILED);
+
+				last_search_successful = FALSE;
 			}
-
-			/* status bar should be updated be it the mode is notify or not; so it should be outside the if clause */
-			gtk_statusbar_pop(status_bar, status_msg_context_id);
-			status_msg_context_id = gtk_statusbar_get_context_id(status_bar, STATUS_DESC_SEARCH_FAILURE);
-			gtk_statusbar_push(status_bar, status_msg_context_id, STR_STATUS_QUERY_FAILED);
-
-			last_search_successful = FALSE;
-			last_search = NULL;
+			if(suggestions)
+			{
+				g_slist_free_full(suggestions, g_free);
+				suggestions = NULL;
+			}
+			show_window(window);
 		}
 
 		gtk_editable_select_region(GTK_EDITABLE(gtk_bin_get_child(GTK_BIN(combo_query))), 0, -1);
 		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 	}
 
-	if(search_str && !results_set)
+	if(search_str)
 	{
 		g_free(search_str);
 		search_str = NULL;
 	}
+	last_lookup_a_notification = FALSE;
 }
 
 static void combo_query_changed(GtkComboBox *combo_query, gpointer user_data)
@@ -2610,7 +2645,7 @@ static void setup_toolbar(GtkBuilder *gui_builder)
 	gtk_toolbar_insert(toolbar, toolbar_item, -1);
 
 	/* if mod notify is present */
-	if(notifier)
+	if(mod_notifier)
 	{
 		toolbar_item = gtk_toggle_tool_button_new_from_stock(notifier_enabled ? GTK_STOCK_YES : GTK_STOCK_NO);
 		gtk_tool_button_set_use_underline(GTK_TOOL_BUTTON(toolbar_item), TRUE);
@@ -2671,7 +2706,7 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder)
 	menu = GTK_MENU(gtk_menu_new());
 
 	/* if mod notify is present, setup a notifications menu */
-	if(notifier)
+	if(mod_notifier)
 	{
 		menu_notify = GTK_CHECK_MENU_ITEM(gtk_check_menu_item_new_with_mnemonic(STR_TOOLITEM_NOTIFY));
 		// load the settings value
@@ -2899,36 +2934,6 @@ static void save_preferences()
 	g_key_file_set_boolean(config_file, GROUP_SETTINGS, KEY_LAUNCH_HIDDEN, launch_minimized);
 
 	save_preferences_to_file();
-}
-
-static void about_email_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data)
-{
-	GError *err = NULL;
-	gchar *final_uri = NULL;
-
-	final_uri = g_strconcat(MAILTO_PREFIX, link, NULL);
-
-	if(!gtk_show_uri(NULL, final_uri, GDK_CURRENT_TIME, &err))
-	{
-		g_warning("Email gtk_show_uri error: %s\n", err->message);
-		g_error_free(err);
-		err = NULL;
-	}
-
-	g_free(final_uri);
-	final_uri = NULL;
-}
-
-static void about_url_hook(GtkAboutDialog *about_dialog, const gchar *link, gpointer user_data)
-{
-	GError *err = NULL;
-
-	if(!gtk_show_uri(NULL, link, GDK_CURRENT_TIME, &err))
-	{
-		g_warning("URL gtk_show_uri error: %s\n", err->message);
-		g_error_free(err);
-		err = NULL;
-	}
 }
 
 static gboolean autocomplete_selected(GtkEntryCompletion *query_completion, GtkTreeModel *model, GtkTreeIter *iter, GtkButton *button)
@@ -3381,11 +3386,6 @@ static void destructor(GtkBuilder *gui_builder)
 	        wordnet_terms = NULL;
 	}
 
-	if(last_search)
-	{
-		last_search = NULL;
-	}
-
 	/* be responsible, give back the OS what you got from it :) */
 	if(results)
 	{
@@ -3413,7 +3413,7 @@ static void destructor(GtkBuilder *gui_builder)
 		mod_suggest = FALSE;
 	}
 
-	if(notifier)
+	if(mod_notifier)
 	{
 		mod_notify_uninit();
 	}
@@ -3488,11 +3488,14 @@ static void show_message_dlg(GtkWidget *parent_window, MessageResposeCode msg_co
 
 static gboolean window_visibility_toggled(GtkWidget *widget, GdkEventVisibility *event, gpointer user_data)
 {
-	/* when the window becomes fully visible, make sure a proper lookup is made to offset the notify 
-	lookup (quickie); when last_search_successful is set & yet last_search is NULL, it confirms a quickie */
+	/* when the window becomes fully visible, make sure a proper lookup is made
+	   if the last lookup was a notification i.e. a light lookup */
 
-	if(GDK_VISIBILITY_UNOBSCURED == event->state && notifier && notifier_enabled && last_search_successful && !last_search)
+	if(GDK_VISIBILITY_UNOBSCURED == event->state && last_lookup_a_notification)
+	{
+		last_search_successful = FALSE;
 		gtk_button_clicked(GTK_BUTTON(user_data));
+	}
 
 	return FALSE;
 }
@@ -3637,7 +3640,7 @@ int main(int argc, char *argv[])
 					{
 						status_icon = GTK_STATUS_ICON(gtk_builder_get_object(gui_builder, STATUS_ICON));
 						gtk_status_icon_set_from_file(status_icon, icon_file_path);
-						gtk_status_icon_set_tooltip(status_icon, STR_APP_TITLE);
+						gtk_status_icon_set_tooltip_text(status_icon, STR_APP_TITLE);
 						gtk_status_icon_set_visible(status_icon, show_trayicon);
 					}
 					else
@@ -3702,9 +3705,6 @@ int main(int argc, char *argv[])
 					G_DEBUG("GUI loaded successfully!\n");
 
 					create_stores_renderers(gui_builder);
-
-					gtk_about_dialog_set_email_hook(about_email_hook, NULL, NULL);
-					gtk_about_dialog_set_url_hook(about_url_hook, NULL, NULL);
 
 					mod_suggest = suggestions_init();
 

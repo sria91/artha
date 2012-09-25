@@ -44,37 +44,24 @@ EnchantDict *enchant_dict = NULL;
 
 const gchar* dict_lang_tag = "en";
 
-gchar** suggestions_get(const gchar *lemma)
+GSList* suggestions_get(const gchar *lemma)
 {
-	gchar **suggestions = NULL;
-	gchar **valid_suggestions = NULL;
-	size_t suggestions_count = 0, i = 0, valid_count = 0;
-	GSList *str_list = NULL, *temp_list = NULL;
+	GSList *suggestions_list = NULL;
 
 	// check if Enchant broker and English dictionary are initialized
 	if(enchant_broker && enchant_dict)
 	{
 		if(enchant_dict_check(enchant_dict, lemma, -1))
 		{
-			suggestions = enchant_dict_suggest(enchant_dict, lemma, -1, &suggestions_count);
+			size_t suggestions_count = 0;
+			gchar **suggestions = enchant_dict_suggest(enchant_dict, lemma, -1, &suggestions_count);
 
-			for(i = 0; i < suggestions_count; i++)
+			for(size_t i = 0; i < suggestions_count; i++)
 			{
 				if(wni_request_nyms(suggestions[i], NULL, (WNIRequestFlags) 0, FALSE))
 				{
-					str_list = g_slist_prepend(str_list, g_strdup(suggestions[i]));
-					++valid_count;
+					suggestions_list = g_slist_append(suggestions_list, g_strdup(suggestions[i]));
 				}
-			}
-			
-			if(valid_count)
-			{
-				valid_suggestions = g_new0(gchar*, valid_count + 1);
-
-				for(temp_list = str_list; temp_list; temp_list = g_slist_next(temp_list))
-					valid_suggestions[--valid_count] = (gchar*) temp_list->data;
-
-				g_slist_free(str_list);
 			}
 			
 			if(suggestions)
@@ -82,7 +69,7 @@ gchar** suggestions_get(const gchar *lemma)
 		}
 	}
 	
-	return valid_suggestions;
+	return suggestions_list;
 }
 
 /* 

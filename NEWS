@@ -1,7 +1,9 @@
 1.0.3 (Sep 20, 2012)
 	After a long hiatus, Artha gets an updated with new features and lot of fixes in overall
 	portable code and in Win32-specific code as well. Auto completion of wordnet terms is a nice
-	feature since it makes finding words easy. Lookup history is now persistant and can be
+	feature since it makes finding words easy. Threads were considered initially when loading
+	wordnet terms from index file into the GtkEntryCompletion, but was called off, since a more
+	elegant solution would be to use the idle wait. Lookup history is now persistant and can be
 	cleared or saved to a file when required. Initially saving lookup history was coupled with
 	the config/settings file and implemented, but this was deemed slow and instead storing them in
 	a plain file was opted and found to be faster/simpler. Minor features like making the display
