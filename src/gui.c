@@ -55,10 +55,11 @@ static gboolean 		was_double_click = FALSE, last_search_successful = FALSE, adva
 static gboolean		hotkey_set = FALSE, mod_suggest = FALSE;
 // options which default to true
 static gboolean		notifier_enabled = TRUE, show_polysemy = TRUE, launch_minimized = TRUE, show_trayicon = TRUE;
-static gboolean		hotkey_processing = FALSE, last_lookup_a_notification = FALSE;
+static gboolean		last_lookup_a_notification = FALSE;
 static gchar		last_search[MAX_LEMMA_LEN] = "";
 #ifdef X11_AVAILABLE
 static Display			*dpy = NULL;
+gboolean		hotkey_processing = FALSE;
 guint32			last_hotkey_time = 0;
 static guint			num_lock_mask = 0, caps_lock_mask = 0, scroll_lock_mask = 0;
 #endif
@@ -92,13 +93,13 @@ static gboolean are_same_after_strip(const gchar *strA, const gchar *strB);
 static inline gboolean is_alt_pressed();
 static inline void print_last_error();
 static gchar* win32_capture_selection();
+static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data);
 #endif
-static void notification_lookup(gchar *query);
+static void notification_lookup(gchar *selection, GtkComboBox *combo_query);
 static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpointer user_data);
 static void status_icon_activate(GtkStatusIcon *status_icon, gpointer user_data);
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint active_time, gpointer user_data);
 static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpointer user_data);
-static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data);
 static void about_activate(GtkToolButton *menu_item, gpointer user_data);
 static void quit_activate(GtkWidget *widget, gpointer user_data);
 static guint8 get_frequency(guint sense_count);
@@ -156,12 +157,26 @@ static GtkMenu *create_popup_menu(GtkBuilder *gui_builder);
 static void create_text_view_tags(GtkBuilder *gui_builder);
 static void load_preference_hotkey(gboolean *first_run);
 static gboolean load_preferences(GtkWindow *parent);
-static void save_history(const gchar *term);
+static gboolean update_history_in_file(const gchar *term);
 static void save_preferences_to_file();
 static void save_preferences();
 static gboolean autocomplete_selected(GtkEntryCompletion *query_completion, GtkTreeModel *model, GtkTreeIter *iter, GtkButton *button);
 static void show_loading(GtkBuilder *gui_builder);
-static gboolean wordnet_terms_load(GtkBuilder *gui_builder);
+
+typedef struct
+{
+	GtkBuilder		*gui_builder;
+	GtkListStore	*completion_list;
+	gchar			*index_file_contents;
+	gsize		 	 index_file_length;
+	gsize		 	 pos_in_file;
+	gchar			*last_lemma;
+}
+WordnetTermsLoaderData;
+static void attach_loaded_terms(WordnetTermsLoaderData *loader_data);
+static gboolean terms_loader(WordnetTermsLoaderData *loader_data);
+static gboolean wordnet_terms_load(WordnetTermsLoaderData *loader_data);
+
 #ifdef X11_AVAILABLE
 static void lookup_ignorable_modifiers(void);
 #elif defined G_OS_WIN32
@@ -400,11 +415,16 @@ static gchar* win32_capture_selection()
 
 	return selection;
 }
+
+static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data)
+{
+	return ((int)ShellExecute(hMainWindow, "open", uri, NULL, NULL, SW_SHOWNORMAL) > 32);
+}
 #endif
 
-static void notification_lookup(gchar *query)
+static void notification_lookup(gchar *selection, GtkComboBox *combo_query)
 {
-	gchar *stripped_lookup = g_strstrip(strip_invalid_edges(query));
+	gchar *stripped_lookup = g_strstrip(strip_invalid_edges(selection));
 	// make sure this isn't a zero length string; valid but zero length
 	if(stripped_lookup[0])
 	{
@@ -418,6 +438,9 @@ static void notification_lookup(gchar *query)
 		if(results)
 		{
 			construct_show_notification();
+
+			gchar *lemma = ((WNIDefinitionItem*)((WNIOverview*)((WNINym*)results->data)->data)->definitions_list->data)->lemma;
+			update_history_and_save(combo_query, lemma);
 
 			g_stpcpy(last_search, stripped_lookup);
 			last_search_successful = TRUE;
@@ -434,8 +457,6 @@ static void notification_lookup(gchar *query)
 			}
 			last_search_successful = FALSE;
 		}
-		g_free(stripped_lookup);
-		stripped_lookup = NULL;
 	}
 	last_lookup_a_notification = TRUE;
 }
@@ -460,10 +481,9 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 	{
 #endif
 		GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-
-		hotkey_processing = TRUE;
 		
 #ifdef X11_AVAILABLE
+		hotkey_processing = TRUE;
 		last_hotkey_time = xe->xkey.time;
 
 		// get the clipboard text and strip off any invalid characters
@@ -480,7 +500,6 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 			GtkEntry *text_entry_query = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 			gtk_entry_set_text(text_entry_query, selection);
 			//gtk_editable_set_position(GTK_EDITABLE(text_entry_query), -1);
-
 			if(gtk_widget_get_visible(GTK_WIDGET(window)) || !notifier_enabled)
 			{
 				GtkButton *button_search = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
@@ -489,7 +508,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 			// if notifier_enabled and notifier mod is present
 			else if(mod_notifier)
 			{
-				notification_lookup(selection);
+				notification_lookup(selection, combo_query);
 			}
 			g_free(selection);
 			selection = NULL;
@@ -500,8 +519,9 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 			show_window(window);
 			gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 		}
-
+#ifdef X11_AVAILABLE
 		hotkey_processing = FALSE;
+#endif
 
 		return GDK_FILTER_REMOVE;
 	}
@@ -563,8 +583,7 @@ static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpo
 															err->message));
 				gtk_dialog_run(err_msg);
 				gtk_widget_destroy(GTK_WIDGET(err_msg));
-				g_error_free(err);
-				err = NULL;
+				g_clear_error(&err);
 			}
 #else
 			link_launch(GTK_ABOUT_DIALOG(about_dialog), STR_BUG_WEBPAGE, NULL);
@@ -578,13 +597,6 @@ static void about_response_handle(GtkDialog *about_dialog, gint response_id, gpo
 	gtk_widget_destroy(GTK_WIDGET(about_dialog));
 }
 
-#ifdef G_OS_WIN32
-static gboolean link_launch(GtkAboutDialog *about_dialog, gchar *uri, gpointer user_data)
-{
-	return ((int)ShellExecute(hMainWindow, "open", uri, NULL, NULL, SW_SHOWNORMAL) > 32);
-}
-#endif
-
 static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 {
 	GtkWidget *about_dialog = gtk_about_dialog_new();
@@ -597,7 +609,7 @@ static void about_activate(GtkToolButton *menu_item, gpointer user_data)
 
 	gtk_dialog_add_button(GTK_DIALOG(about_dialog), STR_REPORT_BUG, ARTHA_RESPONSE_REPORT_BUG);
 	g_signal_connect(about_dialog, "response", G_CALLBACK(about_response_handle), NULL);
-	
+
 #ifdef G_OS_WIN32
 	g_signal_connect(about_dialog, "activate-link", G_CALLBACK(link_launch), NULL);
 #endif
@@ -1243,7 +1255,7 @@ static gboolean set_regex_results(const gchar *wildmat_exp, GtkBuilder *gui_buil
 			gtk_statusbar_push(status_bar, status_msg_context_id, status_msg);
 		}
 
-		// if regex was invlaid (it would be NULL)
+		// if regex was invalid (it would be NULL)
 		// or if the expr. fetched no results, set regex failed message
 		if(NULL == regex || 0 == count)
 		{
@@ -1394,8 +1406,22 @@ static gboolean update_history_and_save(GtkComboBox *combo_query, char *lemma)
 	gboolean saved = FALSE;
 	if(update_history(combo_query, lemma))
 	{
-		save_history(lemma);
-		saved = TRUE;
+		static gboolean update_history_in_file_fail_notifed = FALSE;
+		if(update_history_in_file(lemma))
+		{
+			saved = TRUE;
+		}
+		else if(!update_history_in_file_fail_notifed)
+		{
+			GtkDialog *err_msg = GTK_DIALOG(gtk_message_dialog_new(NULL,
+																0,
+																GTK_MESSAGE_ERROR,
+																GTK_BUTTONS_CLOSE,
+																STR_HISTORY_FILE_UPDATE_FAILED));
+			gtk_dialog_run(err_msg);
+			gtk_widget_destroy(GTK_WIDGET(err_msg));
+			update_history_in_file_fail_notifed = TRUE;
+		}
 	}
 	return saved;
 }
@@ -1611,6 +1637,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 {
 	GtkBuilder *gui_builder = GTK_BUILDER(user_data);
 	GtkComboBox *combo_query = GTK_COMBO_BOX(gtk_builder_get_object(gui_builder, COMBO_QUERY));
+	GtkEntry *combo_entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)));
 	GtkTextView *text_view = GTK_TEXT_VIEW(gtk_builder_get_object(gui_builder, TEXT_VIEW_DEFINITIONS));
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
 
@@ -1621,7 +1648,7 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		return;
 
 	// from here on normal lookup starts
-	search_str = g_strdup(gtk_entry_get_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(combo_query)))));
+	search_str = g_strdup(gtk_entry_get_text(combo_entry));
 	search_str = g_strstrip(strip_invalid_edges(search_str));
 
 	// make sure this isn't a 0 length string
@@ -1638,8 +1665,6 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 		// check if this isn't the previous search query
 		if(new_search)
 		{
-			GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-
 			show_searching(gui_builder);
 			query_wni(search_str, WORDNET_INTERFACE_ALL, &suggestions);
 
@@ -1681,10 +1706,11 @@ static void button_search_click(GtkButton *button, gpointer user_data)
 				g_slist_free_full(suggestions, g_free);
 				suggestions = NULL;
 			}
+			GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
 			show_window(window);
 		}
 
-		gtk_editable_select_region(GTK_EDITABLE(gtk_bin_get_child(GTK_BIN(combo_query))), 0, -1);
+		gtk_editable_select_region(GTK_EDITABLE(combo_entry), 0, -1);
 		gtk_widget_grab_focus(GTK_WIDGET(combo_query));
 	}
 
@@ -2356,8 +2382,8 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 															GTK_DIALOG_DESTROY_WITH_PARENT,
 															GTK_MESSAGE_INFO,
 															GTK_BUTTONS_OK,
-															STR_HISTORY_SAVE_SUCCESS);
-				g_object_set(save_complete_dialog, "title", "Artha ~ Save successful!", NULL);
+															STR_HISTORY_FILE_SAVE_SUCCESS);
+				g_object_set(save_complete_dialog, "title", STR_HISTORY_FILE_SAVE_SUCCESS_TITLE, NULL);
 				gtk_dialog_run(GTK_DIALOG(save_complete_dialog));
 			}
 			else
@@ -2366,12 +2392,11 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 															GTK_DIALOG_DESTROY_WITH_PARENT,
 															GTK_MESSAGE_WARNING,
 															GTK_BUTTONS_OK,
-															STR_HISTORY_SAVE_FAILED,
+															STR_HISTORY_FILE_SAVE_FAILED,
 															err->message);
-				g_object_set(save_complete_dialog, "title", "Artha ~ Save failed!", NULL);
+				g_object_set(save_complete_dialog, "title", STR_HISTORY_FILE_SAVE_FAILURE_TITLE, NULL);
 				gtk_dialog_run(GTK_DIALOG(save_complete_dialog));
-				g_error_free(err);
-				err = NULL;
+				g_clear_error(&err);
 			}
 			gtk_widget_destroy(save_complete_dialog);
 
@@ -2386,13 +2411,16 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 																GTK_BUTTONS_OK,
 																STR_HISTORY_SAVE_FAILED,
 																STR_HISTORY_MISSING);
-			g_object_set(save_failed_msgbox, "title", "Artha ~ Save failed!", NULL);
+			g_object_set(save_failed_msgbox, "title", STR_HISTORY_FILE_SAVE_FAILURE_TITLE, NULL);
 			gtk_dialog_run(GTK_DIALOG(save_failed_msgbox));
 			gtk_widget_destroy(save_failed_msgbox);
 			save_failed_msgbox = NULL;
 		}
 		g_object_unref(history_file);
 		history_file = NULL;
+	}
+	if(dest_filename)
+	{
 		g_free(dest_filename);
 		dest_filename = NULL;
 	}
@@ -2425,39 +2453,26 @@ static void query_combo_popup(GtkEntry *query_entry_widget, GtkMenu *popup_menu,
 
 static void load_history(GtkListStore *list_store_query)
 {
-	GFile *history_file = NULL;
 	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
 	if(!hist_file_path)
 	{
-		g_error("Failed creating path to load history");
+		g_warning("Failed creating path to load history");
+		return;
 	}
-	history_file = g_file_new_for_path(hist_file_path);
+	FILE *hist_file = fopen(hist_file_path, "r");
 	g_free(hist_file_path);
 	hist_file_path = NULL;
-	if(g_file_query_exists(history_file, NULL))
+	if(hist_file)
 	{
-		gchar *term = NULL;
-		GDataInputStream *dis = NULL;
-		GFileInputStream *fis = g_file_read(history_file, NULL, NULL);
-		if(!fis)
-		{
-			g_error("Failed reading history file");
-		}
-		dis = g_data_input_stream_new(G_INPUT_STREAM(fis));
-		g_object_unref(fis);
-		fis = NULL;
-		while((term = g_data_input_stream_read_line(dis, NULL, NULL, NULL)))
+		gchar lookup[MAX_LEMMA_LEN] = "";
+		while(fscanf(hist_file, "%s\n", lookup) != EOF)
 		{
 			GtkTreeIter iter = {0};
 			gtk_list_store_prepend(list_store_query, &iter);
-			gtk_list_store_set(list_store_query, &iter, 0, term, -1);
-			g_free(term); term = NULL;
+			gtk_list_store_set(list_store_query, &iter, 0, lookup, -1);
 		}
-		g_object_unref(dis);
-		dis = NULL;
+		fclose(hist_file);
 	}
-	g_object_unref(history_file);
-	history_file = NULL;
 }
 
 static void create_stores_renderers(GtkBuilder *gui_builder)
@@ -2812,10 +2827,7 @@ static void load_preference_hotkey(gboolean *first_run)
 
 static gboolean load_preferences(GtkWindow *parent)
 {
-	gchar *conf_file_path = NULL;
 	gboolean first_run = FALSE;
-
-	GError *err = NULL;
 
 	config_file = g_key_file_new();
 	if(!config_file)
@@ -2823,39 +2835,40 @@ static gboolean load_preferences(GtkWindow *parent)
 		g_error("Error creating GKeyFile to load/store preferences");
 	}
 
-	conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
+	gchar *conf_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, CONF_FILE_EXT, NULL);
 	if(g_key_file_load_from_file(config_file, conf_file_path, G_KEY_FILE_KEEP_COMMENTS, NULL))
 	{
-		g_free(conf_file_path);
-		conf_file_path = NULL;
-
 		advanced_mode = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_MODE, NULL);
 		notifier_enabled = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_NOTIFICATIONS, NULL);
+		GError *err = NULL;
 		show_polysemy = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_POLYSEMY, &err);
 		if(err)
 		{
 			show_polysemy = TRUE;
-			g_error_free(err);
-			err = NULL;
+			g_clear_error(&err);
 		}
 		show_trayicon = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_TRAYICON, &err);
 		if(err)
 		{
 			show_trayicon = TRUE;
-			g_error_free(err);
-			err = NULL;
+			g_clear_error(&err);
 		}
 		load_preference_hotkey(&first_run);
 		launch_minimized = g_key_file_get_boolean(config_file, GROUP_SETTINGS, KEY_LAUNCH_HIDDEN, &err);
 		if(err)
 		{
 			launch_minimized = TRUE;
-			g_error_free(err);
-			err = NULL;
+			g_clear_error(&err);
 		}
 	}
 	else
 		first_run = TRUE;
+
+	if(conf_file_path)
+	{
+		g_free(conf_file_path);
+		conf_file_path = NULL;
+	}
 
 	/* The user might never close the app. and just shut down the system.
 	   Conf file won't be written to disk in that case. Hence save the 
@@ -2864,35 +2877,28 @@ static gboolean load_preferences(GtkWindow *parent)
 	return first_run;
 }
 
-static void save_history(const gchar *term)
+/* this function uses FILE instead of GFile to workaround
+ * a bug in GDataOutputStream, which doesn't convert '\n'
+ * (C's std. new file literal)
+ * to the target OS's line character; while std. FILE does */
+static gboolean update_history_in_file(const gchar *term)
 {
-	GFile *history_file = NULL;
-	GFileOutputStream *fos = NULL;
-	GDataOutputStream *dos = NULL;
+	gboolean update_succeeded = FALSE;
 	gchar *hist_file_path = g_strconcat(g_get_user_config_dir(), G_DIR_SEPARATOR_S, PACKAGE_TARNAME, HISTORY_FILE_EXT, NULL);
 	if(!hist_file_path)
 	{
 		g_error("Failed creating path to save history");
 	}
-	history_file = g_file_new_for_path(hist_file_path);
+	FILE *hist_file = fopen(hist_file_path, "a+");
 	g_free(hist_file_path);
 	hist_file_path = NULL;
-	fos = g_file_append_to(history_file, G_FILE_CREATE_PRIVATE, NULL, NULL);
-	if(!fos)
+	if(hist_file)
 	{
-		g_error("Failed appending lookup to history file");
+		update_succeeded = (fprintf(hist_file, "%s\n", term) > 0);
+		fclose(hist_file);
+		hist_file = NULL;
 	}
-	dos  = g_data_output_stream_new(G_OUTPUT_STREAM(fos));
-	g_object_unref(fos);
-	fos = NULL;
-	
-	g_data_output_stream_put_string(dos, term, NULL, NULL);
-	g_data_output_stream_put_byte(dos, '\n', NULL, NULL);
-
-	g_object_unref(dos);
-	dos = NULL;
-	g_object_unref(history_file);
-	history_file = NULL;
+	return update_succeeded;
 }
 
 static void save_preferences_to_file()
@@ -2968,91 +2974,94 @@ static void show_loading(GtkBuilder *gui_builder)
 		gdk_window_process_updates(((GtkWidget*)status_bar)->window, FALSE);
 }
 
-static gboolean wordnet_terms_load(GtkBuilder *gui_builder)
+static void attach_loaded_terms(WordnetTermsLoaderData *loader_data)
 {
-	if(SetSearchdir())
+	g_free(loader_data->index_file_contents);
+	loader_data->index_file_contents = NULL;
+	loader_data->index_file_length = loader_data->pos_in_file = 0;
+	loader_data->last_lemma = NULL;
+
+	GtkEntryCompletion *query_entry_completion = gtk_entry_completion_new();
+	gtk_entry_completion_set_model(query_entry_completion, GTK_TREE_MODEL(loader_data->completion_list));
+	g_object_unref(loader_data->completion_list);
+	loader_data->completion_list = NULL;
+	gtk_entry_completion_set_text_column(query_entry_completion, 0);
+	gtk_entry_completion_set_minimum_key_length(query_entry_completion, 3);
+	GtkButton *query_button = GTK_BUTTON(gtk_builder_get_object(loader_data->gui_builder, BUTTON_SEARCH));
+	g_signal_connect(query_entry_completion, "match-selected", G_CALLBACK(autocomplete_selected), query_button);
+
+	GtkBin *query_combo = GTK_BIN(gtk_builder_get_object(loader_data->gui_builder, COMBO_QUERY));
+	GtkEntry *query_entry = GTK_ENTRY(gtk_bin_get_child(query_combo));	
+	gtk_entry_set_completion(query_entry, query_entry_completion);
+
+	// clear the loading message from status bar
+	GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(loader_data->gui_builder, STATUSBAR));
+	gtk_statusbar_pop(status_bar, status_msg_context_id);
+}
+
+static gboolean terms_loader(WordnetTermsLoaderData *loader_data)
+{
+	gboolean load_pending = TRUE, is_reading = TRUE;
+	gchar lemma[MAX_LEMMA_LEN] = "", ch = 0;
+	gsize i = 0;
+	while((ch = loader_data->index_file_contents[loader_data->pos_in_file++]) != '\n')
 	{
-		gsize file_size = 0;
-		gchar *contents = NULL;
-		gchar *index_file_path = g_strdup_printf(SENSEIDXFILE, SetSearchdir());
-		if(g_file_get_contents(index_file_path, &contents, &file_size, NULL))
+		if(is_reading)
 		{
-			GtkBin *query_combo = GTK_BIN(gtk_builder_get_object(gui_builder, COMBO_QUERY));
-			GtkEntry *query_entry = GTK_ENTRY(gtk_bin_get_child(query_combo));
-			GtkButton *query_button = GTK_BUTTON(gtk_builder_get_object(gui_builder, BUTTON_SEARCH));
-			GtkStatusbar *status_bar = GTK_STATUSBAR(gtk_builder_get_object(gui_builder, STATUSBAR));
-			GtkEntryCompletion *query_entry_completion = NULL;
-			GtkListStore *completion_list = gtk_list_store_new(1, G_TYPE_STRING);
-			GtkTreeIter iter = {0};
-
-			gchar last_lemma[MAX_LEMMA_LEN] = "";
-			gchar lemma[MAX_LEMMA_LEN] = "";
-			gsize i = 0;
-			guint8 j = 0;
-			gboolean is_reading = TRUE;
-
-			show_loading(gui_builder);
-			wordnet_terms = g_string_new(NULL);
-			while(i < file_size)
+			if(ch == '%')
 			{
-				gchar ch = contents[i++];
-				
-				if(is_reading)
+				is_reading = FALSE;
+				lemma[i++] = '\n';
+				lemma[i] = '\0';
+				if(g_strcmp0(lemma, loader_data->last_lemma) != 0)
 				{
-					if('%' == ch)
-					{
-						is_reading = FALSE;
-						lemma[j++]='\n';
-						lemma[j] = '\0';
-						if(g_strcmp0(lemma, last_lemma))
-						{
-							wordnet_terms = g_string_append(wordnet_terms, lemma);
-							memcpy(last_lemma, lemma, MAX_LEMMA_LEN);
-							lemma[j - 1] = '\0';
+					g_string_append(wordnet_terms, lemma);
+					loader_data->last_lemma = wordnet_terms->str + wordnet_terms->len - i;
 
-							gtk_list_store_append(completion_list, &iter);
-							gtk_list_store_set(completion_list, &iter, 0, lemma, -1);
-						}
-						j = 0;
-					}
-					else
-					{
-						if('_' == ch)
-							ch = ' ';
-						lemma[j++] = ch;
-					}
-				}
-				else
-				{
-					if('\n' == ch)
-					{
-						is_reading = TRUE;
-					}
+					lemma[i - 1] = '\0';
+					GtkTreeIter iter = {0};
+					gtk_list_store_append(loader_data->completion_list, &iter);
+					gtk_list_store_set(loader_data->completion_list, &iter, 0, lemma, -1);
 				}
 			}
-
-			G_DEBUG("Total Dict. Terms Loaded: %d\n", ++count);
-
-			query_entry_completion = gtk_entry_completion_new();
-			gtk_entry_completion_set_model(query_entry_completion, GTK_TREE_MODEL(completion_list));
-			g_object_unref(completion_list);
-			completion_list = NULL;
-			gtk_entry_completion_set_text_column(query_entry_completion, 0);
-			gtk_entry_completion_set_minimum_key_length(query_entry_completion, 3);
-			gtk_entry_set_completion(query_entry, query_entry_completion);
-			g_signal_connect(query_entry_completion, "match-selected", G_CALLBACK(autocomplete_selected), query_button);
-
-			// clear the loading message from status bar
-			gtk_statusbar_pop(status_bar, status_msg_context_id);
-			
-			g_free(contents);
-			contents = NULL;
+			else
+			{
+				lemma[i++] = (ch == '_') ? ' ' : ch;
+			}
 		}
-		g_free(index_file_path);
-		index_file_path = NULL;
+	}
+	
+	if(loader_data->pos_in_file == loader_data->index_file_length)
+	{
+		attach_loaded_terms(loader_data);
+		load_pending = FALSE;
 	}
 
-	return FALSE;
+	return load_pending;
+}
+
+static gboolean wordnet_terms_load(WordnetTermsLoaderData *loader_data)
+{
+	gboolean succeeded = FALSE;
+	gchar *index_file_path = g_strdup_printf(SENSEIDXFILE, SetSearchdir());
+	if(g_file_get_contents(index_file_path,
+						&loader_data->index_file_contents,
+						&loader_data->index_file_length,
+						NULL))
+	{
+		show_loading(loader_data->gui_builder);
+
+		wordnet_terms = g_string_new("");
+		loader_data->last_lemma = wordnet_terms->str;
+		loader_data->completion_list = gtk_list_store_new(1, G_TYPE_STRING);
+
+		g_idle_add((GSourceFunc) terms_loader, loader_data);
+		succeeded = TRUE;
+	}
+	g_free(index_file_path);
+	index_file_path = NULL;
+
+	return succeeded;
 }
 
 #ifdef X11_AVAILABLE
@@ -3716,7 +3725,8 @@ int main(int argc, char *argv[])
 						gdk_notify_startup_complete();
 
 					// index all wordnet terms from the index.sense onto memory
-					g_idle_add((GSourceFunc) wordnet_terms_load, gui_builder);
+					WordnetTermsLoaderData loader_data = { gui_builder };
+					wordnet_terms_load(&loader_data);
 
 					gtk_main();
 

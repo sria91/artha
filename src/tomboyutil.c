@@ -68,7 +68,7 @@ tomboy_window_move_to_current_workspace (GtkWindow *window)
 {
 	GdkWindow *gdkwin = GTK_WIDGET (window)->window;
 	GdkWindow *rootwin = 
-		gdk_screen_get_root_window (gdk_drawable_get_screen (gdkwin));
+		gdk_screen_get_root_window (gdk_window_get_screen (gdkwin));
 
 	GdkAtom current_desktop = 
 		gdk_atom_intern ("_NET_CURRENT_DESKTOP", FALSE);
@@ -102,7 +102,7 @@ tomboy_window_move_to_current_workspace (GtkWindow *window)
 	xev.xclient.window = GDK_WINDOW_XWINDOW (gdkwin);
 	xev.xclient.message_type = 
 		gdk_x11_atom_to_xatom_for_display(
-			gdk_drawable_get_display (gdkwin),
+			gdk_window_get_display (gdkwin),
 			wm_desktop);
 	xev.xclient.format = 32;
 	xev.xclient.data.l[0] = workspace;
@@ -149,9 +149,9 @@ tomboy_window_override_user_time (GtkWindow *window)
 void
 tomboy_window_present_hardcore (GtkWindow *window)
 {
-	if (!GTK_WIDGET_REALIZED (window))
+	if (!gtk_widget_get_realized (GTK_WIDGET (window)))
 		gtk_widget_realize (GTK_WIDGET (window));
-	else if (GTK_WIDGET_VISIBLE (window))
+	else if (gtk_widget_get_visible (GTK_WIDGET (window)))
 		tomboy_window_move_to_current_workspace (window);
 
 	tomboy_window_override_user_time (window);
