@@ -528,8 +528,7 @@ static GdkFilterReturn hotkey_pressed(GdkXEvent *xevent, GdkEvent *event, gpoint
 #ifdef G_OS_WIN32
 	else if(WM_ARTHA_RELAUNCH == msg->message)
 	{
-		window = GTK_WINDOW(gtk_builder_get_object(gui_builder, WINDOW_MAIN));
-		gtk_window_present(window);
+		show_window(window);
 		return GDK_FILTER_REMOVE;
 	}
 #endif
@@ -2409,7 +2408,7 @@ static void save_history_to_file(GtkMenuItem *menu_item, gpointer user_data)
 																GTK_DIALOG_DESTROY_WITH_PARENT,
 																GTK_MESSAGE_WARNING,
 																GTK_BUTTONS_OK,
-																STR_HISTORY_SAVE_FAILED,
+																STR_HISTORY_FILE_SAVE_FAILED,
 																STR_HISTORY_MISSING);
 			g_object_set(save_failed_msgbox, "title", STR_HISTORY_FILE_SAVE_FAILURE_TITLE, NULL);
 			gtk_dialog_run(GTK_DIALOG(save_failed_msgbox));
