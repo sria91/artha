@@ -44,7 +44,7 @@ enum
 	NUM_COLUMNS
 };
 
-/* these keys should never be part of the hot key combo */
+/* these keys should never be part of the hotkey combo */
 static const guint forbidden_keyvals[] = 
 {
 	/* Navigation keys */

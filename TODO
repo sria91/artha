@@ -22,3 +22,8 @@ Start-up mode -> tray/show
 Notification system -> duration, etc.
 Watch clipboard/selection
 Fonts and Colours
+
+libgtkhotkey seems to be a good way of removing platform-specific code to manage hotkey.
+flite seems to be good speech engine for implementing pronunciation feature
+showing phonetics seems to be possible now with the	Moby Project
+new version of libenchant available and Artha needs to be updated accordingly

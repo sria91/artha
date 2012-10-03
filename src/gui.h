@@ -148,7 +148,7 @@
 #define STR_TOOLITEM_ABOUT	"_About"
 #define STR_TOOLITEM_TRAYICON "_Tray Icon"
 #define STR_TOOLITEM_NOTIFY	"N_otify"
-#define STR_TOOLITEM_OPTIONS	"_Options"
+#define STR_TOOLITEM_OPTIONS	"Opt_ions"
 #define STR_TOOLITEM_MODE	"_Detailed"
 #define STR_TOOLITEM_NEXT	"_Next"
 #define STR_TOOLITEM_PREV	"_Previous"

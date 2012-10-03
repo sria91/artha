@@ -5,7 +5,7 @@
   <object class="GtkDialog" id="optionsDialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Artha ~ Preferences</property>
+    <property name="title" translatable="yes">Artha ~ Options</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center-on-parent</property>
@@ -66,7 +66,7 @@
             <property name="spacing">10</property>
             <child>
               <object class="GtkCheckButton" id="chkBtnStatusIcon">
-                <property name="label" translatable="yes">_Hide status icon (runs Artha invisibly)</property>
+                <property name="label" translatable="yes">Hide _status icon (runs Artha invisibly)</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
@@ -102,7 +102,7 @@
                 <property name="can_focus">False</property>
                 <child>
                   <object class="GtkCheckButton" id="chkBtnPolysemy">
-                    <property name="label" translatable="yes">Show _Polysemy count based classification</property>
+                    <property name="label" translatable="yes">Show _familiarity based on polysemy count</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
@@ -120,7 +120,7 @@
                   <object class="GtkLabel" id="lblPolysemy">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Polysemy count is the number of senses a term has in a given part of speech. Based on this count WordNet classifies the word as &lt;i&gt;Rare&lt;/i&gt;, &lt;i&gt;Common&lt;/i&gt;, &lt;i&gt;very familiar&lt;/i&gt;, etc.</property>
+                    <property name="label" translatable="yes">Polysemy count is the number of senses a term has in a given part of speech. Based on this count WordNet classifies a term as &lt;i&gt;Rare&lt;/i&gt;, &lt;i&gt;Common&lt;/i&gt;, &lt;i&gt;very familiar&lt;/i&gt;, etc.</property>
                     <property name="use_markup">True</property>
                     <property name="wrap">True</property>
                   </object>

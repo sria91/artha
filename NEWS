@@ -1,5 +1,5 @@
 1.0.3 (Sep 20, 2012)
-	After a long hiatus, Artha gets an updated with new features and lot of fixes in overall
+	After a long hiatus, Artha gets updated with new features and lot of fixes in overall
 	portable code and in Win32-specific code as well. Auto completion of wordnet terms is a nice
 	feature since it makes finding words easy. Threads were considered initially when loading
 	wordnet terms from index file into the GtkEntryCompletion, but was called off, since a more
@@ -14,14 +14,11 @@
 	aimed at making way for the next major release with pronunciation feature using some TTS
 	engine.	Documentation was lacking for WNI for a long time, which was done and checked in as a
 	docbook. Another issue of finding the libnotify.so on different distros has a decent fix right
-	now, although a more concrete fix would be better. Since GtkComboxBoxEntry was deprecated since
-	2.14 and GtkComboBox got it's "has-entry" property only since 2.24, this will be the minimum
-	version of GTK+ from now on that Artha depends on. libgtkhotkey seems to be a good way of
-	removing platform-specific code to manage hotkey. flite seems to be good speech	engine for
-	implementing pronunciation feature, also showing phonetics seems to be possible now with the
-	Moby Project being found. A good deal of refactoring was done to functions like
-	button_search_click which has oodles of lines, now broken down to 6 smaller functions; lot of
-	minor fixes both to the source and few to the make/conf files done.
+	now, although a more concrete fix would be better. A good deal of refactoring was done to
+	functions like button_search_click which has oodles of lines, now broken down to 6 smaller
+	functions; lot of minor fixes both to the source and few to the make/conf files done. Since
+	GtkComboxBoxEntry was deprecated since 2.14 and GtkComboBox got it's "has-entry" property only
+	since 2.24, this will be the minimum version of GTK+ from now on that Artha depends on.
 
 1.0.2 (May 27, 2010)
 	Finally, Artha is truly cross-platform now! A M$ Windows build is made with exactly the 
