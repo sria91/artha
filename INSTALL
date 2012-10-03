@@ -1,6 +1,6 @@
 Artha - An open cross-platform thesaurus based on WordNet
 ===============================================================================
-Copyright (c) 2009, 2010  Sundaram Ramaswamy, <legends2k@yahoo.com>
+Copyright (c) 2009-12  Sundaram Ramaswamy, <legends2k@yahoo.com>
 
 
 Installation Instructions
@@ -43,8 +43,8 @@ In order to build artha, as described above, you will need the following
 within braces):
 
 	- wordnet  	>= 3.0		(wordnet-dev)
-	- glib     	>= 2.14		(libglib2.0-dev)
-	- gtk+     	>= 2.12		(libgtk2.0-dev)
+	- glib     	>= 2.28		(libglib2.0-dev)
+	- gtk+     	>= 2.24		(libgtk2.0-dev)
 	- dbus-glib	>= 0.74		(libdbus-glib-1-dev)
 
 WordNet can be obtained from http://wordnet.princeton.edu/download. Debian & 
@@ -55,8 +55,8 @@ http://en.sourceforge.jp/projects/sfnet_wordnet30forwin/
 
 Optionally, Artha will use the following "runtime" libraries, if they are 
 available:
-	- notify	(libnotify.so.1 / libnotify-1.dll)
-	- enchant	(libenchant.so.1 / libenchant.dll)
+	- notify	(libnotify.so.4 / libnotify-1.dll)
+	- enchant	(libenchant.so.4 / libenchant.dll)
 
 
 These 2 libraries are not mandatory for building Artha; however if they are 
