@@ -2900,7 +2900,7 @@ static gboolean update_history_in_file(const gchar *term)
 	hist_file_path = NULL;
 	if(hist_file)
 	{
-		update_succeeded = (fputs(term, hist_file) >= 0);
+		update_succeeded = (fprintf(hist_file, "%s\n", term) > 0);
 		fclose(hist_file);
 		hist_file = NULL;
 	}
