@@ -2464,11 +2464,18 @@ static void load_history(GtkListStore *list_store_query)
 	if(hist_file)
 	{
 		gchar lookup[MAX_LEMMA_LEN] = "";
-		while(fscanf(hist_file, "%s\n", lookup) != EOF)
+		while(fgets(lookup, MAX_LEMMA_LEN, hist_file))
 		{
-			GtkTreeIter iter = {0};
-			gtk_list_store_prepend(list_store_query, &iter);
-			gtk_list_store_set(list_store_query, &iter, 0, lookup, -1);
+			size_t lookup_len = strlen(lookup);
+			// some char(s) and '\n' is minimum
+			if(lookup_len > 1 && lookup[lookup_len - 1] == '\n')
+			{
+				// remove the new line character
+				lookup[lookup_len - 1] = '\0';
+				GtkTreeIter iter = {0};
+				gtk_list_store_prepend(list_store_query, &iter);
+				gtk_list_store_set(list_store_query, &iter, 0, lookup, -1);
+			}
 		}
 		fclose(hist_file);
 	}
@@ -2893,7 +2900,7 @@ static gboolean update_history_in_file(const gchar *term)
 	hist_file_path = NULL;
 	if(hist_file)
 	{
-		update_succeeded = (fprintf(hist_file, "%s\n", term) > 0);
+		update_succeeded = (fputs(term, hist_file) >= 0);
 		fclose(hist_file);
 		hist_file = NULL;
 	}
