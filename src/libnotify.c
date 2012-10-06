@@ -147,11 +147,11 @@ static DWORD notification_daemon_main(LPVOID lpdwThreadParam);
 static LRESULT CALLBACK notificationWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK mouse_over_hook_proc(int nCode, WPARAM wParam, LPARAM lParam);
 static uint16_t word_count(const wchar_t *str);
-static gboolean byte_to_wide_string(const gchar *byte_string, wchar_t *wide_string, gint max_buffer);
+static BOOL byte_to_wide_string(const char *byte_string, wchar_t *wide_string, int max_buffer);
 
 
 /* dll exported functions */
-LIBNOTIFY_API gboolean notify_init(const char *app_name)
+LIBNOTIFY_API BOOL notify_init(const char *app_name)
 {
 	DWORD thread_ret_code = 0;
 	HANDLE wait_handles[2] = {NULL};
@@ -324,8 +324,8 @@ LIBNOTIFY_API void notify_uninit(void)
 }
 
 LIBNOTIFY_API NotifyNotification* notify_notification_new(
-	const gchar *summary, const gchar *body,
-	const gchar *icon)
+	const char *summary, const char *body,
+	const char *icon)
 {
 	if(!notification_thread) return NULL;
 
@@ -340,8 +340,8 @@ LIBNOTIFY_API NotifyNotification* notify_notification_new(
 }
 
 LIBNOTIFY_API gboolean notify_notification_update(
-	NotifyNotification *notification, const gchar *summary,
-	const gchar *body, const gchar *icon)
+	NotifyNotification *notification, const char *summary,
+	const char *body, const char *icon)
 {
 	gboolean ret = FALSE;
 
@@ -843,18 +843,18 @@ uint16_t word_count(const wchar_t *str)
 	return count;
 }
 
-static gboolean byte_to_wide_string(const gchar *byte_string, wchar_t *wide_string, gint max_buffer)
+static gboolean byte_to_wide_string(const char *byte_string, wchar_t *wide_string, int max_buffer)
 {
 	static const wchar_t ellipses[] = L"...";
-	const guint16 conversion_limit = max_buffer - G_N_ELEMENTS(ellipses);
-	gint conv_len = ((gint)strlen(byte_string) >= max_buffer) ? conversion_limit : -1;
+	const uint16_t conversion_limit = max_buffer - G_N_ELEMENTS(ellipses);
+	int conv_len = ((gint)strlen(byte_string) >= max_buffer) ? conversion_limit : -1;
 	if(0 != MultiByteToWideChar(CP_ACP, 0, byte_string, conv_len, wide_string, max_buffer))
 	{
 	    if(-1 != conv_len)
 		{
-			guint16 i = conversion_limit - 1;
+			uint16_t i = conversion_limit - 1;
 			for(; wide_string[i] != L' '; --i);
-			wcscpy_s(&wide_string[++i], max_buffer - conversion_limit, ellipses);
+			wcscpy(&wide_string[++i], ellipses);
 		}
 		return TRUE;
 	}

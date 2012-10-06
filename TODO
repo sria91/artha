@@ -1,6 +1,7 @@
 Users' Wish List:
 * Pronunciations
-* Command-line interface
+* Command-line interface (n/PDCurses)?
+* i18n
 * Option to make the hotkey a switch
 * Single click jump to words in both senses and relatives as an option.
 * Spacing issue; not all spaces are filled with '_' in the index files E.g. 24-karet_gold in index.noun
@@ -12,14 +13,10 @@ To Do:
 
 * Ctrl + Z / Undo feature is to be added, particularly to the search text bar.
 
-* Auto complete of the query combo using history or the whole dict. index?
-
 * Wrapped text should get aligned with the definition start and not the sense count start
 
 Settings
 ~~~~~~~~
-Start-up mode -> tray/show
-Notification system -> duration, etc.
 Watch clipboard/selection
 Fonts and Colours
 

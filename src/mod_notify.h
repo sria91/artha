@@ -27,7 +27,7 @@
 #ifndef __MOD_NOTIFY_H__
 #define __MOD_NOTIFY_H__
 
-#include <gtk/gtk.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
@@ -37,13 +37,13 @@ gboolean	(*notify_init)		(const char *app_name);
 void		(*notify_uninit)	(void);
 
 NotifyNotification* (*notify_notification_new) (
-	const gchar *summary, const gchar *body,
-	const gchar *icon);
+	const char *summary, const char *body,
+	const char *icon);
 
 gboolean (*notify_notification_update)	(NotifyNotification *notification, 
-						const gchar *summary, 
-						const gchar *body, 
-						const gchar *icon);
+						const char *summary, 
+						const char *body, 
+						const char *icon);
 
 gboolean (*notify_notification_show)	(NotifyNotification *notification, 
 						GError **error);

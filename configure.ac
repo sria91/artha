@@ -16,6 +16,7 @@ AM_INIT_AUTOMAKE([-Wall -Werror check-news dist-bzip2 gnu])
 
 # Checks for programs.
 AM_PROG_CC_C_O
+AM_PROG_AR
 AC_LANG([C])
 AC_LANG_CONFTEST(
 [AC_LANG_SOURCE([[const char hw[] = "Hello, World\n";]])])

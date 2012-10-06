@@ -81,17 +81,19 @@ Steps
 ~~~~~
 
 1. Install the latest MinGW and MSYS from http://sourceforge.net/projects/
-mingwbuilds/files/<windows-host/> and <External binary packages/> respectively.
-Both are archived files that can be extracted to the root of C drive; it's
-better to stick to this directory. Add C:\MinGW\bin to PATH. In a new command
-prompt, "gcc" should give you "gcc: fatal error: no input files".
+mingwbuilds/files/<host-windows/releases/> and <external-binary-packages/> 
+respectively. Both are archived files that can be extracted to the root of 
+C drive; it's better to stick to this directory.
 
-2. Run C:\msys\msys.bat and try gcc, automake, autoconf commands to verify
+2. Add C:\MinGW\bin to PATH. In a new command prompt, "gcc" should give you 
+"gcc: fatal error: no input files".
+
+3. Run C:\msys\msys.bat and try gcc, automake, autoconf commands to verify
 if they work correctly.
 
-4. Download GTK+ Win32 development bundle from ftp.gnome.org or just google 
-for gtk+-bundle_2.24.10-20120208_win32.zip. Extract it to C:/GTK+. Add the bin
-directory (C:/GTK+/bin) to PATH. Now start cmd (not MSYS) and give 
+4. Download the latest GTK+ Win32 development bundle from ftp.gnome.org or just 
+google for gtk+-bundle_2.24.10-20120208_win32.zip. Extract it to C:/GTK+. Add 
+the bin directory (C:/GTK+/bin) to PATH. Now start cmd (not MSYS) and give 
 
 	pkg-config --cflags --libs gtk+-2.0
 
@@ -100,9 +102,7 @@ understandable by GCC. "Yay! GTK+ is also done, I am all set now!" ~ No, still
 pkg-config won't work in MSYS. Need to fix that.
 
 5. Create a new environment variable PKG_CONFIG_PATH and set its value to 
-/c/gtk+/lib/pkgconfig and copy C:/GTK+/share/aclocal/pkg.m4 to
-C:/MSYS/share/aclocal assuming C:/GTK+ and C:/MSYS are your chosen directories
-for the installations.
+/c/gtk+/lib/pkgconfig (this is path is in MSYS directory format).
 
 6. Now shoot up MSYS terminal and try the above pkg-config command, it should 
 output the same output it gave in the cmd earlier window. There! Now you're 
@@ -110,7 +110,7 @@ golden!
 
 Unlike Linux, where WordNet 3.0 development headers are available on many 
 distros as a package in their repos, on Windows the official release by 
-Princeton University is only 2.1; so download WordNet 3.0 for Linux and compile
+Princeton University is only 2.1; so download WordNet 3.0 for Linux and compile 
 it on MSYS. Earlier the author of this file thought it isn't feasible, but thanks 
 to a project he found @ http://en.sourceforge.jp/projects/sfnet_wordnet30forwin/ 
 which proved otherwise.
