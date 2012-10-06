@@ -27,7 +27,7 @@
 #ifndef __MOD_NOTIFY_H__
 #define __MOD_NOTIFY_H__
 
-#include <glib.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
