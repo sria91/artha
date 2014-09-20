@@ -1,0 +1,81 @@
+.
+├── bin
+│   ├── artha.exe
+│   ├── artha.png
+│   ├── freetype6.dll
+│   ├── gui.glade
+│   ├── intl.dll
+│   ├── libatk-1.0-0.dll
+│   ├── libcairo-2.dll
+│   ├── libenchant.dll
+│   ├── libexpat-1.dll
+│   ├── libfontconfig-1.dll
+│   ├── libgdk_pixbuf-2.0-0.dll
+│   ├── libgdk-win32-2.0-0.dll
+│   ├── libgio-2.0-0.dll
+│   ├── libglib-2.0-0.dll
+│   ├── libgmodule-2.0-0.dll
+│   ├── libgobject-2.0-0.dll
+│   ├── libgthread-2.0-0.dll
+│   ├── libgtk-win32-2.0-0.dll
+│   ├── libnotify-1.dll
+│   ├── libpango-1.0-0.dll
+│   ├── libpangocairo-1.0-0.dll
+│   ├── libpangoft2-1.0-0.dll
+│   ├── libpangowin32-1.0-0.dll
+│   ├── libpng14-14.dll
+│   └── zlib1.dll
+├── COPYING
+├── dict
+│   ├── adj.exc
+│   ├── adv.exc
+│   ├── cntlist.rev
+│   ├── data.adj
+│   ├── data.adv
+│   ├── data.noun
+│   ├── data.verb
+│   ├── index.adj
+│   ├── index.adv
+│   ├── index.noun
+│   ├── index.sense
+│   ├── index.verb
+│   ├── noun.exc
+│   ├── sentidx.vrb
+│   ├── sents.vrb
+│   └── verb.exc
+├── etc
+│   ├── fonts
+│   │   └── fonts.conf
+│   └── gtk-2.0
+│       ├── gtkrc
+│       └── im-multipress.conf
+├── lib
+│   ├── enchant
+│   │   └── libenchant_myspell.dll
+│   └── gtk-2.0
+│       ├── 2.10.0
+│       │   └── engines
+│       │       ├── libpixmap.dll
+│       │       └── libwimp.dll
+│       └── modules
+│           └── libgail.dll
+├── setup
+│   ├── artha_setup.iss
+│   ├── Output
+│   │   ├── artha_1.0.2.0.exe
+│   │   └── artha_1.0.3.0.exe
+│   ├── setup_bg.bmp
+│   ├── setup_bg_small.bmp
+│   └── setup.ico
+├── share
+    ├── enchant
+    │   └── myspell
+    │       ├── dictionary.lst
+    │       ├── en_GB.aff
+    │       └── en_GB.dic
+    └── themes
+        └── MS-Windows
+            └── gtk-2.0
+                └── gtkrc
+
+19 directories, 59 files

@@ -58,7 +58,7 @@
 
         <sect2>
             <title>Port-unfriendly Modules</title>
-            <para>These non-portable, platform-dependant functionalities might need to a rewrite.</para>
+            <para>These non-portable, platform-dependant functionalities might need a rewrite.</para>
             <itemizedlist mark='opencircle'>
                 <listitem>
                     <para>
