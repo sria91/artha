@@ -1,6 +1,6 @@
 /* wni.h
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009 - 2014  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,6 +76,14 @@ G_BEGIN_DECLS
 #define SYNONYM_MAPPING		1
 #define ANTONYM_MAPPING		2
 #define PROPERTY_MAPPING	3
+
+/* index.sense reveals that the longest lemma in WordNet is
+ * blood-oxygenation_level_dependent_functional_magnetic_resonance_imaging
+ * 71 chars long; this needs to be updated when WordNet lib. is updated
+ * although it's very hard to beat this one ;) last updated for WN 3.1
+ */
+#define MAX_LEMMA_LEN		75
+#define	MAX_SENSE_DIGITS	5
 
 // WNI Data Structures Used
 typedef enum

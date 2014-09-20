@@ -38,8 +38,8 @@ artha_LDADD = libwni.a $(WORDNET_LIB)
 
 if POSIX
 AM_CFLAGS += @libdbus_CFLAGS@
-artha_LDADD += -lX11 -ldbus-1 -ldbus-glib-1 -lgtk-x11-2.0 \
-		-lgdk-x11-2.0 -lgmodule-2.0 -lgobject-2.0 -lglib-2.0
+artha_LDADD += -lX11 -ldbus-1 -ldbus-glib-1 -lgtk-x11-2.0 -lgdk-x11-2.0 \
+		 -lgio-2.0 -lgmodule-2.0 -lgobject-2.0 -lglib-2.0
 else
 artha_LDADD += @GTK_LIBS@
 artha_LDFLAGS = -mwindows

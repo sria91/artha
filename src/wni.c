@@ -1,6 +1,6 @@
 /* wni.c
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009 - 2014  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,7 +154,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 			}
 			temp_list = NULL;
 
-			//G_PRINTF("Antonym for Sense %d: %s#%d\n", sense, cur_synset->words[synptr->pto[i] - 1], cur_synset->wnsns[synptr->pto[i] - 1]);
+			G_PRINTF("Antonym for Sense %d: %s#%d\n", sense, cur_synset->words[synptr->pto[i] - 1], cur_synset->wnsns[synptr->pto[i] - 1]);
 
 			if(synptr->pto[i] != 0 && advanced_mode)
 			{
@@ -177,7 +177,7 @@ static void populate_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr, gu
 						count++;
 					}
 					
-					//G_PRINTF("%s#%d\n", cur_synset->words[j], cur_synset->wnsns[j]);
+					G_PRINTF("%s#%d\n", cur_synset->words[j], cur_synset->wnsns[j]);
 				}
 				temp_list = g_slist_reverse(temp_list);
 				antonym->implications = g_slist_concat(antonym->implications, temp_list);
@@ -294,7 +294,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 					temp_list = NULL;
 					count = 0;
 
-					//G_PRINTF("%s\n", strip_adj_marker(ant_synset->words[0]));	// Except the first word, all other words are treated as implications
+					G_PRINTF("%s\n", strip_adj_marker(ant_synset->words[0]));	// Except the first word, all other words are treated as implications
 
 					for(j = 1; j < ant_synset->wcount && advanced_mode; j++)			// Coz of this, notice that the index starts at 1 and not 0, it also has a -> before it. e.g. tall
 					{
@@ -309,7 +309,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 							temp_list = g_slist_prepend(temp_list, implication);
 							count++;
 						}
-						//G_PRINTF("->%s\n", strip_adj_marker(ant_synset->words[j]));
+						G_PRINTF("->%s\n", strip_adj_marker(ant_synset->words[j]));
 					}
 					for(j = 0; j < ant_synset->ptrcount && advanced_mode; j++)
 					{
@@ -333,7 +333,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 									temp_list = g_slist_prepend(temp_list, implication);
 									count++;
 								}
-								//G_PRINTF("\t=> %s\n", strip_adj_marker(sim_synset->words[k]));
+								G_PRINTF("\t=> %s\n", strip_adj_marker(sim_synset->words[k]));
 							}
 							free_synset(sim_synset);
 						}
@@ -354,7 +354,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 					temp_list = NULL;
 					temp_str = indirect_via(ant_synset, &count);	// get the sense of indirect term via count variable
 
-					//G_PRINTF("Indirect VIA: %s\n", temp_str);
+					G_PRINTF("Indirect VIA: %s\n", temp_str);
 
 					if(temp_str)
 					{
@@ -394,7 +394,7 @@ static void populate_adj_antonyms(SynsetPtr synptr, WNIProperties **antonyms_ptr
 								temp_list = g_slist_prepend(temp_list, implication);
 								count++;
 							}
-							//G_PRINTF("\t\t=> %s\n", ant_synset->words[j]);
+							G_PRINTF("\t\t=> %s\n", ant_synset->words[j]);
 						}
 
 					    	temp_list = g_slist_reverse(temp_list);
@@ -625,6 +625,7 @@ static gchar *get_example(gchar *offset, gchar *wd)
 {
 	gchar *line = NULL, *example = NULL;
 	glong last_char_index = 0;
+    gchar lemma[MAX_LEMMA_LEN] = "";
 
 	if (vsentfilefp != NULL)
 	{
@@ -634,9 +635,12 @@ static gchar *get_example(gchar *offset, gchar *wd)
 				line++;
 
 			last_char_index = strlen(line) - 1;
-			// The last char is mostly a new line char. from file hence truncate it. If not we are dealing with the last line in the examples file :)
+			// The last char is mostly a new line char from file hence truncate it. If not we are dealing with the last line in the examples file :)
 			line[last_char_index] = (line[last_char_index]=='\n')? '\0' : line[last_char_index];
-			example = g_strdup_printf(g_strstrip(line), wd);
+            // lemma 'get married' invokes this function to get an example, whose example has "get_married" hence '_' needs to be stripped in such cases
+            g_stpcpy(lemma, wd);
+            strsubst(lemma, '_', ' ');
+			example = g_strdup_printf(g_strstrip(line), lemma);
 		}
 	}
 	
@@ -1034,7 +1038,7 @@ static void populate_ptr(gchar *lemma, SynsetPtr synptr, WNIProperties **data_pt
 						}
 					}
 				}
-				//G_PRINTF("ID: %d, Sense: %d, %s\n", id, sense, cursyn->words[j]);
+				G_PRINTF("ID: %d, Sense: %d, %s\n", id, sense, cursyn->words[j]);
 			}
 			free_synset(cursyn);
 		}
@@ -1462,7 +1466,7 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 				{
 					do
 					{
-						//G_PRINTF("i - 1: %d, %s\n", i, morph_word);
+						G_PRINTF("i - 1: %d, %s\n", i, morph_word);
 
 						if(((definitions_set = is_defined(morph_word, i)) != 0) && response_list)
 							populate(morph_word, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
@@ -1477,7 +1481,7 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 
 					do
 					{
-						//G_PRINTF("i: %d, %s\n", i, morph_word);
+						G_PRINTF("i: %d, %s\n", i, morph_word);
 						if(((definitions_set = is_defined(morph_word, i)) != 0) && response_list)
 							populate(morph_word, i, WORDNET_INTERFACE_OVERVIEW | additional_request_flags, search_str, definitions_set, advanced_mode);
 					} while((morph_word = morphstr(NULL, i)) != NULL );
@@ -1496,6 +1500,7 @@ gboolean wni_request_nyms(gchar *search_str, GSList **response_list, WNIRequestF
 		if(global_list)
 		{
 			*response_list = global_list;
+            definitions_set = definitions_set ? definitions_set : 1;
 			global_list = NULL;
 		}
 	}
@@ -2035,7 +2040,12 @@ void wni_free(GSList **response_list)
 #ifdef WNI_INDEPENDENT_DEBUG
 int main(int argc, char *argv[])
 {
-	printf("%d\n", wni_request_nyms("thesaurus", NULL, 0, FALSE));
+    if (argc >= 2)
+    {
+        GSList *response_list = NULL;
+        printf("%d\n", wni_request_nyms(argv[1], &response_list, WORDNET_INTERFACE_ALL, FALSE));
+        wni_free(&response_list);
+    }
 
 	return 0;
 }

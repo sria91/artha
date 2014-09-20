@@ -1,6 +1,6 @@
 /* gui.h
  * Artha - Free cross-platform open thesaurus
- * Copyright (C) 2009, 2010  Sundaram Ramaswamy, legends2k@yahoo.com
+ * Copyright (C) 2009 - 2014  Sundaram Ramaswamy, legends2k@yahoo.com
  *
  * Artha is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,13 +62,6 @@
 #define UI_FILE			"gui.glade"
 #define MAX_CONCAT_STR		500
 #define MAX_STATUS_MSG		100
-/* index.sense reveals that the longest lemma in WordNet is
- * blood-oxygenation_level_dependent_functional_magnetic_resonance_imaging
- * 71 chars long; this needs to be updated when WordNet lib. is updated
- * although it's very hard to beat this one ;)
- */
-#define MAX_LEMMA_LEN		75
-#define	MAX_SENSE_DIGITS	5
 
 /* about box constants */
 #define MAILTO_PREFIX "mailto:"
@@ -205,8 +198,8 @@ currently not set. It can be set via the hotkey button in the toolbar."
 
 #define STR_APP_TITLE		"Artha ~ The Open Thesaurus"
 
-#define STR_COPYRIGHT		"Copyright © 2009 - 2012  Sundaram Ramaswamy\n\nWordNet 3.0 \
-Copyright 2006 - 2012 by Princeton University.  All rights reserved."
+#define STR_COPYRIGHT		"Copyright © 2009 - 2014  Sundaram Ramaswamy\n\nWordNet 3.0 \
+Copyright 2006 - 2014 by Princeton University.  All rights reserved."
 
 #define STR_BUG_WEBPAGE		"http://launchpad.net/artha/+filebug"
 

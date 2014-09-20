@@ -1,6 +1,6 @@
 Artha - An open cross-platform thesaurus based on WordNet
 ===============================================================================
-Copyright (c) 2009-12  Sundaram Ramaswamy, <legends2k@yahoo.com>
+Copyright (c) 2009-14  Sundaram Ramaswamy, <legends2k@yahoo.com>
 
 
 Installation Instructions
@@ -78,18 +78,18 @@ will find it useful. Before beginning, remove all previous versions of MinGW,
 MSYS and GTK+ dev and meticulously follow the below steps.
 
 Steps
-~~~~~
-
+-----
 1. Install the latest MinGW and MSYS from http://sourceforge.net/projects/
-mingwbuilds/files/<host-windows/releases/> and <external-binary-packages/> 
-respectively. Both are archived files that can be extracted to the root of 
-C drive; it's better to stick to this directory.
+mingw-w64/files/Toolchains targetting Win32/Personal Builds/mingw-builds/
+and http://sourceforge.net/projects/msys2/files/Base respectively.
+Both are archived files that can be extracted to the root of C drive; it's
+better to stick to this directory.
 
 2. Add C:\MinGW\bin to PATH. In a new command prompt, "gcc" should give you 
 "gcc: fatal error: no input files".
 
-3. Run C:\msys\msys.bat and try gcc, automake, autoconf commands to verify
-if they work correctly.
+3. Setup MSYS2 (fairly straight forward) and install autoconf, automake and make
+packages through pacman and verify the working of those commands once.
 
 4. Download the latest GTK+ Win32 development bundle from ftp.gnome.org or just 
 google for gtk+-bundle_2.24.10-20120208_win32.zip. Extract it to C:/GTK+. Add 

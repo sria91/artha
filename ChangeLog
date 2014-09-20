@@ -1,3 +1,6 @@
+version 1.0.4 (Aug 07, 2014):
+	* Fixed an issue in generating examples for verbs like 'get married' to strip
+	  '_' character in the lemma
 version 1.0.3 (Sep 20, 2012):
 	* Auto completion of wordnet terms implmented
 	* Wordnet terms load and auto completion list populate made idle exec. functions
