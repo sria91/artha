@@ -29,9 +29,13 @@
 
 #include <glib.h>
 
+#ifdef WNI_INDEPENDENT_DEBUG
+#define DEBUG_LEVEL 3
+#endif
+
 G_BEGIN_DECLS
 
-#ifdef HAVE_CONFIG_H
+#if defined(HAVE_CONFIG_H) || defined(WNI_INDEPENDENT_DEBUG)
 
 #	if DEBUG_LEVEL >= 1
 #		define G_DEBUG(...) g_debug(__VA_ARGS__)
